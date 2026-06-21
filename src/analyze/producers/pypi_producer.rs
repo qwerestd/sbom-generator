@@ -64,3 +64,63 @@ impl SbomProducer for PypiProducer {
         Ok(result)
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::analyze::producers::producer::SbomProducerConfiguration;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_pypi_producer_find_dependencies() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("resources/py/requirements.txt");
+
+        let producer = PypiProducer::default();
+        let config = SbomProducerConfiguration {
+            use_debug: false,
+            base_path: d.parent().unwrap().to_path_buf(),
+        };
+
+        let deps = producer
+            .find_dependencies(&[d], &config)
+            .expect("Failed to parse requirements.txt");
+
+        // resources/py/requirements.txt 中一共包含 7 个有效的包：
+        // requests, urllib3, Flask, fastapi, colorama, aiohttp, pytest
+        assert_eq!(
+            deps.len(),
+            7,
+            "Expected 7 dependencies, found {}",
+            deps.len()
+        );
+
+        // 测试简单包
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "requests" && d.version.as_deref() == Some("2.31.0")));
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "urllib3" && d.version.as_deref() == Some("1.26.16")));
+
+        // 测试带 Extras 的包 (Flask[async] 和 fastapi[all])
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "Flask" && d.version.as_deref() == Some("2.3.2")));
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "fastapi" && d.version.as_deref() == Some("0.100.0")));
+
+        // 测试带有环境标记的复杂行 (colorama 和 aiohttp)
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "colorama" && d.version.as_deref() == Some("0.4.6")));
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "aiohttp" && d.version.as_deref() == Some("3.8.4")));
+
+        // 测试带有行内注释的包 (pytest)
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "pytest" && d.version.as_deref() == Some("7.4.0")));
+    }
+}

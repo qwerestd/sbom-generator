@@ -59,3 +59,56 @@ impl SbomProducer for CargoProducer {
         Ok(result)
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::analyze::producers::producer::SbomProducerConfiguration;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_cargo_producer_find_dependencies() {
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("resources/cargo/Cargo.toml");
+
+        let producer = CargoProducer::default();
+        let config = SbomProducerConfiguration {
+            use_debug: false,
+            base_path: d.parent().unwrap().to_path_buf(),
+        };
+
+        let deps = producer
+            .find_dependencies(&[d], &config)
+            .expect("Failed to parse Cargo.toml");
+
+        // resources/cargo/Cargo.toml 中的 dependencies 和 dev-dependencies 包含：
+        // regex, rand, serde, tokio, criterion
+        // (注：libc 在 [target.'cfg(unix)'.dependencies] 中，你的代码目前跳过它，这是符合预期的)
+        assert_eq!(
+            deps.len(),
+            5,
+            "Expected 5 dependencies, found {}",
+            deps.len()
+        );
+
+        // 验证普通格式
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "regex" && d.version.as_deref() == Some("1.10.0")));
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "rand" && d.version.as_deref() == Some("0.8.5")));
+
+        // 验证内联表/对象格式 (带有 features 的)
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "serde" && d.version.as_deref() == Some("1.0.190")));
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "tokio" && d.version.as_deref() == Some("1.33.0")));
+
+        // 验证 dev-dependencies 能被正确提取
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "criterion" && d.version.as_deref() == Some("0.5.1")));
+    }
+}

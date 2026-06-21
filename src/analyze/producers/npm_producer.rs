@@ -65,3 +65,49 @@ impl SbomProducer for NpmProducer {
         Ok(result)
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::analyze::producers::npm_producer::NpmProducer;
+    use crate::analyze::producers::producer::SbomProducerConfiguration;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_npm_producer_find_dependencies() {
+        // 使用 CARGO_MANIFEST_DIR 定位到项目根目录，然后进入 resources/npm
+        let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        d.push("resources/npm/package.json");
+
+        let producer = NpmProducer::default();
+        let config = SbomProducerConfiguration {
+            use_debug: false,
+            base_path: d.parent().unwrap().to_path_buf(),
+        };
+
+        let deps = producer
+            .find_dependencies(&[d], &config)
+            .expect("Failed to parse package.json");
+
+        // 验证我们能提取到 3 个合法依赖：express, lodash, jest
+        // (local-pkg 因为是 file: 协议，根据逻辑会被跳过)
+        assert_eq!(
+            deps.len(),
+            3,
+            "Expected 3 dependencies, found {}",
+            deps.len()
+        );
+
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "express" && d.version.as_deref() == Some("^4.18.2")));
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "lodash" && d.version.as_deref() == Some("4.17.21")));
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "jest" && d.version.as_deref() == Some("29.5.0")));
+
+        // 确保 file: 前缀的依赖被正确跳过
+        assert!(!deps.iter().any(|d| d.name == "local-pkg"));
+    }
+}
