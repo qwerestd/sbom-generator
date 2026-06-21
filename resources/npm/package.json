@@ -8,5 +8,12 @@
   "devDependencies": {
     "jest": "29.5.0",
     "local-pkg": "file:../local-pkg"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0"
+  },
+  "optionalDependencies": {
+    "fsevents": "~2.3.2",
+    "git-dep": "git+https://github.com/user/repo.git"
   }
 }

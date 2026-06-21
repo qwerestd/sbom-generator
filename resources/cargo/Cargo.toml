@@ -3,18 +3,16 @@ name = "test-cargo"
 version = "0.1.0"
 
 [dependencies]
-# 【简单】字符串格式
 regex = "1.10.0"
 rand = "0.8.5"
 
-# 【复杂】内联表/对象格式，包含 features 等额外属性
 serde = { version = "1.0.190", features = ["derive"] }
 tokio = { version = "1.33.0", features = ["full", "rt-multi-thread"] }
-
 [dev-dependencies]
-# 【简单】开发环境依赖
 criterion = "0.5.1"
-
 [target.'cfg(unix)'.dependencies]
-# 【复杂】特定平台下的依赖（如果你的解析器目前只读 `dependencies` 和 `dev-dependencies`，这种可能会被跳过，属于高级复杂情况）
 libc = "0.2"
+[build-dependencies]
+cc = "1.0.79"
+pkg-config = { version = "0.3.27", optional = true }
+my-workspace-lib = { workspace = true }
