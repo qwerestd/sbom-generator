@@ -1,0 +1,14 @@
+# 【简单】纯包名和版本
+requests==2.31.0
+urllib3 >= 1.26.16
+
+# 【复杂】带有特性(Extras)后缀的包
+Flask[async]==2.3.2
+fastapi[all] ~= 0.100.0
+
+# 【复杂】带有 PEP-508 环境标记 (分号后面的部分应该被忽略)
+colorama == 0.4.6 ; sys_platform == 'win32'
+aiohttp==3.8.4; python_version >= "3.8"
+
+# 【复杂】带有行内注释的脏数据
+pytest==7.4.0 # 这是一个测试框架，这里的注释不应该影响解析

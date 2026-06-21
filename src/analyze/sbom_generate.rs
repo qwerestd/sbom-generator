@@ -1,10 +1,12 @@
+use crate::analyze::producers::cargo_producer::CargoProducer;
 use crate::analyze::producers::maven::maven_producer::MavenProducerBuilder;
+use crate::analyze::producers::npm_producer::NpmProducer;
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
+use crate::analyze::producers::pypi_producer::PypiProducer;
 use crate::model::configuration::Configuration;
 use crate::sbom::generate::generate_sbom;
 use crate::utils::file_utils::get_files;
 use std::path::PathBuf;
-
 /// Analyze paths, find dependencies and write the SBOM to disk.
 /// The [configuration] is the configuration of the tool (directory to scan, etc)
 pub fn analyze(configuration: &Configuration) -> anyhow::Result<()> {
@@ -13,9 +15,12 @@ pub fn analyze(configuration: &Configuration) -> anyhow::Result<()> {
         configuration.print_configuration();
     }
 
-    let all_producers = vec![MavenProducerBuilder::default()
-        .build()
-        .expect("build producer")];
+    let all_producers: Vec<Box<dyn SbomProducer>> = vec![
+        Box::new(MavenProducerBuilder::default().build().unwrap()),
+        Box::new(NpmProducer::default()),
+        Box::new(CargoProducer::default()),
+        Box::new(PypiProducer::default()),
+    ];
 
     let all_files = get_files(configuration.directory.as_str()).expect("cannot read directory");
     let producer_configuration = SbomProducerConfiguration {

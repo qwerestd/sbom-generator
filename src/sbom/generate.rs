@@ -19,7 +19,9 @@ pub fn generate_sbom(
 
             if let Some(v) = d.version {
                 component_builder = component_builder.version(&v);
-                component_builder.purl(format!("pkg:maven/{}@{}", d.name, &v).to_string());
+                if !d.purl.is_empty() {
+                    component_builder = component_builder.purl(d.purl);
+                }
             }
 
             component_builder.build().unwrap()

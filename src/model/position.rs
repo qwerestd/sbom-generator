@@ -27,17 +27,22 @@ pub fn get_position_in_string(content: &str, offset: usize) -> anyhow::Result<Po
         anyhow::bail!("offset is larger than content length");
     }
 
-    let bstr = BStr::new(&content);
-
-    let mut line_number: u32 = 1;
+    let bstr = BStr::new(content);
     let lines = bstr.lines_with_terminator();
-    for line in lines {
-        let start_index = line.as_ptr() as usize - content.as_ptr() as usize;
+
+    // 追踪当前行在整个字符串中的起始字节偏移量
+    let mut current_line_offset = 0;
+
+    // 修复点 1: 使用 (1_u32..) 和 zip 消除外层行计数器 line_number
+    for (line_number, line) in (1_u32..).zip(lines) {
+        let start_index = current_line_offset;
         let end_index = start_index + line.len();
 
         if (start_index..end_index).contains(&offset) {
-            let mut col_number: u32 = 1;
-            for (grapheme_start, grapheme_end, _) in line.grapheme_indices() {
+            // 修复点 2: 使用 (1_u32..) 和 zip 消除内层列计数器 col_number
+            for (col_number, (grapheme_start, grapheme_end, _)) in
+                (1_u32..).zip(line.grapheme_indices())
+            {
                 let grapheme_absolute_start = start_index + grapheme_start;
                 let grapheme_absolute_end = start_index + grapheme_end;
 
@@ -56,10 +61,11 @@ pub fn get_position_in_string(content: &str, offset: usize) -> anyhow::Result<Po
                         col: NonZeroU32::new(col_number + 1).unwrap(),
                     });
                 }
-                col_number += 1;
             }
         }
-        line_number += 1;
+
+        // 累加当前行的长度，作为下一行的起始偏移量
+        current_line_offset += line.len();
     }
 
     Err(anyhow::anyhow!("cannot find position"))
