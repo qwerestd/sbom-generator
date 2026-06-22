@@ -4,13 +4,16 @@ use crate::analyze::producers::npm_producer::NpmProducer;
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::analyze::producers::pypi_producer::PypiProducer;
 use crate::model::configuration::Configuration;
+use crate::model::dependency::Dependency;
 use crate::sbom::generate::generate_sbom;
 use crate::utils::file_utils::get_files;
 use std::path::PathBuf;
+
 /// Analyze paths, find dependencies and write the SBOM to disk.
 /// The [configuration] is the configuration of the tool (directory to scan, etc)
 pub fn analyze(configuration: &Configuration) -> anyhow::Result<()> {
-    let mut dependencies = vec![];
+    // 1. 初始化空数组（保持原样）
+    let mut dependencies: Vec<Dependency> = vec![];
     if configuration.use_debug {
         configuration.print_configuration();
     }
@@ -44,6 +47,16 @@ pub fn analyze(configuration: &Configuration) -> anyhow::Result<()> {
         }
     }
 
+    dependencies.sort_by(|a, b| {
+        a.group
+            .cmp(&b.group)
+            .then(a.name.cmp(&b.name))
+            .then(a.version.cmp(&b.version))
+    });
+
+    // 2. 严格去重：必须 group, name, version 完全一致才算重复
+    dependencies.dedup_by(|a, b| a.group == b.group && a.name == b.name && a.version == b.version);
+
     for dep in dependencies.iter() {
         let dep_file = dep
             .location
@@ -59,6 +72,7 @@ pub fn analyze(configuration: &Configuration) -> anyhow::Result<()> {
             dep_line
         )
     }
+
     generate_sbom(dependencies, configuration).expect("cannot generate SBOM");
     Ok(())
 }

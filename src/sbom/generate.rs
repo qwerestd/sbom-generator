@@ -11,11 +11,16 @@ pub fn generate_sbom(
     configuration: &Configuration,
 ) -> anyhow::Result<()> {
     let mut file = fs::File::create(configuration.output.as_str()).expect("cannot create file");
+
     let components: Vec<serde_cyclonedx::cyclonedx::v_1_6::Component> = dependencies
         .into_iter()
         .map(|d| {
             let mut binding = ComponentBuilder::default();
             let mut component_builder = binding.name(d.name.to_string()).type_("library");
+
+            if let Some(g) = d.group {
+                component_builder = component_builder.group(g);
+            }
 
             if let Some(v) = d.version {
                 component_builder = component_builder.version(&v);
@@ -27,6 +32,7 @@ pub fn generate_sbom(
             component_builder.build().unwrap()
         })
         .collect();
+
     let cyclonedx = CycloneDxBuilder::default()
         .bom_format("CycloneDX")
         .spec_version("1.6")

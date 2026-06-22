@@ -17,7 +17,6 @@ use std::str::FromStr;
 lazy_static! {
     static ref REGEX_VARIABLE: Regex = Regex::new(r"\$\{(.+)\}").unwrap();
 }
-
 fn enrich_string_with_properties(s: &str, properties: &HashMap<String, String>) -> String {
     if let Some(caps) = REGEX_VARIABLE.captures(s) {
         let total_capture_opt = caps.get(0);
@@ -89,12 +88,17 @@ impl MavenDependency {
 
 impl From<&MavenDependency> for Dependency {
     fn from(value: &MavenDependency) -> Self {
+        let version_str = value.version.clone().unwrap_or_default();
         DependencyBuilder::default()
-            .name(format!("{}:{}", value.group_id, value.artifact_id))
-            .version(value.version.clone())
+            .group(Some(value.group_id.clone()))
+            .name(value.artifact_id.clone())
+            .version(Some(version_str.clone()))
             .location(value.location.clone())
             .r#type(DependencyType::Library)
-            .purl("bla".to_string())
+            .purl(format!(
+                "pkg:maven/{}/{}@{}",
+                value.group_id, value.artifact_id, version_str
+            ))
             .build()
             .unwrap()
     }
