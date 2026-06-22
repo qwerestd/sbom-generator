@@ -11,9 +11,10 @@ use std::path::PathBuf;
 
 /// Analyze paths, find dependencies and write the SBOM to disk.
 /// The [configuration] is the configuration of the tool (directory to scan, etc)
-pub fn analyze(configuration: &Configuration) -> anyhow::Result<()> {
+pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<()> {
     // 1. 初始化空数组（保持原样）
-    let mut dependencies: Vec<Dependency> = vec![];
+    let mut static_dependencies: Vec<Dependency> = vec![];
+    let dynamic_dependencies: Vec<Dependency> = vec![];
     if configuration.use_debug {
         configuration.print_configuration();
     }
@@ -43,21 +44,35 @@ pub fn analyze(configuration: &Configuration) -> anyhow::Result<()> {
             sbom_producer.find_dependencies(producer_files.as_slice(), &producer_configuration);
 
         if let Ok(deps) = dependencies_found {
-            dependencies.extend(deps);
+            static_dependencies.extend(deps);
         }
     }
+    if dynamic {
+        println!(" -> 静态检测发现 {} 个依赖组件", static_dependencies.len());
+    }
+    let mut final_dependencies: Vec<Dependency> = vec![];
+    final_dependencies.extend(static_dependencies);
+    final_dependencies.extend(dynamic_dependencies);
 
-    dependencies.sort_by(|a, b| {
+    // 2. 排序 (去重的前提)
+    final_dependencies.sort_by(|a, b| {
         a.group
             .cmp(&b.group)
             .then(a.name.cmp(&b.name))
             .then(a.version.cmp(&b.version))
     });
-
-    // 2. 严格去重：必须 group, name, version 完全一致才算重复
-    dependencies.dedup_by(|a, b| a.group == b.group && a.name == b.name && a.version == b.version);
-
-    for dep in dependencies.iter() {
+    if dynamic {
+        let initial_count = final_dependencies.len();
+        final_dependencies
+            .dedup_by(|a, b| a.group == b.group && a.name == b.name && a.version == b.version);
+        let dedup_count = initial_count - final_dependencies.len();
+        println!(
+            " -> 融合完毕！总计合并去除了 {} 个重复依赖，最终生效 {} 个依赖。",
+            dedup_count,
+            final_dependencies.len()
+        );
+    }
+    for dep in final_dependencies.iter() {
         let dep_file = dep
             .location
             .as_ref()
@@ -72,7 +87,6 @@ pub fn analyze(configuration: &Configuration) -> anyhow::Result<()> {
             dep_line
         )
     }
-
-    generate_sbom(dependencies, configuration).expect("cannot generate SBOM");
+    generate_sbom(final_dependencies, configuration).expect("cannot generate SBOM");
     Ok(())
 }

@@ -4,6 +4,7 @@ pub struct Configuration {
     pub directory: String,
     pub output: String,
     pub use_debug: bool,
+    pub dynamic: bool,
 }
 
 impl Configuration {

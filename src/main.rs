@@ -25,6 +25,12 @@ pub fn main() {
 
     opts.optflag("d", "debug", "use debug mode");
 
+    opts.optflag(
+        "D",
+        "dynamic",
+        "enable dynamic dependency detection (Windows only)",
+    );
+
     opts.optopt(
         "o",
         "output",
@@ -58,12 +64,18 @@ pub fn main() {
         print_usage(&program, opts);
         exit(1);
     }
-
+    let enable_dynamic = matches.opt_present("D");
+    #[cfg(not(target_os = "windows"))]
+    if enable_dynamic {
+        eprintln!("[Warning] Dynamic detection is only supported on Windows. Falling back to static analysis.");
+        enable_dynamic = false;
+    }
     let configuration = Configuration {
         directory: directory_to_analyze_option.unwrap(),
         output: output.unwrap(),
         use_debug: matches.opt_present("d"),
+        dynamic: enable_dynamic,
     };
 
-    analyze(&configuration).expect("error when generating SBOM");
+    analyze(&configuration, enable_dynamic).expect("error when generating SBOM");
 }
