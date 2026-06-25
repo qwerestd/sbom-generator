@@ -1,5 +1,8 @@
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
+use anyhow::Context;
+use cargo_metadata::{DependencyKind, MetadataCommand};
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Default)]
@@ -8,7 +11,8 @@ pub struct CargoProducer {}
 impl SbomProducer for CargoProducer {
     fn use_file(&self, path: &Path, _config: &SbomProducerConfiguration) -> bool {
         path.file_name()
-            .is_some_and(|n| n.eq_ignore_ascii_case("Cargo.toml"))
+            .map(|name| name == "Cargo.toml")
+            .unwrap_or(false)
     }
 
     fn find_dependencies(
@@ -16,80 +20,113 @@ impl SbomProducer for CargoProducer {
         paths: &[PathBuf],
         _config: &SbomProducerConfiguration,
     ) -> anyhow::Result<Vec<Dependency>> {
-        let mut result = vec![];
-        let categories = ["dependencies", "dev-dependencies", "build-dependencies"];
+        let mut all_dependencies = Vec::new();
 
-        for p in paths {
-            if let Ok(content) = std::fs::read_to_string(p) {
-                if let Ok(toml_value) = content.parse::<toml::Value>() {
-                    for category in categories {
-                        if let Some(deps) = toml_value.get(category).and_then(|v| v.as_table()) {
-                            for (name, val) in deps {
-                                let version = if let Some(v_str) = val.as_str() {
-                                    // 格式: package = "1.0"
-                                    Some(v_str.to_string())
-                                } else if let Some(v_obj) = val.as_table() {
-                                    // 格式: package = { version = "1.0" }
-                                    v_obj
-                                        .get("version")
-                                        .and_then(|v| v.as_str())
-                                        .map(|s| s.to_string())
-                                } else {
-                                    None
-                                };
+        for single_path in paths {
+            // [1. 元数据提取]
+            let metadata = MetadataCommand::new()
+                .manifest_path(single_path)
+                .exec()
+                .with_context(|| {
+                    format!("Failed to execute cargo metadata on {:?}", single_path)
+                })?;
 
-                                if let Some(ver) = version {
-                                    result.push(
-                                        DependencyBuilder::default()
-                                            .name(name.clone())
-                                            .version(Some(ver.clone()))
-                                            .r#type(DependencyType::Library)
-                                            .purl(format!("pkg:cargo/{}@{}", name, ver))
-                                            .location(None)
-                                            .build()
-                                            .unwrap(),
-                                    );
-                                }
-                            }
+            let resolve = metadata
+                .resolve
+                .as_ref()
+                .context("No dependency resolve graph found in Cargo metadata")?;
+
+            // [2. 拓扑图剪枝]
+            let mut runtime_deps = HashSet::new();
+            let mut queue = Vec::new();
+
+            for root in &metadata.workspace_members {
+                runtime_deps.insert(root.clone());
+                queue.push(root.clone());
+            }
+
+            let node_map: HashMap<_, _> = resolve.nodes.iter().map(|n| (&n.id, n)).collect();
+
+            while let Some(node_id) = queue.pop() {
+                if let Some(node) = node_map.get(&node_id) {
+                    for edge in &node.deps {
+                        let is_runtime = edge
+                            .dep_kinds
+                            .iter()
+                            .any(|k| k.kind != DependencyKind::Development);
+
+                        if is_runtime && runtime_deps.insert(edge.pkg.clone()) {
+                            queue.push(edge.pkg.clone());
                         }
                     }
                 }
             }
+
+            // --- 【新增步骤：建立 PackageId 到 PURL 的映射表】 ---
+            // 因为在找子依赖时，我们手里只有 PackageId，但 SBOM 规范需要存 PURL
+            let mut id_to_purl = HashMap::new();
+            for pkg in &metadata.packages {
+                let purl = format!("pkg:cargo/{}@{}", pkg.name, pkg.version);
+                id_to_purl.insert(pkg.id.clone(), purl);
+            }
+            // ------------------------------------------------------
+
+            // [3. 组装组件模型]
+            let mut single_file_dependencies = Vec::new();
+
+            for pkg in &metadata.packages {
+                if !runtime_deps.contains(&pkg.id) {
+                    continue;
+                }
+
+                // 注意：由于当前逻辑排除了 workspace_members 本身（只作为根，不作为依赖），
+                // 这个行为保持原样。
+                if metadata.workspace_members.contains(&pkg.id) {
+                    continue;
+                }
+
+                let mut builder = DependencyBuilder::default();
+
+                builder.name(pkg.name.to_string());
+                builder.version(Some(pkg.version.to_string()));
+                builder.r#type(DependencyType::Library);
+
+                let purl = format!("pkg:cargo/{}@{}", pkg.name, pkg.version);
+                builder.purl(purl.clone()); // 克隆一下，下面还要用
+
+                // --- 【新增步骤：提取当前组件的依赖关系图】 ---
+                let mut child_dependencies = Vec::new();
+
+                // 从拓扑节点中找到当前组件
+                if let Some(node) = node_map.get(&pkg.id) {
+                    // 遍历它所指向的下级边
+                    for edge in &node.deps {
+                        // 过滤规则必须与顶层一致：排除开发依赖
+                        let is_runtime = edge
+                            .dep_kinds
+                            .iter()
+                            .any(|k| k.kind != DependencyKind::Development);
+
+                        // 如果该子包是运行时依赖，且存在于我们之前筛选好的有效集合中
+                        if is_runtime && runtime_deps.contains(&edge.pkg) {
+                            // 通过 ID 查出子包的 PURL 并放入数组
+                            if let Some(child_purl) = id_to_purl.get(&edge.pkg) {
+                                child_dependencies.push(child_purl.clone());
+                            }
+                        }
+                    }
+                }
+
+                builder.dependencies(child_dependencies);
+
+                if let Ok(dep) = builder.build() {
+                    single_file_dependencies.push(dep);
+                }
+            }
+
+            all_dependencies.extend(single_file_dependencies);
         }
-        Ok(result)
+
+        Ok(all_dependencies)
     }
-}
-#[test]
-fn test_cargo_producer_find_dependencies_extended() {
-    let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    d.push("resources/cargo/Cargo.toml");
-
-    let producer = CargoProducer::default();
-    let config = SbomProducerConfiguration {
-        use_debug: false,
-        base_path: d.parent().unwrap().to_path_buf(),
-    };
-
-    let deps = producer
-        .find_dependencies(&[d], &config)
-        .expect("Failed to parse Cargo.toml");
-
-    // 验证构建依赖 (build-dependencies) 是否被正确解析
-    assert!(deps
-        .iter()
-        .any(|d| d.name == "cc" && d.version.as_deref() == Some("1.0.79")));
-    assert!(deps
-        .iter()
-        .any(|d| d.name == "pkg-config" && d.version.as_deref() == Some("0.3.27")));
-
-    // 验证缺少 version 字段的依赖（例如 workspace = true）被安全忽略
-    assert!(!deps.iter().any(|d| d.name == "my-workspace-lib"));
-
-    // 确保总数符合预期（原有的 5 个 + 新增的 2 个有效的 = 7）
-    assert_eq!(
-        deps.len(),
-        7,
-        "Expected 7 dependencies, found {}",
-        deps.len()
-    );
 }

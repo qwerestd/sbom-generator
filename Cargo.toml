@@ -31,5 +31,6 @@ tree-sitter = "0.23.0"
 walkdir = "2.5.0"
 lazy_static = "1.5.0"
 toml = "0.8"
+cargo_metadata = "0.23.1"
 [build-dependencies]
 cc = "1.1.5"

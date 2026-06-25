@@ -10,7 +10,8 @@ cargo build -r
 echo "testing on ${DIRECTORY}"
 echo "test dir on ${TEST_DIR}"
 
-osv-scanner  --skip-git -r --experimental-only-packages --format=cyclonedx-1-5 --paths-relative-to-scan-dir --output "${TEST_DIR}/osv-scanner.json" "${DIRECTORY}"
+# 移除了所有在新版中不兼容的废弃参数
+osv-scanner -r --format=cyclonedx-1-5 --output "${TEST_DIR}/osv-scanner.json" "${DIRECTORY}"
 trivy fs --output "${TEST_DIR}/trivy.json" --format cyclonedx "${DIRECTORY}"
 ./target/release/sbom-generator --directory "${DIRECTORY}" --output "${TEST_DIR}/sbom-generator.json"
 
