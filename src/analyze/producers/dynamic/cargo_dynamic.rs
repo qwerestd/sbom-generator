@@ -10,7 +10,6 @@ use std::process::Command;
 #[derive(Default)]
 pub struct CargoDynamicProducer {}
 
-// 【核心：必须显式为 CargoDynamicProducer 实现 DynamicProducer】
 impl DynamicProducer for CargoDynamicProducer {
     fn is_applicable(&self, configuration: &Configuration) -> bool {
         let mut path = PathBuf::from(&configuration.directory);
@@ -18,7 +17,6 @@ impl DynamicProducer for CargoDynamicProducer {
         path.exists()
     }
 
-    // 检查此处的任何类型（如 anyhow::Result 是否带了泛型，Configuration 是否加了引用）
     fn detect_dependencies(
         &self,
         configuration: &Configuration,
@@ -65,6 +63,7 @@ impl DynamicProducer for CargoDynamicProducer {
 
         let mut id_to_child_purls: HashMap<&str, Vec<String>> = HashMap::new();
 
+        // ======= 核心修改区域：通过 resolve.nodes.deps 过滤测试依赖 =======
         if let Some(nodes) = json
             .get("resolve")
             .and_then(|r| r.get("nodes"))
@@ -74,9 +73,28 @@ impl DynamicProducer for CargoDynamicProducer {
                 if let Some(parent_id) = node.get("id").and_then(|i| i.as_str()) {
                     let mut child_purls = vec![];
 
-                    if let Some(child_ids) = node.get("dependencies").and_then(|d| d.as_array()) {
-                        for cid_val in child_ids {
-                            if let Some(cid) = cid_val.as_str() {
+                    // 注意：这里把原本的 "dependencies" 改为了 "deps"
+                    // 因为 "deps" 是一个对象数组，包含了更详细的 `dep_kinds` 信息
+                    if let Some(deps) = node.get("deps").and_then(|d| d.as_array()) {
+                        for dep_obj in deps {
+                            // 检查依赖的类型（kind）是否包含 "dev"
+                            let is_dev = dep_obj
+                                .get("dep_kinds")
+                                .and_then(|k| k.as_array())
+                                .map(|kinds| {
+                                    kinds.iter().any(|k| {
+                                        k.get("kind").and_then(|s| s.as_str()) == Some("dev")
+                                    })
+                                })
+                                .unwrap_or(false);
+
+                            // 如果是测试依赖，直接跳过，不加入当前包的依赖列表
+                            if is_dev {
+                                continue;
+                            }
+
+                            // 如果不是 dev 依赖，再获取其 pkg (即依赖包的 ID)
+                            if let Some(cid) = dep_obj.get("pkg").and_then(|p| p.as_str()) {
                                 if let Some(child_meta) = id_to_meta.get(cid) {
                                     child_purls.push(child_meta.purl.clone());
                                 }
@@ -87,6 +105,7 @@ impl DynamicProducer for CargoDynamicProducer {
                 }
             }
         }
+        // ==============================================================
 
         let mut final_deps = vec![];
 
@@ -97,7 +116,7 @@ impl DynamicProducer for CargoDynamicProducer {
                 .name(meta.name)
                 .version(Some(meta.version))
                 .r#type(DependencyType::Library)
-                .purl(Dependency::auto_fix_and_validate_purl(&meta.purl))
+                .purl(meta.purl)
                 .dependencies(edges)
                 .location(None)
                 .build()

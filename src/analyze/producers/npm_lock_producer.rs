@@ -109,7 +109,7 @@ impl NpmLockProducer {
                 .name(node.name)
                 .version(Some(node.version))
                 .r#type(DependencyType::Library)
-                .purl(Dependency::auto_fix_and_validate_purl(&node.purl))
+                .purl(node.purl)
                 .dependencies(child_purls) // 👈 自动构建完整的传递依赖关系链路！
                 .location(None)
                 .build()
