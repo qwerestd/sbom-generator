@@ -30,11 +30,6 @@ pub fn main() {
         "static-only",
         "force static analysis only (disable dynamic detection)",
     );
-    opts.optflag(
-        "D",
-        "dynamic",
-        "explicitly enable dynamic detection (enabled by default)",
-    );
 
     opts.optopt(
         "o",
