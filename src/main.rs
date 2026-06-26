@@ -22,13 +22,18 @@ pub fn main() {
         "directory to scan (valid existing directory)",
         "/path/to/code/to/analyze",
     );
-
     opts.optflag("d", "debug", "use debug mode");
 
+    // 【修改点1】：反转设计逻辑！默认开启动态，新增 -s 供用户强制离线纯静态
+    opts.optflag(
+        "s",
+        "static-only",
+        "force static analysis only (disable dynamic detection)",
+    );
     opts.optflag(
         "D",
         "dynamic",
-        "enable dynamic dependency detection (Windows only)",
+        "explicitly enable dynamic detection (enabled by default)",
     );
 
     opts.optopt(
@@ -40,9 +45,7 @@ pub fn main() {
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(f) => {
-            panic!("error when parsing arguments: {}", f)
-        }
+        Err(f) => panic!("error when parsing arguments: {}", f),
     };
 
     if matches.opt_present("h") {
@@ -64,12 +67,8 @@ pub fn main() {
         print_usage(&program, opts);
         exit(1);
     }
-    let enable_dynamic = matches.opt_present("D");
-    #[cfg(not(target_os = "windows"))]
-    if enable_dynamic {
-        eprintln!("[Warning] Dynamic detection is only supported on Windows. Falling back to static analysis.");
-        enable_dynamic = false;
-    }
+
+    let enable_dynamic = !matches.opt_present("s");
     let configuration = Configuration {
         directory: directory_to_analyze_option.unwrap(),
         output: output.unwrap(),

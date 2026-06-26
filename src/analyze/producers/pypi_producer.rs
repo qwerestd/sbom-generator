@@ -5,9 +5,17 @@ use regex::Regex;
 use std::path::{Path, PathBuf};
 
 lazy_static! {
-    // 匹配如 "requests[security] == 2.25.1" 或 "urllib3>=1.21.1"
-    // 忽略大小写，分组1为包名，分组2为操作符，分组3为版本号
-    static ref PYPI_REGEX: Regex = Regex::new(r"(?i)^([A-Z0-9_\-\.]+)(?:\[.*\])?\s*(==|>=|<=|~=|!=)\s*([A-Z0-9\.\-\*]+)").unwrap();
+    // 工业级全能正则：
+    // 分组1: 包名 (合法首字符 + 中间允许字母数字及 - _ .)
+    // 分组2: 可选的 Extra [security,socks] (直接剥离)
+    // 分组3: 可选的操作符 (==|>=|<=|~=|!=|>|<)
+    // 分组4: 可选的版本号文字
+    static ref PYPI_LINE_RE: Regex = Regex::new(
+        r"(?i)^([A-Z0-9][A-Z0-9_\-\.]*)(?:\[[^\]]+\])?(?:\s*(==|>=|<=|~=|!=|>|<)\s*([A-Z0-9\.\-\*]+))?"
+    ).unwrap();
+
+    // PEP 503 规范化清洗正则：将连续的 _ . - 统一压扁为单减号 -
+    static ref PEP503_NORM_RE: Regex = Regex::new(r"[-_.]+").unwrap();
 }
 
 #[derive(Clone, Default)]
@@ -25,39 +33,66 @@ impl SbomProducer for PypiProducer {
         _config: &SbomProducerConfiguration,
     ) -> anyhow::Result<Vec<Dependency>> {
         let mut result = vec![];
+
         for p in paths {
-            if let Ok(content) = std::fs::read_to_string(p) {
-                for line in content.lines() {
-                    // 1. 去除尾部的行内环境标记 (分号后面部分) 和 注释 (井号后面部分)
-                    let clean_line = line
-                        .split('#')
-                        .next()
-                        .unwrap_or("")
-                        .split(';')
-                        .next()
-                        .unwrap_or("")
-                        .trim();
+            let Ok(content) = std::fs::read_to_string(p) else {
+                continue;
+            };
 
-                    if clean_line.is_empty() {
-                        continue;
-                    }
+            for line in content.lines() {
+                // 1. 干净利落的行尾剥离 (顺序极度重要：先砍掉#注释，再砍掉;环境变量标记)
+                let clean_line = line
+                    .split('#')
+                    .next()
+                    .unwrap_or("")
+                    .split(';')
+                    .next()
+                    .unwrap_or("")
+                    .trim();
 
-                    // 2. 正则匹配并提取
-                    if let Some(caps) = PYPI_REGEX.captures(clean_line) {
-                        let name = caps.get(1).unwrap().as_str().to_string();
-                        let version = caps.get(3).unwrap().as_str().to_string();
+                if clean_line.is_empty() {
+                    continue;
+                }
 
-                        result.push(
-                            DependencyBuilder::default()
-                                .name(name.clone())
-                                .version(Some(version.clone()))
-                                .r#type(DependencyType::Library)
-                                .purl(format!("pkg:pypi/{}@{}", name, version))
-                                .location(None)
-                                .build()
-                                .unwrap(),
-                        );
-                    }
+                // 【安全防线一】：拦截 pip 本地路径、远程URL、命令行传参（如 -r base.txt, --index-url）
+                if clean_line.starts_with('-')
+                    || clean_line.starts_with('.')
+                    || clean_line.starts_with('/')
+                    || clean_line.contains("://")
+                {
+                    continue;
+                }
+
+                if let Some(caps) = PYPI_LINE_RE.captures(clean_line) {
+                    let raw_name = caps.get(1).unwrap().as_str();
+                    let raw_ver = caps.get(3).map(|m| m.as_str());
+
+                    // 【安全防线二】：PEP 503 规范化转译 ( PURL 官方铁律 )
+                    // "My_Custom-Pkg.ext" -> "my-custom-pkg-ext"
+                    let normalized_name = PEP503_NORM_RE
+                        .replace_all(&raw_name.to_lowercase(), "-")
+                        .to_string();
+
+                    let ver_opt = raw_ver.map(|v| v.to_string());
+
+                    // 生成标准的机读 PURL（若写了通配符1.2.*或没写版本，转为无版本号PURL）
+                    let purl_str = match ver_opt {
+                        Some(ref v) if !v.contains('*') => {
+                            format!("pkg:pypi/{}@{}", normalized_name, v)
+                        }
+                        _ => format!("pkg:pypi/{}", normalized_name),
+                    };
+
+                    result.push(
+                        DependencyBuilder::default()
+                            .name(raw_name.to_string()) // 👈 存入原始名字，供人类在 UI 上阅读，且保绿你的单测
+                            .version(ver_opt)
+                            .r#type(DependencyType::Library)
+                            .purl(purl_str) // 👈 存入洗练后的机读 PURL，供安全工具撞库
+                            .location(None)
+                            .build()
+                            .unwrap(),
+                    );
                 }
             }
         }

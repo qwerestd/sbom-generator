@@ -1,27 +1,27 @@
+// src/model/dependency.rs
+
 use derive_builder::Builder;
-// 1. 引入 serde 序列化支持
+use packageurl::PackageUrl;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 use crate::model::location::Location;
 
-// 2. 修复点：直接使用 rename_all = "lowercase"，
-// 这样即使未来增加 Application, Framework 等变体，也会自动格式化为 CycloneDX 强制要求的小写
 #[derive(Clone, Copy, Default, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DependencyType {
     #[default]
     Library,
-    // Application, // 未来扩展时，它会自动变成 "application"
 }
 
 #[derive(Builder, Clone, Default, Debug)]
 pub struct DependencyLocation {
     #[allow(dead_code)]
-    #[builder(default)] // 修复点：让 Builder 能真正使用 Location 的默认值，防止 build() 报错
+    #[builder(default)]
     pub block: Location,
 
     #[allow(dead_code)]
-    #[builder(default)] // 修复点：同上
+    #[builder(default)]
     pub name: Location,
 
     #[allow(dead_code)]
@@ -30,7 +30,8 @@ pub struct DependencyLocation {
 }
 
 #[derive(Builder, Clone, Default, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")] // 可选：保持 JSON 输出的一致性
+#[serde(rename_all = "camelCase")]
+#[builder(build_fn(skip))]
 pub struct Dependency {
     #[allow(dead_code)]
     #[builder(default)]
@@ -46,12 +47,9 @@ pub struct Dependency {
 
     #[allow(dead_code)]
     #[builder(default)]
-    // 修复点：核心 Bug！如果不加这行，None 会被序列化为 "version": null，
-    // 这会导致 CycloneDX 标准校验直接崩溃（Schema 不允许 null）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
 
-    #[allow(dead_code)]
     pub purl: String,
 
     #[allow(dead_code)]
@@ -61,6 +59,58 @@ pub struct Dependency {
 
     #[allow(dead_code)]
     #[builder(default)]
-    #[serde(skip)] // 这个没问题，因为 CycloneDX SBOM 里不需要你的代码扫描物理行号位置
+    #[serde(skip)]
     pub location: Option<DependencyLocation>,
+}
+
+impl Dependency {
+    /// 自动检测并修正有问题的 PURL（保持原本完美的清洗逻辑）
+    pub fn auto_fix_and_validate_purl(raw_purl: &str) -> String {
+        match PackageUrl::from_str(raw_purl) {
+            Ok(parsed_purl) => parsed_purl.to_string(),
+            Err(_) => {
+                eprintln!("[自动修复拦截器] 发现不合规的 PURL: {}", raw_purl);
+
+                let fixed_purl = raw_purl.replace(['^', '~', '='], "");
+
+                if PackageUrl::from_str(&fixed_purl).is_ok() {
+                    fixed_purl
+                } else {
+                    raw_purl.split('@').next().unwrap_or(raw_purl).to_string()
+                }
+            }
+        }
+    }
+}
+
+// =====================================================================
+// 【全套接管】：手动为 Builder 实现 build 方法，在这将所有权、可变性清洗一网打尽
+// =====================================================================
+impl DependencyBuilder {
+    pub fn build(&self) -> Result<Dependency, String> {
+        // 1. 提取必要字段（如果没填则抛出规范的 Builder 错误）
+        let name = self
+            .name
+            .clone()
+            .ok_or_else(|| "field 'name' is required but not initialized".to_string())?;
+
+        let raw_purl = self
+            .purl
+            .clone()
+            .ok_or_else(|| "field 'purl' is required but not initialized".to_string())?;
+
+        // 2. 【在这里触发拦截器】：在这里，我们拥有完全可控的变量，彻底规避宏生成的隐式借用冲突
+        let clean_purl = Dependency::auto_fix_and_validate_purl(&raw_purl);
+
+        // 3. 安全组装还原最终的对象模型
+        Ok(Dependency {
+            group: self.group.clone().unwrap_or_default(),
+            r#type: self.r#type.unwrap_or_default(),
+            name,
+            version: self.version.clone().unwrap_or_default(),
+            purl: clean_purl, // 👈 干净合规的 PURL 优雅入库
+            dependencies: self.dependencies.clone().unwrap_or_default(),
+            location: self.location.clone().unwrap_or_default(),
+        })
+    }
 }

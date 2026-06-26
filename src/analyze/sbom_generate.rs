@@ -1,6 +1,7 @@
 use crate::analyze::producers::cargo_producer::CargoProducer;
 use crate::analyze::producers::dynamic::cargo_dynamic::CargoDynamicProducer;
 use crate::analyze::producers::dynamic::npm_dynamic::NpmDynamicProducer;
+use crate::analyze::producers::dynamic::pypi_dynamic::PypiDynamicProducer;
 use crate::analyze::producers::dynamic_producer::DynamicProducer;
 use crate::analyze::producers::maven::maven_producer::MavenProducerBuilder;
 use crate::analyze::producers::npm_producer::NpmProducer;
@@ -14,91 +15,94 @@ use std::path::PathBuf;
 
 /// Analyze paths, find dependencies and write the SBOM to disk.
 pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<()> {
-    // 1. 初始化空数组
-    let mut static_dependencies: Vec<Dependency> = vec![];
-    let mut dynamic_dependencies: Vec<Dependency> = vec![];
+    let mut final_dependencies: Vec<Dependency> = vec![];
 
     if configuration.use_debug {
         configuration.print_configuration();
     }
 
-    let all_producers: Vec<Box<dyn SbomProducer>> = vec![
-        Box::new(MavenProducerBuilder::default().build().unwrap()),
-        Box::new(NpmProducer::default()),
-        Box::new(CargoProducer::default()),
-        Box::new(PypiProducer::default()),
-    ];
-
     let all_files = get_files(configuration.directory.as_str()).expect("cannot read directory");
-    let producer_configuration = SbomProducerConfiguration {
-        base_path: PathBuf::from(configuration.directory.clone()),
+    let producer_cfg = SbomProducerConfiguration {
+        base_path: PathBuf::from(&configuration.directory),
         use_debug: configuration.use_debug,
     };
 
-    // --- 【修改点 1：静态探测增加 match 容错与日志，避免吞异常】 ---
-    for sbom_producer in all_producers {
-        let producer_files = all_files
-            .clone()
-            .iter()
-            .filter(|f| sbom_producer.use_file(f, &producer_configuration))
-            .map(|v| (*v).clone())
-            .collect::<Vec<PathBuf>>();
+    // =====================================================================
+    // 核心编排引擎：生态智能调度闭包 (Ecosystem Dispatcher)
+    // =====================================================================
+    let mut run_dual_track = |eco_name: &str,
+                              dyn_producer: Option<&dyn DynamicProducer>,
+                              static_producer: &dyn SbomProducer| {
+        let mut resolved_by_dynamic = false;
 
-        // 如果当前生态没有匹配到任何文件，直接跳过，节省性能
-        if producer_files.is_empty() {
-            continue;
-        }
-
-        match sbom_producer.find_dependencies(producer_files.as_slice(), &producer_configuration) {
-            Ok(deps) => {
-                println!(" -> [静态] 成功扫描到 {} 个依赖组件", deps.len());
-                static_dependencies.extend(deps);
-            }
-            Err(e) => {
-                // 打印出到底是哪个解析器失败了，防止静默阻断其他语言
-                eprintln!(" -> [警告] 静态扫描发生错误: {}", e);
-            }
-        }
-    }
-
-    if dynamic {
-        println!(
-            " -> 静态检测共发现 {} 个依赖组件",
-            static_dependencies.len()
-        );
-        println!(" -> 启动动态检测模块...");
-
-        let dynamic_producers: Vec<Box<dyn DynamicProducer>> = vec![
-            Box::new(NpmDynamicProducer::default()),
-            Box::new(CargoDynamicProducer::default()),
-        ];
-
-        for producer in dynamic_producers {
-            if producer.is_applicable(configuration) {
-                if configuration.use_debug {
-                    println!(" -> 正在执行动态探测...");
+        // --- 轨道一：动态探针 (完美修复 unnecessary_unwrap 报错) ---
+        if dynamic {
+            if let Some(dp) = dyn_producer {
+                if dp.is_applicable(configuration) {
+                    if configuration.use_debug {
+                        println!(" -> [{}] 启动动态探针...", eco_name);
+                    }
+                    match dp.detect_dependencies(configuration) {
+                        Ok(deps) if !deps.is_empty() => {
+                            println!(
+                                " -> [{}] 动态探测成功 (还原 {} 个依赖及完整 DAG 图链路)",
+                                eco_name,
+                                deps.len()
+                            );
+                            final_dependencies.extend(deps);
+                            resolved_by_dynamic = true; // 标记动态已决断
+                        }
+                        Ok(_) => {} // 空依赖则直接降级
+                        Err(e) => {
+                            eprintln!(" -> [{}] 动态探测受挫 ({})，正在无缝降级...", eco_name, e);
+                        }
+                    }
                 }
-                match producer.detect_dependencies(configuration) {
+            }
+        }
+
+        // --- 轨道二：静态 AST 兜底 (仅当动态未命中或报错时才触发) ---
+        if !resolved_by_dynamic {
+            let target_files: Vec<PathBuf> = all_files
+                .iter()
+                .filter(|f| static_producer.use_file(f, &producer_cfg))
+                .cloned()
+                .collect();
+
+            if !target_files.is_empty() {
+                match static_producer.find_dependencies(&target_files, &producer_cfg) {
                     Ok(deps) => {
-                        dynamic_dependencies.extend(deps);
+                        println!(
+                            " -> [{}] 静态解析完成 (提取 {} 个基础依赖)",
+                            eco_name,
+                            deps.len()
+                        );
+                        final_dependencies.extend(deps);
                     }
-                    Err(e) => {
-                        eprintln!(" -> [警告] 动态探测执行失败: {}", e);
-                    }
+                    Err(e) => eprintln!(" -> [{}] 静态扫描发生异常: {}", eco_name, e),
                 }
             }
         }
-        println!(
-            " -> 动态检测发现 {} 个运行时依赖组件",
-            dynamic_dependencies.len()
-        );
-    }
+    };
 
-    let mut final_dependencies: Vec<Dependency> = vec![];
-    final_dependencies.extend(static_dependencies);
-    final_dependencies.extend(dynamic_dependencies);
+    // 按语言生态成对挂载驱动器
+    let cargo_dyn = CargoDynamicProducer::default();
+    let cargo_static = CargoProducer::default();
+    run_dual_track("Cargo", Some(&cargo_dyn), &cargo_static);
 
-    // 2. 排序 (去重的前提)
+    let npm_dyn = NpmDynamicProducer::default();
+    let npm_static = NpmProducer::default();
+    run_dual_track("NPM", Some(&npm_dyn), &npm_static);
+
+    // Maven 内部已经自带了闭环双轨制，外部动态传 None 即可
+    let maven_static = MavenProducerBuilder::default().build().unwrap();
+    run_dual_track("Maven", None, &maven_static);
+
+    let pypi_static = PypiProducer::default();
+    let pypi_dyn = PypiDynamicProducer::default();
+    run_dual_track("PyPI", Some(&pypi_dyn), &pypi_static);
+
+    // 排序
     final_dependencies.sort_by(|a, b| {
         a.group
             .cmp(&b.group)
@@ -106,37 +110,40 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
             .then(a.version.cmp(&b.version))
     });
 
-    // --- 【修改点 2：去重逻辑 MUST 移出 `if dynamic` 外面】 ---
-    // 哪怕只跑静态扫描，多模块下的包也经常有重复，去重是全生命周期的必须步骤！
+    // --- 【智能拓扑去重算法】 ---
+    // 在 Rust std::vec::Vec::dedup_by 规范中：a 是后一个元素(待删除)，b 是前一个保留的元素
     let initial_count = final_dependencies.len();
-    final_dependencies
-        .dedup_by(|a, b| a.group == b.group && a.name == b.name && a.version == b.version);
+    final_dependencies.dedup_by(|a, b| {
+        if a.group == b.group && a.name == b.name && a.version == b.version {
+            // 如果前一个保留者(b)没有子依赖链路，但后一个被删者(a)有，把 a 的链路抢过来！
+            if b.dependencies.is_empty() && !a.dependencies.is_empty() {
+                b.dependencies = std::mem::take(&mut a.dependencies);
+            }
+            true // 判定为重复，抹杀 a
+        } else {
+            false
+        }
+    });
     let dedup_count = initial_count - final_dependencies.len();
 
     println!(
-        " -> 融合完毕！总计合并去除了 {} 个重复依赖，最终生效 {} 个依赖组件。",
+        " -> 融合扫描完毕！去除了 {} 个重复项，最终产出 {} 个有效 SBOM 组件。",
         dedup_count,
         final_dependencies.len()
     );
 
-    // 3. 打印最终写入的包列表
-    for dep in final_dependencies.iter() {
-        let dep_file = dep
-            .location
-            .as_ref()
-            .map(|v| v.block.file.clone())
-            .unwrap_or("no file".to_string());
-        let dep_line = dep.location.as_ref().map(|v| v.block.start.line);
-
-        // 建议：这个打印信息非常多，可以考虑用 if configuration.use_debug 包裹起来，
-        // 否则大项目会直接刷屏终端。
-        if configuration.use_debug {
+    if configuration.use_debug {
+        for dep in final_dependencies.iter() {
+            let dep_file = dep
+                .location
+                .as_ref()
+                .map(|v| v.block.file.clone())
+                .unwrap_or_else(|| "runtime".to_string());
             println!(
-                "dependency name={} version={}, file={}, line={:?}",
+                "dep: {}@{} [{}]",
                 dep.name,
-                dep.version.clone().unwrap_or("no version".to_string()),
-                dep_file,
-                dep_line
+                dep.version.clone().unwrap_or_default(),
+                dep_file
             );
         }
     }

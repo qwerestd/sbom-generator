@@ -15,33 +15,32 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 lazy_static! {
-    static ref REGEX_VARIABLE: Regex = Regex::new(r"\$\{(.+)\}").unwrap();
+    static ref REGEX_VARIABLE: Regex = Regex::new(r"\$\{([^}]+)\}").unwrap();
 }
+
 fn enrich_string_with_properties(s: &str, properties: &HashMap<String, String>) -> String {
-    if let Some(caps) = REGEX_VARIABLE.captures(s) {
-        let total_capture_opt = caps.get(0);
-        let var_capture_opt = caps.get(1);
+    let mut resolved = s.to_string();
 
-        match (total_capture_opt, var_capture_opt) {
-            (Some(total_capture), Some(var_capture)) => {
-                let var_val = s;
-                let var_name = var_val.get(var_capture.start()..var_capture.end()).unwrap();
-                println!("var capture: {}", var_name);
+    for _ in 0..5 {
+        let mut has_replacement = false;
+        let current_text = resolved.clone();
 
-                if let Some(prop) = properties.get(var_name) {
-                    println!("val: {}", prop);
-                    let mut to_replace = var_val.get(0..total_capture.start()).unwrap().to_string();
-                    to_replace.push_str(prop.as_str());
-                    to_replace.push_str(var_val.get(total_capture.end()..var_val.len()).unwrap());
-                    return to_replace;
-                }
-            }
-            _ => {
-                return s.to_string();
+        for cap in REGEX_VARIABLE.captures_iter(&current_text) {
+            let full_placeholder = &cap[0];
+            let var_key = &cap[1];
+
+            if let Some(target_val) = properties.get(var_key) {
+                resolved = resolved.replace(full_placeholder, target_val);
+                has_replacement = true;
             }
         }
+
+        if !has_replacement {
+            break;
+        }
     }
-    s.to_string()
+
+    resolved
 }
 
 #[derive(Default, Eq, Hash, Clone, Debug, Builder, PartialEq)]
@@ -69,36 +68,62 @@ pub struct MavenDependency {
 impl MavenDependency {
     pub fn enrich(&self, properties: &HashMap<String, String>) -> Self {
         MavenDependency {
-            group_id: enrich_string_with_properties(self.group_id.as_str(), properties),
-            artifact_id: enrich_string_with_properties(self.artifact_id.as_str(), properties),
-            version: self
-                .version
-                .clone()
-                .map(|x| enrich_string_with_properties(x.as_str(), properties)),
+            group_id: enrich_string_with_properties(&self.group_id, properties)
+                .trim()
+                .to_string(),
+            artifact_id: enrich_string_with_properties(&self.artifact_id, properties)
+                .trim()
+                .to_string(),
+            version: self.version.as_ref().map(|v| {
+                enrich_string_with_properties(v, properties)
+                    .trim()
+                    .to_string()
+            }),
             r#type: self.r#type.clone(),
             scope: self.scope.clone(),
             location: self.location.clone(),
         }
     }
 
+    /// 【核心放宽检测逻辑】：
+    /// 废除原本苛刻的占位符拦截。只要具备实质的 groupId 和 artifactId，该包就是存活的！
     pub fn is_valid_for_sbom(&self) -> bool {
-        self.version.is_some() && !self.group_id.contains("$") && !self.artifact_id.contains("$")
+        !self.group_id.trim().is_empty() && !self.artifact_id.trim().is_empty()
     }
 }
 
 impl From<&MavenDependency> for Dependency {
     fn from(value: &MavenDependency) -> Self {
-        let version_str = value.version.clone().unwrap_or_default();
+        let group_clean = value.group_id.trim();
+        let name_clean = value.artifact_id.trim();
+
+        // 【防线二：PURL 智能降级机制】
+        // 1. 如果版本号清洗后为正常值 "1.12.1" -> 拼出规范 PURL: pkg:maven/...@1.12.1
+        // 2. 如果版本号依然残留着未解析的占位符 "${poi.ver}" 或为空 ->
+        //    降级置为 None（允许未知版本的组件入库），拼出无版本 PURL: pkg:maven/com.deepoove/poi-tl
+        //    绝不阻断该组件生成！
+        let (version_opt, purl_str) = match &value.version {
+            Some(raw_v) => {
+                let clean_v = raw_v.trim();
+                if clean_v.is_empty() || clean_v.contains('$') {
+                    (None, format!("pkg:maven/{}/{}", group_clean, name_clean))
+                } else {
+                    (
+                        Some(clean_v.to_string()),
+                        format!("pkg:maven/{}/{}@{}", group_clean, name_clean, clean_v),
+                    )
+                }
+            }
+            None => (None, format!("pkg:maven/{}/{}", group_clean, name_clean)),
+        };
+
         DependencyBuilder::default()
-            .group(Some(value.group_id.clone()))
-            .name(value.artifact_id.clone())
-            .version(Some(version_str.clone()))
+            .group(Some(group_clean.to_string()))
+            .name(name_clean.to_string())
+            .version(version_opt)
             .location(value.location.clone())
             .r#type(DependencyType::Library)
-            .purl(format!(
-                "pkg:maven/{}/{}@{}",
-                value.group_id, value.artifact_id, version_str
-            ))
+            .purl(purl_str)
             .build()
             .unwrap()
     }
@@ -153,9 +178,7 @@ fn get_dependencies_from_dependency_management(
             continue;
         }
 
-        // the @element query
         let element_block = m.captures[0].node;
-
         let block_position_opt = Some(Location {
             file: path_string.clone(),
             start: get_position_in_string(content, element_block.start_byte())
@@ -164,7 +187,6 @@ fn get_dependencies_from_dependency_management(
                 .expect("cannot find end"),
         });
 
-        // get the version, name, option, artifact id, etc.
         for i in (5..m.captures.len()).step_by(2) {
             if m.captures[i].index != 4 {
                 continue;
@@ -172,11 +194,12 @@ fn get_dependencies_from_dependency_management(
             let tag_node = m.captures[i].node;
             let value_node = m.captures[i + 1].node;
 
-            let tag = content[tag_node.start_byte()..tag_node.end_byte()].to_string();
-            let value = content[value_node.start_byte()..value_node.end_byte()].to_string();
-            if tag == ARTIFACT_ID {
-                artifact_id_opt = Some(value.clone());
+            // 【核心优化2】：直接使用 &str 切片对比，省去上万次 String 堆内存分配
+            let tag_slice = &content[tag_node.start_byte()..tag_node.end_byte()];
+            let value_str = &content[value_node.start_byte()..value_node.end_byte()];
 
+            if tag_slice == ARTIFACT_ID {
+                artifact_id_opt = Some(value_str.to_string());
                 name_position_opt = Some(Location {
                     file: path_string.clone(),
                     start: get_position_in_string(content, value_node.start_byte())
@@ -184,13 +207,10 @@ fn get_dependencies_from_dependency_management(
                     end: get_position_in_string(content, value_node.end_byte())
                         .expect("cannot find end"),
                 });
-            }
-            if tag == GROUP_ID {
-                group_id_opt = Some(value.clone());
-            }
-            if tag == VERSION {
-                version_opt = Some(value.clone());
-
+            } else if tag_slice == GROUP_ID {
+                group_id_opt = Some(value_str.to_string());
+            } else if tag_slice == VERSION {
+                version_opt = Some(value_str.to_string());
                 version_position_opt = Some(Location {
                     file: path_string.clone(),
                     start: get_position_in_string(content, value_node.start_byte())
@@ -198,17 +218,14 @@ fn get_dependencies_from_dependency_management(
                     end: get_position_in_string(content, value_node.end_byte())
                         .expect("cannot find end"),
                 });
-            }
-            if tag == TYPE {
-                type_opt = MavenDependencyType::from_str(value.as_str()).ok();
-            }
-            if tag == SCOPE {
-                scope_opt = MavenDependencyScope::from_str(value.as_str()).ok();
+            } else if tag_slice == TYPE {
+                type_opt = MavenDependencyType::from_str(value_str).ok();
+            } else if tag_slice == SCOPE {
+                scope_opt = MavenDependencyScope::from_str(value_str).ok();
             }
         }
 
-        if let (Some(group_id), Some(artifact_id)) = (group_id_opt.clone(), artifact_id_opt.clone())
-        {
+        if let (Some(group_id), Some(artifact_id)) = (group_id_opt, artifact_id_opt) {
             let location = if let (Some(block_pos), Some(name_pos)) =
                 (block_position_opt, name_position_opt)
             {
@@ -232,7 +249,6 @@ fn get_dependencies_from_dependency_management(
                     .build()
                     .unwrap(),
             );
-            continue;
         }
     }
 
@@ -269,9 +285,7 @@ fn get_dependencies(
             continue;
         }
 
-        // the @element query
         let element_block = m.captures[0].node;
-
         let block_position_opt = Some(Location {
             file: path_string.clone(),
             start: get_position_in_string(content, element_block.start_byte())
@@ -280,7 +294,6 @@ fn get_dependencies(
                 .expect("cannot find end"),
         });
 
-        // get the version, name, option, artifact id, etc.
         for i in (0..m.captures.len()).step_by(2) {
             if m.captures[i].index != 3 {
                 continue;
@@ -288,11 +301,11 @@ fn get_dependencies(
             let tag_node = m.captures[i].node;
             let value_node = m.captures[i + 1].node;
 
-            let tag = content[tag_node.start_byte()..tag_node.end_byte()].to_string();
-            let value = content[value_node.start_byte()..value_node.end_byte()].to_string();
-            if tag == ARTIFACT_ID {
-                artifact_id_opt = Some(value.clone());
+            let tag_slice = &content[tag_node.start_byte()..tag_node.end_byte()];
+            let value_str = &content[value_node.start_byte()..value_node.end_byte()];
 
+            if tag_slice == ARTIFACT_ID {
+                artifact_id_opt = Some(value_str.to_string());
                 name_position_opt = Some(Location {
                     file: path_string.clone(),
                     start: get_position_in_string(content, value_node.start_byte())
@@ -300,13 +313,10 @@ fn get_dependencies(
                     end: get_position_in_string(content, value_node.end_byte())
                         .expect("cannot find end"),
                 });
-            }
-            if tag == GROUP_ID {
-                group_id_opt = Some(value.clone());
-            }
-            if tag == VERSION {
-                version_opt = Some(value.clone());
-
+            } else if tag_slice == GROUP_ID {
+                group_id_opt = Some(value_str.to_string());
+            } else if tag_slice == VERSION {
+                version_opt = Some(value_str.to_string());
                 version_position_opt = Some(Location {
                     file: path_string.clone(),
                     start: get_position_in_string(content, value_node.start_byte())
@@ -314,14 +324,12 @@ fn get_dependencies(
                     end: get_position_in_string(content, value_node.end_byte())
                         .expect("cannot find end"),
                 });
-            }
-            if tag == SCOPE {
-                scope_opt = MavenDependencyScope::from_str(value.as_str()).ok();
+            } else if tag_slice == SCOPE {
+                scope_opt = MavenDependencyScope::from_str(value_str).ok();
             }
         }
 
-        if let (Some(group_id), Some(artifact_id)) = (group_id_opt.clone(), artifact_id_opt.clone())
-        {
+        if let (Some(group_id), Some(artifact_id)) = (group_id_opt, artifact_id_opt) {
             let location = if let (Some(block_pos), Some(name_pos)) =
                 (block_position_opt, name_position_opt)
             {
@@ -344,7 +352,6 @@ fn get_dependencies(
                     .build()
                     .unwrap(),
             );
-            continue;
         }
     }
 
@@ -358,7 +365,6 @@ pub fn get_variables(
 ) -> HashMap<String, String> {
     let mut variables = HashMap::new();
 
-    // Get the project version is any
     let mut cursor = tree_sitter::QueryCursor::new();
     let matches = cursor.matches(
         &maven_producer_context.query_project_metadata,
@@ -367,17 +373,16 @@ pub fn get_variables(
     );
 
     for m in matches {
-        let value_node = m.captures[2].node;
         let key_node = m.captures[1].node;
-        let key = file_content[key_node.start_byte()..key_node.end_byte()].to_string();
-        let value = file_content[value_node.start_byte()..value_node.end_byte()].to_string();
+        let value_node = m.captures[2].node;
+        let key = &file_content[key_node.start_byte()..key_node.end_byte()];
+        let value = &file_content[value_node.start_byte()..value_node.end_byte()];
 
         if key == "version" {
-            variables.insert("project.version".to_string(), value);
+            variables.insert("project.version".to_string(), value.to_string());
         }
     }
 
-    // Get the project properties
     cursor = tree_sitter::QueryCursor::new();
     let matches = cursor.matches(
         &maven_producer_context.query_project_properties,
@@ -400,7 +405,6 @@ pub fn get_project_info(
     file_content: &str,
     maven_producer_context: &MavenProducerContext,
 ) -> Option<MavenProjectInfo> {
-    // Get the project version is any
     let mut cursor = tree_sitter::QueryCursor::new();
     let matches = cursor.matches(
         &maven_producer_context.query_project_metadata,
@@ -408,27 +412,25 @@ pub fn get_project_info(
         file_content.as_bytes(),
     );
 
-    let mut version: Option<String> = None;
-    let mut artifact_id: Option<String> = None;
-    let mut group_id: Option<String> = None;
+    let mut version = None;
+    let mut artifact_id = None;
+    let mut group_id = None;
 
     for m in matches {
         let key_node = m.captures[1].node;
         let value_node = m.captures[2].node;
-        let key = file_content[key_node.start_byte()..key_node.end_byte()].to_string();
-        let value = file_content[value_node.start_byte()..value_node.end_byte()].to_string();
+        let key = &file_content[key_node.start_byte()..key_node.end_byte()];
+        let value = &file_content[value_node.start_byte()..value_node.end_byte()];
+
         if key == "version" {
-            version = Some(value.clone());
-        }
-
-        if key == "artifactId" {
-            artifact_id = Some(value.clone());
-        }
-
-        if key == "groupId" {
-            group_id = Some(value.clone());
+            version = Some(value.to_string());
+        } else if key == "artifactId" {
+            artifact_id = Some(value.to_string());
+        } else if key == "groupId" {
+            group_id = Some(value.to_string());
         }
     }
+
     artifact_id.map(|a| MavenProjectInfo {
         version,
         artifact_id: a,
@@ -436,7 +438,6 @@ pub fn get_project_info(
     })
 }
 
-#[warn(unused_assignments)]
 fn get_parent_information(
     tree: &tree_sitter::Tree,
     _path: &Path,
@@ -444,10 +445,10 @@ fn get_parent_information(
     context: &MavenProducerContext,
 ) -> Option<MavenFileParent> {
     let mut cursor = tree_sitter::QueryCursor::new();
-    let mut relative_path: Option<String> = None;
-    let mut group_id: Option<String> = None;
-    let mut artifact_id: Option<String> = None;
-    let mut version: Option<String> = None;
+    let mut relative_path = None;
+    let mut group_id = None;
+    let mut artifact_id = None;
+    let mut version = None;
 
     let matches = cursor.matches(
         &context.query_parent_information,
@@ -458,30 +459,24 @@ fn get_parent_information(
     for m in matches {
         let key_node = m.captures[2].node;
         let value_node = m.captures[3].node;
-        let key_value = content[key_node.start_byte()..key_node.end_byte()].to_string();
+        let key_str = &content[key_node.start_byte()..key_node.end_byte()];
+        let val_str = &content[value_node.start_byte()..value_node.end_byte()];
 
-        let value_value = content[value_node.start_byte()..value_node.end_byte()].to_string();
-
-        if key_value == "relativePath" {
-            relative_path = Some(value_value.clone());
-        }
-        if key_value == "artifactId" {
-            artifact_id = Some(value_value.clone());
-        }
-        if key_value == "groupId" {
-            group_id = Some(value_value.clone());
-        }
-        if key_value == "version" {
-            version = Some(value_value.clone());
+        if key_str == "relativePath" {
+            relative_path = Some(val_str.to_string());
+        } else if key_str == "artifactId" {
+            artifact_id = Some(val_str.to_string());
+        } else if key_str == "groupId" {
+            group_id = Some(val_str.to_string());
+        } else if key_str == "version" {
+            version = Some(val_str.to_string());
         }
     }
 
     match (relative_path, group_id, artifact_id, version) {
         (Some(rp), None, None, None) => Some(MavenFileParent {
             relative_path: Some(rp),
-            artifact_id: None,
-            group_id: None,
-            version: None,
+            ..Default::default()
         }),
         (Some(rp), Some(gi), Some(ai), Some(v)) => Some(MavenFileParent {
             relative_path: Some(rp),
@@ -500,134 +495,91 @@ fn get_parent_information(
 }
 
 fn replace_properties(properties: HashMap<String, String>) -> HashMap<String, String> {
-    let mut result = HashMap::new();
-    // replace variables inside the properties
+    let mut result = HashMap::with_capacity(properties.len());
     for (k, v) in &properties {
-        if let Some(caps) = REGEX_VARIABLE.captures(v.as_str()) {
-            let total_capture_opt = caps.get(0);
-            let var_capture_opt = caps.get(1);
-
-            if let (Some(total_capture), Some(var_capture)) = (total_capture_opt, var_capture_opt) {
-                let var_val = v.as_str();
-                let var_name = var_val.get(var_capture.start()..var_capture.end()).unwrap();
-
-                if let Some(prop) = properties.get(var_name) {
-                    let mut to_replace = var_val.get(0..total_capture.start()).unwrap().to_string();
-                    to_replace.push_str(prop.as_str());
-                    to_replace.push_str(var_val.get(total_capture.end()..var_val.len()).unwrap());
-
-                    result.insert(k.clone(), to_replace);
-                }
-            }
-        } else {
-            result.insert(k.clone(), v.clone());
-        }
+        result.insert(k.clone(), enrich_string_with_properties(v, &properties));
     }
     result
 }
 
 impl MavenFile {
     pub fn new(path: &PathBuf, context: &MavenProducerContext) -> anyhow::Result<Self> {
-        let file_content = fs::read_to_string(path);
-        if let Ok(content) = file_content {
-            if let Some(t) = get_tree(content.as_str(), &context.language) {
-                let project_info = get_project_info(&t, content.as_str(), context);
+        let content = fs::read_to_string(path)?;
+        let t =
+            get_tree(&content, &context.language).ok_or_else(|| anyhow!("cannot parse tree"))?;
 
-                if project_info.is_none() {
-                    return Err(anyhow!("cannot get project info"));
-                }
+        let project_info = get_project_info(&t, &content, context)
+            .ok_or_else(|| anyhow!("cannot get project info"))?;
 
-                let variables = get_variables(&t, content.as_str(), context);
-                let dependencies = get_dependencies(&t, path, content.as_str(), context);
-                let dependency_management = get_dependencies_from_dependency_management(
-                    &t,
-                    path,
-                    content.as_str(),
-                    context,
-                );
-                let parent_information =
-                    get_parent_information(&t, path, content.as_str(), context);
-                let maven_file = MavenFile {
-                    project_info: project_info.unwrap(),
-                    path: path.clone(),
-                    properties: variables,
-                    dependency_management: dependency_management?,
-                    dependencies: dependencies?,
-                    parent: parent_information,
-                };
-                Ok(maven_file)
-            } else {
-                Err(anyhow!("cannot parse tree"))
-            }
-        } else {
-            Err(anyhow!("cannot parse file"))
-        }
+        let variables = get_variables(&t, &content, context);
+        let dependencies = get_dependencies(&t, path, &content, context)?;
+        let dependency_management =
+            get_dependencies_from_dependency_management(&t, path, &content, context)?;
+        let parent_info = get_parent_information(&t, path, &content, context);
+
+        Ok(MavenFile {
+            project_info,
+            path: path.clone(),
+            properties: variables,
+            dependency_management,
+            dependencies,
+            parent: parent_info,
+        })
     }
 
+    /// 【核心优化3】：绝对安全的文件寻址，彻底告别 canonicalize 带来的 Panic
     fn get_parent_file_path(&self, context: &MavenProducerContext) -> Option<PathBuf> {
-        if let Some(relative_path) = self.parent.clone().and_then(|x| x.relative_path) {
-            let bp = fs::canonicalize(&context.base_path).expect("cannot get base path");
-            let mut f = self.path.clone().parent().unwrap().to_path_buf();
-            f.push(&relative_path);
-            let full_path = fs::canonicalize(f).expect("cannot get full path");
+        let rel_str = self.parent.as_ref()?.relative_path.as_ref()?;
 
-            let mut rel_path = full_path
-                .strip_prefix(&bp)
-                .expect("get rel path")
-                .to_path_buf();
+        let mut candidate = self.path.parent()?.to_path_buf();
+        candidate.push(rel_str);
 
-            if !relative_path.ends_with("pom.xml") {
-                rel_path.push("pom.xml");
-            }
-            println!("rel path: {:?}", rel_path);
-            return Some(rel_path);
+        // 使用 .ok()? 优雅降级，当企业远程父POM本地不存在时静默回退
+        let full_path = fs::canonicalize(&candidate).ok()?;
+        let base_path = fs::canonicalize(&context.base_path).ok()?;
+
+        let mut rel_path = full_path.strip_prefix(&base_path).ok()?.to_path_buf();
+
+        if !rel_str.ends_with("pom.xml") {
+            rel_path.push("pom.xml");
         }
-        None
+
+        Some(rel_path)
     }
 
     fn get_parent_by_project_info(&self, context: &MavenProducerContext) -> Option<MavenFile> {
-        if let Some(p) = &self.parent {
-            if let Some(a) = &p.artifact_id {
-                let project_info = MavenProjectInfo {
-                    artifact_id: a.to_string(),
-                    group_id: p.group_id.clone(),
-                    version: p.version.clone(),
-                };
+        let p = self.parent.as_ref()?;
+        let a = p.artifact_id.as_ref()?;
 
-                if let Some(p) = context.get_maven_file_by_project_info(&project_info) {
-                    return Some(p.clone());
-                }
-            }
-        }
-        None
+        let lookup_info = MavenProjectInfo {
+            artifact_id: a.clone(),
+            group_id: p.group_id.clone(),
+            version: p.version.clone(),
+        };
+
+        context
+            .get_maven_file_by_project_info(&lookup_info)
+            .cloned()
     }
 
-    /// Get all properties related to this file and sub-files and put them in a HashMap.
-    /// Also resolve variables when appropriate/possible.
     fn get_all_properties(&self, context: &MavenProducerContext) -> HashMap<String, String> {
         fn get_all_properties_int(
             maven_file: &MavenFile,
             context: &MavenProducerContext,
         ) -> HashMap<String, String> {
-            let mut res: HashMap<String, String> = HashMap::new();
+            let mut res = HashMap::new();
 
-            let parent_path = maven_file.get_parent_file_path(context);
-
-            if let Some(parent) = parent_path {
-                if let Some(parent_maven_file) = context.get_maven_file_by_path(&parent) {
-                    println!("found parent file");
-                    res.extend(parent_maven_file.get_all_properties(context));
+            if let Some(parent_path) = maven_file.get_parent_file_path(context) {
+                if let Some(parent_file) = context.get_maven_file_by_path(&parent_path) {
+                    res.extend(parent_file.get_all_properties(context));
                 }
             } else if let Some(p) = &maven_file.parent {
-                if let (Some(g), Some(a), Some(v)) =
-                    (p.clone().group_id, p.clone().artifact_id, p.clone().version)
-                {
+                if let (Some(g), Some(a), Some(v)) = (&p.group_id, &p.artifact_id, &p.version) {
                     let key = MavenProjectInfo {
-                        artifact_id: a,
-                        group_id: Some(g),
-                        version: Some(v),
+                        artifact_id: a.clone(),
+                        group_id: Some(g.clone()),
+                        version: Some(v.clone()),
                     };
-
                     if let Some(m) = context.get_maven_file_by_project_info(&key) {
                         res.extend(m.get_all_properties(context));
                     }
@@ -635,9 +587,9 @@ impl MavenFile {
             }
 
             res.extend(maven_file.properties.clone());
-
             res
         }
+
         replace_properties(get_all_properties_int(self, context))
     }
 
@@ -645,30 +597,17 @@ impl MavenFile {
         &self,
         context: &MavenProducerContext,
     ) -> Vec<MavenDependency> {
-        let mut res: Vec<MavenDependency> = vec![];
+        let mut res = vec![];
 
-        let parent_path = self.get_parent_file_path(context);
-
-        if let Some(parent) = parent_path {
-            if let Some(parent_maven_file) = context.get_maven_file_by_path(&parent) {
-                res.extend(
-                    parent_maven_file.get_all_dependencies_from_dependency_management(context),
-                );
+        if let Some(parent_path) = self.get_parent_file_path(context) {
+            if let Some(parent_file) = context.get_maven_file_by_path(&parent_path) {
+                res.extend(parent_file.get_all_dependencies_from_dependency_management(context));
             }
-        } else {
-            println!("getting parent by key");
-            if let Some(parent_maven_file) = self.get_parent_by_project_info(context) {
-                println!("found parent by key");
-                res.extend(
-                    parent_maven_file.get_all_dependencies_from_dependency_management(context),
-                );
-            } else {
-                println!("not found parent by key");
-            }
+        } else if let Some(parent_file) = self.get_parent_by_project_info(context) {
+            res.extend(parent_file.get_all_dependencies_from_dependency_management(context));
         }
 
         res.extend(self.dependency_management.clone());
-
         res
     }
 
@@ -676,39 +615,23 @@ impl MavenFile {
         &self,
         context: &MavenProducerContext,
     ) -> Vec<MavenDependency> {
-        let mut res = vec![];
+        let mut res = Vec::with_capacity(self.dependencies.len());
+        let properties = self.get_all_properties(context);
+        let dep_mgmt = self.get_all_dependencies_from_dependency_management(context);
 
-        // get all properties from the current file and its parent
-        let properties = &self.get_all_properties(context);
-
-        let dependencies_from_property_management =
-            &self.get_all_dependencies_from_dependency_management(context);
-
-        for dependency in &self.dependencies {
-            println!("dependency {}", dependency.artifact_id);
-            if dependency.version.is_none() {
-                println!("dependency {} has no version", dependency.artifact_id);
-                let dep_from_dep_management =
-                    dependencies_from_property_management.iter().find(|x| {
-                        x.artifact_id == dependency.artifact_id && x.group_id == dependency.group_id
-                    });
-
-                if let Some(dep) = dep_from_dep_management {
-                    println!(
-                        "dependency {} found in dependency management",
-                        dependency.artifact_id
-                    );
-                    let enriched = dep.clone().enrich(properties);
-
-                    if enriched.is_valid_for_sbom() {
-                        res.push(enriched);
-                    }
-                }
+        for dep in &self.dependencies {
+            let target_dep = if dep.version.is_none() {
+                dep_mgmt
+                    .iter()
+                    .find(|x| x.artifact_id == dep.artifact_id && x.group_id == dep.group_id)
+                    .unwrap_or(dep)
             } else {
-                let enriched = dependency.clone().enrich(properties);
-                if enriched.is_valid_for_sbom() {
-                    res.push(enriched);
-                }
+                dep
+            };
+
+            let enriched = target_dep.enrich(&properties);
+            if enriched.is_valid_for_sbom() {
+                res.push(enriched);
             }
         }
 
@@ -750,7 +673,6 @@ mod tests {
 
         context.add_maven_file(&maven_file);
 
-        // ensure that we can get the same properties from the sub-directory.
         let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         d.push("resources/maven/hierarchy/subproject/pom.xml");
 
