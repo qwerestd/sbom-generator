@@ -34,5 +34,6 @@ toml = "0.8"
 cargo_metadata = "0.23.1"
 tracing = "0.1.44"
 packageurl = "0.3.0"
+chrono = "0.4"
 [build-dependencies]
 cc = "1.1.5"
