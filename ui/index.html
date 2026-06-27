@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>SBOM 依赖网络图谱</title>
+    <!-- 引入强大的 ECharts -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f6f8;
+            color: #333;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .input-row label {
+            width: 120px;
+            font-weight: bold;
+            color: #444;
+        }
+        .input-row input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: monospace;
+            transition: border-color 0.3s;
+        }
+        .input-row input[type="text"]:focus {
+            border-color: #007acc;
+            outline: none;
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background-color: #007acc;
+            color: white;
+            padding: 12px 30px;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0, 122, 204, 0.2);
+        }
+        .btn-primary:hover {
+            background-color: #005999;
+            transform: translateY(-1px);
+        }
+
+        #status-display {
+            font-size: 14px;
+            color: #666;
+            margin-left: 15px;
+            font-weight: bold;
+        }
+
+        #chart-container {
+            width: 100%;
+            height: calc(100vh - 220px);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+        }
+
+        .tip {
+            font-size: 12px;
+            color: #888;
+            margin-top: -5px;
+            margin-left: 130px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="control-panel">
+    <div class="input-row">
+        <label for="input-dir">📂 项目文件夹:</label>
+        <input type="text" id="input-dir" placeholder="请粘贴绝对路径，例如: C:\Users\zw\RustroverProjects\my-app" />
+    </div>
+    <div class="tip">提示：在 Windows 文件夹中按住 Shift 键右击，选择“复制文件地址”即可快速获取路径。</div>
+
+    <div class="input-row">
+        <label for="input-save">💾 保存位置:</label>
+        <input type="text" id="input-save" placeholder="请粘贴包含文件名的绝对路径，例如: C:\Users\zw\Desktop\result.json" />
+    </div>
+
+    <div style="display: flex; align-items: center; margin-top: 10px;">
+        <button id="analyze-btn" class="btn-primary">🚀 深度分析与构建图谱</button>
+        <span id="status-display">准备就绪，等待输入...</span>
+    </div>
+</div>
+
+<div id="chart-container"></div>
+
+<script>
+    const chartDom = document.getElementById('chart-container');
+    const myChart = echarts.init(chartDom);
+    const { invoke } = window.__TAURI__.core;
+
+    // 🌟 核心算法升级：带依赖热度计算和虚拟根节点的 Graph 生成器
+    function convertCycloneDXToGraph(sbom) {
+        if (!sbom || !sbom.components || !sbom.dependencies) {
+            throw new Error("不是合法的 CycloneDX 格式数据");
+        }
+
+        const nodes = [];
+        const links = [];
+
+        // 1. 统计每个包被依赖的次数 (计算节点的"重力"与"体积")
+        const dependedCountMap = new Map();
+        sbom.dependencies.forEach(dep => {
+            if (dep.dependsOn) {
+                dep.dependsOn.forEach(childRef => {
+                    dependedCountMap.set(childRef, (dependedCountMap.get(childRef) || 0) + 1);
+
+                    // 构建基础有向边: 依赖者 -> 被依赖者
+                    links.push({
+                        source: dep.ref,
+                        target: childRef,
+                        lineStyle: { curveness: 0.2, width: 1.5, opacity: 0.6 }
+                    });
+                });
+            }
+        });
+
+        const componentRefs = new Set();
+
+        // 2. 生成常规组件节点
+        sbom.components.forEach(c => {
+            componentRefs.add(c['bom-ref']);
+            const count = dependedCountMap.get(c['bom-ref']) || 0;
+
+            // 动态计算节点大小：基础大小 12，每多一个依赖者加 3，最高不超过 60
+            const nodeSize = Math.min(12 + count * 3, 60);
+
+            nodes.push({
+                id: c['bom-ref'],
+                name: `${c.name}\n(v${c.version || '未知'})`,
+                symbolSize: nodeSize,
+                value: count, // 把被依赖次数存入 value，方便 tooltip 显示
+                itemStyle: {
+                    borderColor: '#fff',
+                    borderWidth: 1,
+                    shadowBlur: count > 5 ? 15 : 5, // 核心节点发光更亮
+                    shadowColor: 'rgba(0, 0, 0, 0.3)'
+                }
+            });
+        });
+
+        // 3. 构建 "虚拟项目根节点"
+        const VIRTUAL_ROOT_ID = '__VIRTUAL_PROJECT_ROOT__';
+        nodes.push({
+            id: VIRTUAL_ROOT_ID,
+            name: '📦 项目根节点\n(Project Root)',
+            symbolSize: 65, // 根节点是最大的
+            itemStyle: {
+                color: '#ff4d4f', // 醒目的红色
+                borderColor: '#fff',
+                borderWidth: 3,
+                shadowBlur: 20,
+                shadowColor: 'rgba(255, 77, 79, 0.6)'
+            }
+        });
+
+        // 4. 将虚拟根节点与所有 "顶级包" 连接
+        // 所谓顶级包，就是从未在别人的 dependsOn 里出现过的包 (count === 0)
+        componentRefs.forEach(ref => {
+            if (!dependedCountMap.has(ref)) {
+                links.push({
+                    source: VIRTUAL_ROOT_ID,
+                    target: ref,
+                    lineStyle: {
+                        curveness: 0.1,
+                        width: 2,
+                        type: 'dashed', // 虚线表示这是系统自动推导的顶层连线
+                        opacity: 0.8,
+                        color: '#ff4d4f'
+                    }
+                });
+            }
+        });
+
+        return { nodes, links };
+    }
+
+    document.getElementById('analyze-btn').addEventListener('click', async function() {
+        let directory = document.getElementById('input-dir').value.trim();
+        let outputPath = document.getElementById('input-save').value.trim();
+        const statusDisplay = document.getElementById('status-display');
+
+        // 去掉引号和补全文件名逻辑
+        if (directory.startsWith('"') && directory.endsWith('"')) directory = directory.slice(1, -1);
+        if (outputPath.startsWith('"') && outputPath.endsWith('"')) outputPath = outputPath.slice(1, -1);
+        if (outputPath && !outputPath.endsWith('.json') && !outputPath.endsWith('.sbom')) {
+            const separator = outputPath.includes('\\') ? '\\' : '/';
+            outputPath = outputPath.replace(/[\\/]$/, '') + separator + 'sbom_result.json';
+        }
+
+        document.getElementById('input-dir').value = directory;
+        document.getElementById('input-save').value = outputPath;
+
+        if (!directory || !outputPath) {
+            alert("请完整粘贴项目文件夹路径和 JSON 保存位置！");
+            return;
+        }
+
+        try {
+            statusDisplay.style.color = '#007acc';
+            statusDisplay.innerText = `⏳ 正在深度构建项目宇宙，请稍候...`;
+            myChart.showLoading();
+
+            const jsonString = await invoke('run_sbom_analyze', { directory, outputPath });
+            const rawData = JSON.parse(jsonString);
+
+            // 执行带两大优化的转换逻辑
+            const graphData = convertCycloneDXToGraph(rawData);
+
+            statusDisplay.style.color = 'green';
+            statusDisplay.innerText = `✅ 图谱构建成功！共汇聚 ${graphData.nodes.length - 1} 个依赖项。`;
+            myChart.hideLoading();
+
+            myChart.setOption({
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function (params) {
+                        if (params.dataType === 'node') {
+                            if (params.data.id === '__VIRTUAL_PROJECT_ROOT__') {
+                                return `<b>📦 项目本身</b><br/>它直接包含了所有的顶级依赖`;
+                            }
+                            return `<div style="padding: 4px;">
+                                        <b>${params.data.name.replace('\n', ' ')}</b><br/>
+                                        <hr style="margin: 5px 0; border: 0; border-top: 1px solid #ccc;" />
+                                        被其他组件依赖了 <strong style="color:#e91e63;">${params.data.value}</strong> 次
+                                    </div>`;
+                        }
+                        // 如果鼠标悬浮在连线上
+                        const sourceName = params.data.source === '__VIRTUAL_PROJECT_ROOT__' ? '项目根节点' : params.data.source.split('?')[0];
+                        const targetName = params.data.target.split('?')[0];
+                        return `<b>依赖关系</b><br/>${sourceName} <br/>⬇ 依赖于<br/> ${targetName}`;
+                    }
+                },
+                color: [
+                    '#5470c6', '#91cc75', '#fac858', '#ee6666',
+                    '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'
+                ],
+                series: [
+                    {
+                        type: 'graph',
+                        layout: 'force',
+                        data: graphData.nodes,
+                        links: graphData.links,
+                        roam: true,
+                        draggable: true,
+                        // 🌟 添加单向箭头，大小为 8
+                        edgeSymbol: ['none', 'arrow'],
+                        edgeSymbolSize: [0, 8],
+                        label: {
+                            show: false,
+                            position: 'right',
+                            formatter: '{b}'
+                        },
+                        emphasis: {
+                            focus: 'adjacency', // 悬浮高亮相关链路
+                            lineStyle: {
+                                width: 4,
+                                opacity: 1
+                            },
+                            label: {
+                                show: true,
+                                fontSize: 13,
+                                fontWeight: 'bold',
+                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                                padding: 5,
+                                borderRadius: 4,
+                                color: '#333'
+                            }
+                        },
+                        force: {
+                            repulsion: 200,   // 排斥力调大，给箭头和粗线留出空间
+                            edgeLength: 70,   // 连线长度
+                            gravity: 0.1      // 向心力
+                        }
+                    }
+                ]
+            });
+
+        } catch (error) {
+            myChart.hideLoading();
+            statusDisplay.style.color = 'red';
+            statusDisplay.innerText = `❌ 分析失败。`;
+            alert("执行失败，错误信息:\n" + error);
+        }
+    });
+
+    window.addEventListener('resize', function() {
+        myChart.resize();
+    });
+</script>
+</body>
+</html>
