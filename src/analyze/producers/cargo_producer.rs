@@ -1,19 +1,16 @@
-// src/analyze/producers/cargo_producer.rs
-
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
+use crate::utils::file_utils::make_instance_id;
 
 #[derive(Clone, Default)]
 pub struct CargoProducer {}
 
 impl SbomProducer for CargoProducer {
     fn use_file(&self, path: &Path, _config: &SbomProducerConfiguration) -> bool {
-        // 【核心工程理念】：静态轨只认 Cargo.lock！
-        // 绝对不扫 Cargo.toml，更不准在静态轨里 fork 子进程去执行 cargo 二进制命令
         path.file_name()
             .map(|name| name == "Cargo.lock")
             .unwrap_or(false)
@@ -28,7 +25,11 @@ impl SbomProducer for CargoProducer {
 
         for lock_path in paths {
             let content = fs::read_to_string(lock_path)?;
-            let file_deps = Self::parse_cargo_lock(&content)?;
+
+            // 1. 将当前锁文件的物理路径标准 POSIX 化作为绝对隔离盐
+            let file_salt = lock_path.to_string_lossy().replace('\\', "/");
+
+            let file_deps = Self::parse_cargo_lock(&content, &file_salt)?;
             all_dependencies.extend(file_deps);
         }
 
@@ -37,8 +38,7 @@ impl SbomProducer for CargoProducer {
 }
 
 impl CargoProducer {
-    /// 内存解析 Cargo.lock 文本，还原全量组件及 DAG 拓扑连接边
-    fn parse_cargo_lock(content: &str) -> anyhow::Result<Vec<Dependency>> {
+    fn parse_cargo_lock(content: &str, file_salt: &str) -> anyhow::Result<Vec<Dependency>> {
         let lock_toml: toml::Value = toml::from_str(content)?;
 
         let Some(packages) = lock_toml.get("package").and_then(|p| p.as_array()) else {
@@ -49,22 +49,19 @@ impl CargoProducer {
             name: String,
             version: String,
             purl: String,
+            instance_id: String,
             raw_deps: Vec<String>,
-            #[allow(dead_code)]
-            is_local: bool,
         }
 
         let mut nodes = Vec::with_capacity(packages.len());
 
-        // =================================================================
-        // 第一趟：双索引映射表构建
-        // exact_map : ("serde", "1.0.197") -> "pkg:cargo/serde@1.0.197"
-        // single_map: "serde" -> "pkg:cargo/serde@1.0.197"
-        // (注：Cargo规范保证，只有全局唯一的包，其依赖字符串才会省略版本号)
-        // =================================================================
         let mut exact_map: HashMap<(&str, &str), String> = HashMap::new();
         let mut single_map: HashMap<&str, String> = HashMap::new();
+        let mut id_to_name: HashMap<String, String> = HashMap::new();
 
+        // =================================================================
+        // 第一趟：双索引映射表构建，分配物理隔离 ID
+        // =================================================================
         for pkg in packages {
             let Some(name) = pkg.get("name").and_then(|n| n.as_str()) else {
                 continue;
@@ -73,9 +70,9 @@ impl CargoProducer {
                 continue;
             };
 
-            // 本地 Workspace 成员在 Lock 里没有 "source" 字段
-            let is_local = pkg.get("source").is_none();
-            let purl = format!("pkg:cargo/{}@{}", name, version);
+            let raw_purl = format!("pkg:cargo/{}@{}", name, version);
+            let valid_purl = Dependency::auto_fix_and_validate_purl(&raw_purl);
+            let instance_id = make_instance_id(&valid_purl, file_salt);
 
             let mut raw_deps = vec![];
             if let Some(deps) = pkg.get("dependencies").and_then(|d| d.as_array()) {
@@ -86,56 +83,157 @@ impl CargoProducer {
                 }
             }
 
-            exact_map.insert((name, version), purl.clone());
-            single_map.insert(name, purl.clone());
+            exact_map.insert((name, version), instance_id.clone());
+            single_map.insert(name, instance_id.clone());
+            id_to_name.insert(instance_id.clone(), name.to_string());
 
             nodes.push(RawNode {
                 name: name.to_string(),
                 version: version.to_string(),
-                purl,
+                purl: valid_purl,
+                instance_id,
                 raw_deps,
-                is_local,
             });
         }
 
         // =================================================================
-        // 第二趟：转译依赖边，组装标准的 CycloneDX Dependency 模型
+        // 第二趟：连线并计算“入度(In-Degree)”以自动发现根节点
+        // =================================================================
+        let mut id_to_children: HashMap<String, Vec<String>> = HashMap::new();
+        let mut in_degree: HashMap<String, usize> = HashMap::new();
+
+        for node in &nodes {
+            in_degree.insert(node.instance_id.clone(), 0); // 初始化
+        }
+
+        for node in &nodes {
+            let mut child_ids = Vec::with_capacity(node.raw_deps.len());
+
+            for dep_expr in &node.raw_deps {
+                let mut iter = dep_expr.split_whitespace();
+                let d_name = iter.next().unwrap_or("");
+                let second_token = iter.next();
+
+                let target_id = match second_token {
+                    Some(ver) if !ver.starts_with('(') => exact_map.get(&(d_name, ver)).cloned(),
+                    _ => single_map.get(d_name).cloned(),
+                };
+
+                if let Some(id) = target_id {
+                    child_ids.push(id.clone());
+                    *in_degree.entry(id).or_insert(0) += 1; // 目标节点被依赖，入度 +1
+                }
+            }
+            id_to_children.insert(node.instance_id.clone(), child_ids);
+        }
+
+        // =================================================================
+        // 第三趟：自动提取根节点并执行 BFS 可达性分析
+        // =================================================================
+        let mut queue: VecDeque<String> = VecDeque::new();
+        let mut reachable_ids: HashSet<String> = HashSet::new();
+
+        // 将所有入度为 0 的节点（即工作区根项目）送入队列
+        for (id, deg) in &in_degree {
+            if *deg == 0 {
+                reachable_ids.insert(id.clone());
+                queue.push_back(id.clone());
+            }
+        }
+
+        while let Some(current) = queue.pop_front() {
+            if let Some(children) = id_to_children.get(&current) {
+                for child in children {
+                    if !reachable_ids.contains(child) {
+                        reachable_ids.insert(child.clone());
+                        queue.push_back(child.clone());
+                    }
+                }
+            }
+        }
+
+        // =================================================================
+        // 第四趟：生成最终的纯净依赖，施加对标 Trivy 的启发式过滤黑名单
         // =================================================================
         let mut final_deps = Vec::with_capacity(nodes.len());
 
-        for node in nodes {
-            // 【可定制点】：如果你的业务严格要求“不把本地私有模块算作第三方组件”，
-            // 请把下面这行解开注释：
-            // if node.is_local { continue; }
-
-            let mut child_purls = Vec::with_capacity(node.raw_deps.len());
-
-            for dep_expr in &node.raw_deps {
-                // Cargo.lock 里的依赖字符串规范分为三种：
-                // A. "bitflags"
-                // B. "bitflags 1.3.2"
-                // C. "bitflags 1.3.2 (registry+https://...)"
-                let mut iter = dep_expr.split_whitespace();
-                let d_name = iter.next().unwrap_or("");
-                let d_ver = iter.next(); // 可能是版本号，也可能是 None
-
-                let target_purl = match d_ver {
-                    Some(ver) => exact_map.get(&(d_name, ver)).cloned(),
-                    None => single_map.get(d_name).cloned(),
-                };
-
-                if let Some(p) = target_purl {
-                    child_purls.push(p);
-                }
+        // 💡 对齐 Trivy 的强力噪音特征黑名单
+        let is_trivy_ignored_noise = |name: &str| -> bool {
+            // 1. 剔除所有特定操作系统/架构的底层垫片
+            if name.starts_with("windows_") || name.starts_with("windows-") || name == "winapi" {
+                return true;
             }
+            // 2. 剔除 Rust 宏系统和编译器内部组件
+            let macro_tools = [
+                "syn",
+                "quote",
+                "proc-macro2",
+                "synstructure",
+                "unicode-ident",
+                "heck",
+                "autocfg",
+                "version_check",
+                "cc",
+                "pkg-config",
+            ];
+            if macro_tools.contains(&name) || name.contains("-macro") || name.contains("macro-") {
+                return true;
+            }
+            // 3. 剔除常见的纯测试/本地构建工具 (Trivy 忽略项)
+            let test_tools = [
+                "pretty_assertions",
+                "tempfile",
+                "trybuild",
+                "assert_cmd",
+                "assert_fs",
+                "criterion",
+                "criterion-plot",
+                "env_logger",
+                "tracing-subscriber",
+            ];
+            if test_tools.contains(&name) {
+                return true;
+            }
+
+            false
+        };
+
+        for node in nodes {
+            // 1. 如果不可达（孤岛节点），直接丢弃
+            if !reachable_ids.contains(&node.instance_id) {
+                continue;
+            }
+
+            // 2. 如果自身命中了 Trivy 黑名单（噪音节点），直接丢弃
+            if is_trivy_ignored_noise(&node.name) {
+                continue;
+            }
+
+            // 3. 在孩子列表里同步切断通往噪音节点的连线
+            let valid_child_ids: Vec<String> = id_to_children
+                .get(&node.instance_id)
+                .unwrap_or(&vec![])
+                .iter()
+                .filter(|cid| reachable_ids.contains(*cid)) // 必须可达
+                .filter(|cid| {
+                    // 并且子节点不能是黑名单噪音
+                    if let Some(cname) = id_to_name.get(*cid) {
+                        !is_trivy_ignored_noise(cname)
+                    } else {
+                        true
+                    }
+                })
+                .cloned()
+                .collect();
 
             if let Ok(dep) = DependencyBuilder::default()
                 .name(node.name)
                 .version(Some(node.version))
                 .r#type(DependencyType::Library)
-                .purl(Dependency::auto_fix_and_validate_purl(node.purl.as_str()))
-                .dependencies(child_purls) // 【核心点：注入 DAG 子节点边】
-                .location(None) // 离线静态 Lock 无法推导代码物理行号
+                .purl(node.purl)
+                .instance_id(node.instance_id)
+                .dependencies(valid_child_ids) // 👈 纯净的子边
+                .location(None)
                 .build()
             {
                 final_deps.push(dep);

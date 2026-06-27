@@ -1,4 +1,5 @@
 use crate::model::dependency::{Dependency, DependencyType};
+use crate::utils::file_utils::make_instance_id;
 use regex::Regex;
 use std::collections::HashMap;
 use std::path::Path;
@@ -63,10 +64,11 @@ impl MavenCliDriver {
         Self::parse_ascii_tree(&String::from_utf8_lossy(&output.stdout))
     }
 
-    /// 正则白嫖树状文本拓扑算法
+    /// 正则白嫖树状文本拓扑算法（已集成多项目物理隔离与 Omitted 核弹防线）
     fn parse_ascii_tree(content: &str) -> Result<Vec<Dependency>, String> {
         let mut deps_map: HashMap<String, Dependency> = HashMap::new();
-        let mut parent_stack: Vec<String> = Vec::new(); // 记录父节点轨道的单调栈
+        let mut parent_stack: Vec<String> = Vec::new(); // 👈 栈内存放的必须是 instance_id
+        let mut current_module_scope: String = String::new(); // 【核心新增】当前子项目物理作用域
 
         for line in content.lines() {
             // 剥离 Maven 的 [INFO] 前缀
@@ -76,6 +78,15 @@ impl MavenCliDriver {
             };
 
             if clean_line.starts_with("Building ") || clean_line.contains("Scanning for") {
+                continue;
+            }
+
+            // ---------------------------------------------------------
+            // 🚨 【防线一】：拦截 Maven 冲突/重复包提示词
+            // Maven 遇到重复包会输出: "+- (omitted for duplicate) xxx:yyy:jar:1.0"
+            // 不拦截的话，算出的 depth 会从 1 层暴增到 9 层以上，单调栈当场崩溃！
+            // ---------------------------------------------------------
+            if clean_line.contains("(omitted") || clean_line.contains("(conflict") {
                 continue;
             }
 
@@ -90,30 +101,48 @@ impl MavenCliDriver {
                 let raw_purl = format!("pkg:maven/{}/{}@{}", group_id, artifact_id, version);
                 let valid_purl = Dependency::auto_fix_and_validate_purl(&raw_purl);
 
-                // 核心算法：Maven 树前缀缩进严格占 3 个字符宽，除以3即为当前依赖深度
                 let depth = mat.start() / 3;
 
-                // 维护单调栈并连线父子 DAG 关系
+                // =====================================================
+                // 【精髓 A】：微服务领地切变侦测
+                // =====================================================
+                // Maven 在打印 Monorepo 多个子工程时，新工程的顶层坐标 depth 永远等于 0！
+                // 碰见 0，说明我们跨入了另一个微服务的边界，重新标记 scope
+                if depth == 0 {
+                    current_module_scope = valid_purl.clone();
+                }
+
+                // =====================================================
+                // 【精髓 B】：为当前包派生“带子工程语境”的身份证
+                // =====================================================
+                let instance_id = make_instance_id(&valid_purl, &current_module_scope);
+
+                // =====================================================
+                // 【精髓 C】：单调栈连线（连线的父子节点全部流转 instance_id）
+                // =====================================================
                 parent_stack.truncate(depth);
-                if let Some(parent_purl) = parent_stack.last() {
-                    if let Some(parent_dep) = deps_map.get_mut(parent_purl) {
-                        if !parent_dep.dependencies.contains(&valid_purl) {
-                            parent_dep.dependencies.push(valid_purl.clone());
+                if let Some(parent_instance_id) = parent_stack.last() {
+                    if let Some(parent_dep) = deps_map.get_mut(parent_instance_id) {
+                        if !parent_dep.dependencies.contains(&instance_id) {
+                            parent_dep.dependencies.push(instance_id.clone());
                         }
                     }
                 }
-                parent_stack.push(valid_purl.clone());
+                parent_stack.push(instance_id.clone());
 
-                // 内存优化：只有新包才进行堆内存 String 拷贝
-                if !deps_map.contains_key(&valid_purl) {
+                // =====================================================
+                // 【精髓 D】：落盘入库（Key 严格设为 instance_id）
+                // =====================================================
+                if !deps_map.contains_key(&instance_id) {
                     deps_map.insert(
-                        valid_purl.clone(),
+                        instance_id.clone(),
                         Dependency {
                             group: Some(group_id.to_string()),
+                            r#type: DependencyType::Library,
                             name: artifact_id.to_string(),
                             version: Some(version.to_string()),
                             purl: valid_purl,
-                            r#type: DependencyType::Library,
+                            instance_id,
                             dependencies: Vec::new(),
                             location: None,
                         },
@@ -124,7 +153,7 @@ impl MavenCliDriver {
 
         let result: Vec<Dependency> = deps_map.into_values().collect();
         eprintln!(
-            "🔍 [自检] 动态正则引擎成功提取 {} 个 Java 依赖，并已连线 DAG 拓扑！",
+            "🔍 [自检] 动态正则引擎成功提取 {} 个 Java 依赖，多模块隔离 DAG 连线完毕！",
             result.len()
         );
         Ok(result)

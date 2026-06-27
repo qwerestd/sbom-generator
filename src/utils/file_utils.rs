@@ -1,4 +1,5 @@
-use std::path::PathBuf;
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use walkdir::WalkDir;
@@ -33,4 +34,20 @@ pub fn get_files(directory: &str) -> Result<Vec<PathBuf>> {
         }
     }
     Ok(files_to_return)
+}
+pub fn make_instance_id(purl: &str, manifest_rel_path: &str) -> String {
+    let mut hasher = DefaultHasher::new();
+    purl.hash(&mut hasher);
+    manifest_rel_path.hash(&mut hasher);
+
+    format!("{}?package-id={:016x}", purl, hasher.finish())
+}
+
+/// 计算清单文件相对于 Git 仓库根目录的标准相对路径（兼容 Windows 路径反斜杠）
+pub fn get_manifest_rel_path(workspace_root: &Path, manifest_path: &Path) -> String {
+    manifest_path
+        .strip_prefix(workspace_root)
+        .unwrap_or(manifest_path)
+        .to_string_lossy()
+        .replace('\\', "/")
 }

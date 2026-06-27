@@ -4,7 +4,8 @@ use crate::analyze::producers::maven::model::{MavenDependencyScope, MavenDepende
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyLocation, DependencyType};
 use crate::model::location::Location;
 use crate::model::position::get_position_in_string;
-use crate::utils::tree_sitter::tree::get_tree;
+use crate::utils::file_utils::make_instance_id;
+use crate::utils::tree_sitter::tree::get_tree; // 【新增引入】统一派生身份证主键算法
 use anyhow::anyhow;
 use derive_builder::Builder;
 use lazy_static::lazy_static;
@@ -85,24 +86,18 @@ impl MavenDependency {
         }
     }
 
-    /// 【核心放宽检测逻辑】：
-    /// 废除原本苛刻的占位符拦截。只要具备实质的 groupId 和 artifactId，该包就是存活的！
     pub fn is_valid_for_sbom(&self) -> bool {
         !self.group_id.trim().is_empty() && !self.artifact_id.trim().is_empty()
     }
-}
 
-impl From<&MavenDependency> for Dependency {
-    fn from(value: &MavenDependency) -> Self {
-        let group_clean = value.group_id.trim();
-        let name_clean = value.artifact_id.trim();
+    // =====================================================================
+    // 🚀 【新增核心改造方法】：支持传递 file_salt 直接转译为带全局身份证的 Dependency 实体
+    // =====================================================================
+    pub fn to_isolated_dependency(&self, file_salt: &str) -> Dependency {
+        let group_clean = self.group_id.trim();
+        let name_clean = self.artifact_id.trim();
 
-        // 【防线二：PURL 智能降级机制】
-        // 1. 如果版本号清洗后为正常值 "1.12.1" -> 拼出规范 PURL: pkg:maven/...@1.12.1
-        // 2. 如果版本号依然残留着未解析的占位符 "${poi.ver}" 或为空 ->
-        //    降级置为 None（允许未知版本的组件入库），拼出无版本 PURL: pkg:maven/com.deepoove/poi-tl
-        //    绝不阻断该组件生成！
-        let (version_opt, purl_str) = match &value.version {
+        let (version_opt, purl_str) = match &self.version {
             Some(raw_v) => {
                 let clean_v = raw_v.trim();
                 if clean_v.is_empty() || clean_v.contains('$') {
@@ -117,15 +112,34 @@ impl From<&MavenDependency> for Dependency {
             None => (None, format!("pkg:maven/{}/{}", group_clean, name_clean)),
         };
 
+        let valid_purl = Dependency::auto_fix_and_validate_purl(&purl_str);
+
+        // 【核心心法】：拿 (洗练PURL + pom.xml相对路径) 融合成全局唯一 instance_id
+        let instance_id = make_instance_id(&valid_purl, file_salt);
+
         DependencyBuilder::default()
             .group(Some(group_clean.to_string()))
             .name(name_clean.to_string())
             .version(version_opt)
-            .location(value.location.clone())
+            .location(self.location.clone())
             .r#type(DependencyType::Library)
-            .purl(purl_str)
+            .purl(valid_purl)
+            .instance_id(instance_id) // 👈 身份证稳稳注入！
             .build()
             .unwrap()
+    }
+}
+
+// 保留原有的 From 转换，确保全工程存量测试用例和非多项目调用能向下兼容编译通过
+impl From<&MavenDependency> for Dependency {
+    fn from(value: &MavenDependency) -> Self {
+        // 单项目降级场景下，直接使用默认 location.file（即当前pom物理路径）作为盐保底
+        let fallback_salt = value
+            .location
+            .as_ref()
+            .map(|l| l.block.file.as_str())
+            .unwrap_or("maven-fallback-pom");
+        value.to_isolated_dependency(fallback_salt)
     }
 }
 
@@ -194,7 +208,6 @@ fn get_dependencies_from_dependency_management(
             let tag_node = m.captures[i].node;
             let value_node = m.captures[i + 1].node;
 
-            // 【核心优化2】：直接使用 &str 切片对比，省去上万次 String 堆内存分配
             let tag_slice = &content[tag_node.start_byte()..tag_node.end_byte()];
             let value_str = &content[value_node.start_byte()..value_node.end_byte()];
 
@@ -527,14 +540,12 @@ impl MavenFile {
         })
     }
 
-    /// 【核心优化3】：绝对安全的文件寻址，彻底告别 canonicalize 带来的 Panic
     fn get_parent_file_path(&self, context: &MavenProducerContext) -> Option<PathBuf> {
         let rel_str = self.parent.as_ref()?.relative_path.as_ref()?;
 
         let mut candidate = self.path.parent()?.to_path_buf();
         candidate.push(rel_str);
 
-        // 使用 .ok()? 优雅降级，当企业远程父POM本地不存在时静默回退
         let full_path = fs::canonicalize(&candidate).ok()?;
         let base_path = fs::canonicalize(&context.base_path).ok()?;
 

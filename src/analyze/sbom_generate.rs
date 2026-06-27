@@ -8,17 +8,19 @@ use crate::analyze::producers::npm_lock_producer::NpmLockProducer;
 use crate::analyze::producers::npm_producer::NpmProducer;
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::analyze::producers::pypi_producer::PypiProducer;
-// use crate::analyze::producers::poetry_lock_producer::PoetryLockProducer; // 若补了poetry可解开
+// use crate::analyze::producers::poetry_lock_producer::PoetryLockProducer;
 
 use crate::model::configuration::Configuration;
 use crate::model::dependency::Dependency;
+use crate::report::{generate_report, print_report};
 use crate::sbom::generate::generate_sbom;
 use crate::utils::file_utils::get_files;
+use std::collections::HashMap; // 【新增引入】
 use std::path::PathBuf;
 
 /// Analyze paths, find dependencies and write the SBOM to disk.
 pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<()> {
-    let mut final_dependencies: Vec<Dependency> = vec![];
+    let mut raw_collected_deps: Vec<Dependency> = vec![];
 
     if configuration.use_debug {
         configuration.print_configuration();
@@ -31,13 +33,13 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
     };
 
     // =====================================================================
-    // 升级版编排引擎：支持 [动态轨 -> 静态Lock轨 -> 静态Manifest轨] 链式降级
+    // 工业级编排引擎：支持 [动态探针 -> 按项目父目录聚类 -> 静态责任链降级]
     // =====================================================================
     let mut run_ecosystem_chain =
         |eco_name: &str,
          dyn_producer: Option<&dyn DynamicProducer>,
          static_producers: &[&dyn SbomProducer]| {
-            let mut resolved = false;
+            let mut resolved_dynamically = false;
 
             // --- 轨道一：动态探针 ---
             if dynamic {
@@ -53,57 +55,72 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
                                     eco_name,
                                     deps.len()
                                 );
-                                final_dependencies.extend(deps);
-                                resolved = true;
+                                raw_collected_deps.extend(deps);
+                                resolved_dynamically = true;
                             }
-                            Ok(_) => {} // 产出0依赖则继续向下流转
+                            Ok(_) => {}
                             Err(e) => {
-                                eprintln!(
-                                    " -> [{}] 动态探测受挫 ({})，正在无缝降级...",
-                                    eco_name, e
-                                );
+                                eprintln!(" -> [{}] 动态探测受挫 ({})，正在降级...", eco_name, e);
                             }
                         }
                     }
                 }
             }
 
-            // --- 轨道二：静态责任链队列 (优先级严格由数组元素的先后顺序决定) ---
-            if !resolved {
-                for producer in static_producers {
-                    let target_files: Vec<PathBuf> = all_files
-                        .iter()
-                        .filter(|f| producer.use_file(f, &producer_cfg))
-                        .cloned()
-                        .collect();
+            // --- 轨道二：静态责任链队列（核心重构：下沉到“单个子项目文件夹”粒度） ---
+            if !resolved_dynamically {
+                // 步骤 A：筛选出全仓库内当前生态的所有潜在清单文件
+                let candidate_files: Vec<&PathBuf> = all_files
+                    .iter()
+                    .filter(|f| {
+                        static_producers
+                            .iter()
+                            .any(|p| p.use_file(f, &producer_cfg))
+                    })
+                    .collect();
 
-                    if !target_files.is_empty() {
-                        match producer.find_dependencies(&target_files, &producer_cfg) {
-                            Ok(deps) if !deps.is_empty() => {
-                                println!(
-                                    " -> [{}] 静态解析完成 (提取到 {} 个依赖)",
-                                    eco_name,
-                                    deps.len()
-                                );
-                                final_dependencies.extend(deps);
-                                break; // 【核心决断点】：高优规则一旦拿到数据，立刻截断循环，绝不执行后置规则！
+                // 步骤 B：按文件所在的父文件夹（即各个独立微服务的根目录）聚类
+                let mut project_dirs: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
+                for f in candidate_files {
+                    if let Some(parent) = f.parent() {
+                        project_dirs
+                            .entry(parent.to_path_buf())
+                            .or_default()
+                            .push(f.clone());
+                    }
+                }
+
+                // 步骤 C：遍历每一个独立的微服务领地，在【单文件夹作用域】内跑责任链！
+                for (_proj_dir, files_in_dir) in project_dirs {
+                    for producer in static_producers {
+                        let matched: Vec<PathBuf> = files_in_dir
+                            .iter()
+                            .filter(|f| producer.use_file(f, &producer_cfg))
+                            .cloned()
+                            .collect();
+
+                        if !matched.is_empty() {
+                            match producer.find_dependencies(&matched, &producer_cfg) {
+                                Ok(deps) if !deps.is_empty() => {
+                                    raw_collected_deps.extend(deps);
+                                    // 🚀 【绝杀点】：只截断当前子文件夹的队列！
+                                    // 保证了 /apps/web 认领 Lock 后 break，绝不阻碍 /apps/docs 去认领 Json！
+                                    break;
+                                }
+                                _ => {} // 本文件夹下解析失败，让位给队列后置位（如 Lock 降级为 Json）
                             }
-                            Ok(_) => {
-                                // 扫到了文件（如内容为空的 package-lock.json），但依赖数为0，放行给下一顺位
-                            }
-                            Err(e) => eprintln!(" -> [{}] 静态扫描发生异常: {}", eco_name, e),
                         }
                     }
                 }
             }
         };
 
-    // 1. Cargo 生态 (单轨)
+    // 1. Cargo 生态
     let cargo_dyn = CargoDynamicProducer::default();
     let cargo_static = CargoProducer::default();
     run_ecosystem_chain("Cargo", Some(&cargo_dyn), &[&cargo_static]);
 
-    // 2. NPM 生态 (责任链挂载：Lock 在前，Json 在后)
+    // 2. NPM 生态
     let npm_dyn = NpmDynamicProducer::default();
     let npm_lock = NpmLockProducer::default();
     let npm_json = NpmProducer::default();
@@ -116,36 +133,53 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
     // 4. PyPI 生态
     let pypi_dyn = PypiDynamicProducer::default();
     let pypi_static = PypiProducer::default();
-    // let poetry_lock = PoetryLockProducer::default();
-    run_ecosystem_chain("PyPI", Some(&pypi_dyn), &[&pypi_static]); // 若写了poetry，改写为 &[&poetry_lock, &pypi_static]
+    run_ecosystem_chain("PyPI", Some(&pypi_dyn), &[&pypi_static]);
 
-    // 排序
-    final_dependencies.sort_by(|a, b| {
-        a.group
-            .cmp(&b.group)
-            .then(a.name.cmp(&b.name))
-            .then(a.version.cmp(&b.version))
-    });
+    // =====================================================================
+    // 终极拓扑去重与边融合引擎（废除原有的字面量 dedup_by 执念）
+    // =====================================================================
+    let initial_count = raw_collected_deps.len();
+    let mut merged_map: HashMap<String, Dependency> = HashMap::with_capacity(initial_count);
 
-    // --- 【智能拓扑去重算法】 ---
-    let initial_count = final_dependencies.len();
-    final_dependencies.dedup_by(|a, b| {
-        if a.group == b.group && a.name == b.name && a.version == b.version {
-            if b.dependencies.is_empty() && !a.dependencies.is_empty() {
-                b.dependencies = std::mem::take(&mut a.dependencies);
-            }
-            true
-        } else {
-            false
-        }
-    });
+    for dep in raw_collected_deps {
+        let key = dep.instance_id.clone(); // 绝对物理主键
+
+        merged_map
+            .entry(key)
+            .and_modify(|existing| {
+                // 拓扑边血脉融合：当公共基础库发生复用碰撞时，取 dependsOn 子边的并集
+                for child_id in &dep.dependencies {
+                    if !existing.dependencies.contains(child_id) {
+                        existing.dependencies.push(child_id.clone());
+                    }
+                }
+            })
+            .or_insert(dep);
+    }
+
+    let mut final_dependencies: Vec<Dependency> = merged_map.into_values().collect();
+
+    final_dependencies.sort_by(|a, b| a.instance_id.cmp(&b.instance_id));
+
     let dedup_count = initial_count - final_dependencies.len();
 
     println!(
-        " -> 融合扫描完毕！去除了 {} 个重复项，最终产出 {} 个有效 SBOM 组件。",
+        " -> 融合图谱构建完毕！消除 {} 个冗余节点，最终产出 {} 个绝对隔离 SBOM 实体。",
         dedup_count,
         final_dependencies.len()
     );
+
+    // --- 【终极工程安全网】 ---
+    if cfg!(debug_assertions) {
+        for dep in &final_dependencies {
+            assert!(
+                dep.instance_id.contains("?package-id="),
+                "🚨 [编译期红线断言] 抓到未隔离节点！组件 <{}> 的 ref 依然是纯 PURL: {}",
+                dep.name,
+                dep.instance_id
+            );
+        }
+    }
 
     if configuration.use_debug {
         for dep in final_dependencies.iter() {
@@ -153,16 +187,13 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
                 .location
                 .as_ref()
                 .map(|v| v.block.file.clone())
-                .unwrap_or_else(|| "runtime".to_string());
-            println!(
-                "dep: {}@{} [{}]",
-                dep.name,
-                dep.version.clone().unwrap_or_default(),
-                dep_file
-            );
+                .unwrap_or_else(|| "runtime/manifest".to_string());
+            println!("dep: {} [{}]", dep.instance_id, dep_file);
         }
     }
-
+    if let Ok(report) = generate_report(configuration.output.as_str()) {
+        print_report(&report);
+    }
     generate_sbom(final_dependencies, configuration).expect("cannot generate SBOM");
     Ok(())
 }
