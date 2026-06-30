@@ -77,7 +77,7 @@ impl DynamicProducer for CargoDynamicProducer {
                 .collect();
         }
 
-        // 3. 构建“核心运行时”的边关系 (过滤掉 dev 和 build 依赖)
+        // 3. 构建依赖的边关系（收集所有依赖，不再过滤 dev 和 build）
         let mut id_to_child_ids: HashMap<String, Vec<String>> = HashMap::new();
 
         if let Some(nodes) = json
@@ -91,25 +91,7 @@ impl DynamicProducer for CargoDynamicProducer {
 
                     if let Some(deps) = node.get("deps").and_then(|d| d.as_array()) {
                         for dep_obj in deps {
-                            // 👈 【核心过滤】判断是否为普通运行时依赖
-                            // Cargo 规定: kind == null 为运行时 normal 依赖
-                            let is_runtime = dep_obj
-                                .get("dep_kinds")
-                                .and_then(|k| k.as_array())
-                                .map(|kinds| {
-                                    kinds.iter().any(|k| {
-                                        let kind = k.get("kind");
-                                        kind.is_none()
-                                            || kind.unwrap().is_null()
-                                            || kind.unwrap().as_str() == Some("normal")
-                                    })
-                                })
-                                .unwrap_or(true); // 如果没有 dep_kinds，保守判定为 runtime
-
-                            if !is_runtime {
-                                continue; // 坚决丢弃宏依赖、构建辅助依赖、测试依赖
-                            }
-
+                            // 直接提取所有的子依赖 ID，不论其属于 normal、dev 还是 build
                             if let Some(cid) = dep_obj.get("pkg").and_then(|p| p.as_str()) {
                                 child_ids.push(cid.to_string());
                             }
@@ -120,8 +102,8 @@ impl DynamicProducer for CargoDynamicProducer {
             }
         }
 
-        // 4. 【精髓升级】可达性分析 (BFS)
-        // 从根节点出发，只顺着 Runtime 的路径往下找，找到的才算是真正的组件
+        // 4. 可达性分析 (BFS)
+        // 从根节点出发，顺着所有的依赖路径往下找
         let mut reachable_ids: HashSet<String> = HashSet::new();
         let mut queue: VecDeque<String> = VecDeque::new();
 
@@ -144,60 +126,16 @@ impl DynamicProducer for CargoDynamicProducer {
         // 5. 组装最终结果
         let mut final_deps = vec![];
 
-        // 💡 保持与静态解析器完全一致的强力噪音特征黑名单
-        let is_trivy_ignored_noise = |name: &str| -> bool {
-            if name.starts_with("windows_") || name.starts_with("windows-") || name == "winapi" {
-                return true;
-            }
-            let macro_tools = [
-                "syn",
-                "quote",
-                "proc-macro2",
-                "synstructure",
-                "unicode-ident",
-                "heck",
-                "autocfg",
-                "version_check",
-                "cc",
-                "pkg-config",
-            ];
-            if macro_tools.contains(&name) || name.contains("-macro") || name.contains("macro-") {
-                return true;
-            }
-            let test_tools = [
-                "pretty_assertions",
-                "tempfile",
-                "trybuild",
-                "assert_cmd",
-                "assert_fs",
-                "criterion",
-                "criterion-plot",
-                "env_logger",
-                "tracing-subscriber",
-            ];
-            if test_tools.contains(&name) {
-                return true;
-            }
-            false
-        };
-
         for id in &reachable_ids {
             if let Some(meta) = id_to_meta.get(id) {
-                // 🚀 1. 如果自身命中了 Trivy 黑名单（噪音节点），直接丢弃
-                if is_trivy_ignored_noise(&meta.name) {
-                    continue;
-                }
-
                 let mut edge_instance_ids = vec![];
 
                 if let Some(children) = id_to_child_ids.get(id) {
                     for child_id in children {
                         if reachable_ids.contains(child_id) {
                             if let Some(child_meta) = id_to_meta.get(child_id) {
-                                // 🚀 2. 在子依赖连线中，同步切断指向噪音节点的边
-                                if !is_trivy_ignored_noise(&child_meta.name) {
-                                    edge_instance_ids.push(child_meta.instance_id.clone());
-                                }
+                                // 收集所有相连的子节点
+                                edge_instance_ids.push(child_meta.instance_id.clone());
                             }
                         }
                     }
@@ -209,7 +147,7 @@ impl DynamicProducer for CargoDynamicProducer {
                     .r#type(DependencyType::Library)
                     .purl(meta.purl.clone())
                     .instance_id(meta.instance_id.clone())
-                    .dependencies(edge_instance_ids) // 👈 纯净的子边
+                    .dependencies(edge_instance_ids)
                     .location(None)
                     .build()
                 {

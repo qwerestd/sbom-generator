@@ -153,50 +153,9 @@ impl CargoProducer {
         }
 
         // =================================================================
-        // 第四趟：生成最终的纯净依赖，施加对标 Trivy 的启发式过滤黑名单
+        // 第四趟：生成最终的纯净依赖（移除黑名单过滤，保留所有组件）
         // =================================================================
         let mut final_deps = Vec::with_capacity(nodes.len());
-
-        // 💡 对齐 Trivy 的强力噪音特征黑名单
-        let is_trivy_ignored_noise = |name: &str| -> bool {
-            // 1. 剔除所有特定操作系统/架构的底层垫片
-            if name.starts_with("windows_") || name.starts_with("windows-") || name == "winapi" {
-                return true;
-            }
-            // 2. 剔除 Rust 宏系统和编译器内部组件
-            let macro_tools = [
-                "syn",
-                "quote",
-                "proc-macro2",
-                "synstructure",
-                "unicode-ident",
-                "heck",
-                "autocfg",
-                "version_check",
-                "cc",
-                "pkg-config",
-            ];
-            if macro_tools.contains(&name) || name.contains("-macro") || name.contains("macro-") {
-                return true;
-            }
-            // 3. 剔除常见的纯测试/本地构建工具 (Trivy 忽略项)
-            let test_tools = [
-                "pretty_assertions",
-                "tempfile",
-                "trybuild",
-                "assert_cmd",
-                "assert_fs",
-                "criterion",
-                "criterion-plot",
-                "env_logger",
-                "tracing-subscriber",
-            ];
-            if test_tools.contains(&name) {
-                return true;
-            }
-
-            false
-        };
 
         for node in nodes {
             // 1. 如果不可达（孤岛节点），直接丢弃
@@ -204,25 +163,12 @@ impl CargoProducer {
                 continue;
             }
 
-            // 2. 如果自身命中了 Trivy 黑名单（噪音节点），直接丢弃
-            if is_trivy_ignored_noise(&node.name) {
-                continue;
-            }
-
-            // 3. 在孩子列表里同步切断通往噪音节点的连线
+            // 2. 收集所有可达子节点的连接（移除了根据名字过滤逻辑，保留所有边）
             let valid_child_ids: Vec<String> = id_to_children
                 .get(&node.instance_id)
                 .unwrap_or(&vec![])
                 .iter()
                 .filter(|cid| reachable_ids.contains(*cid)) // 必须可达
-                .filter(|cid| {
-                    // 并且子节点不能是黑名单噪音
-                    if let Some(cname) = id_to_name.get(*cid) {
-                        !is_trivy_ignored_noise(cname)
-                    } else {
-                        true
-                    }
-                })
                 .cloned()
                 .collect();
 
@@ -232,7 +178,7 @@ impl CargoProducer {
                 .r#type(DependencyType::Library)
                 .purl(node.purl)
                 .instance_id(node.instance_id)
-                .dependencies(valid_child_ids) // 👈 纯净的子边
+                .dependencies(valid_child_ids) // 👈 包含所有的子边
                 .location(None)
                 .build()
             {
