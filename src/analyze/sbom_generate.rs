@@ -2,7 +2,10 @@ use crate::analyze::producers::cargo_producer::CargoProducer;
 use crate::analyze::producers::dynamic::cargo_dynamic::CargoDynamicProducer;
 use crate::analyze::producers::dynamic::npm_dynamic::NpmDynamicProducer;
 use crate::analyze::producers::dynamic::pypi_dynamic::PypiDynamicProducer;
+// 【新增】引入 Gradle 的动态与静态解析器
+use crate::analyze::producers::dynamic::gradle_dynamic::GradleDynamicProducer;
 use crate::analyze::producers::dynamic_producer::DynamicProducer;
+use crate::analyze::producers::gradle_producer::GradleProducer;
 use crate::analyze::producers::maven::maven_producer::MavenProducerBuilder;
 use crate::analyze::producers::npm_lock_producer::NpmLockProducer;
 use crate::analyze::producers::npm_producer::NpmProducer;
@@ -135,6 +138,12 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
     let pypi_static = PypiProducer::default();
     run_ecosystem_chain("PyPI", Some(&pypi_dyn), &[&pypi_static]);
 
+    // 5. Gradle 生态 【新增】
+    let gradle_dyn = GradleDynamicProducer::default();
+    let gradle_static = GradleProducer::default();
+    // Gradle 生态同理，先尝试动态解析树（Wrapper/CLI），失败则退化成直接解析 *.gradle / *.kts / libs.versions.toml
+    run_ecosystem_chain("Gradle", Some(&gradle_dyn), &[&gradle_static]);
+
     // =====================================================================
     // 终极拓扑去重与边融合引擎（废除原有的字面量 dedup_by 执念）
     // =====================================================================
@@ -197,6 +206,7 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
     generate_sbom(final_dependencies, configuration).expect("cannot generate SBOM");
     Ok(())
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -204,7 +214,7 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
 
-    // 1. 这是一个供下方 5 个测试用例调用的辅助函数
+    // 1. 这是一个供下方测试用例调用的辅助函数
     fn run_test_for_ecosystem(folder_name: &str) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources");
@@ -245,7 +255,7 @@ mod tests {
         }
     }
 
-    // 2. ======= 以下 5 个 #[test] 入口绝对不能漏掉，它们是刷分的灵魂！ =======
+    // 2. ======= 测试用例区 =======
 
     #[test]
     fn test_analyze_npm_ecosystem() {
