@@ -208,14 +208,14 @@ impl Default for MavenProducerContext {
 
 impl MavenProducerContext {
     pub fn add_maven_file(&mut self, maven_file: &MavenFile) {
-        let relative_path = &maven_file
+        let relative_path = maven_file
             .path
             .strip_prefix(&self.base_path)
-            .expect("can get base path")
+            .unwrap_or(&maven_file.path)
             .to_path_buf();
 
         self.maven_files_by_path
-            .insert(relative_path.clone(), maven_file.clone());
+            .insert(relative_path, maven_file.clone());
         self.maven_files_by_project_info
             .insert(maven_file.project_info.clone(), maven_file.clone());
         self.maven_files.push(maven_file.clone());

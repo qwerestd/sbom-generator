@@ -44,6 +44,18 @@ fn enrich_string_with_properties(s: &str, properties: &HashMap<String, String>) 
     resolved
 }
 
+fn location_from_node(
+    path_string: &str,
+    content: &str,
+    node: tree_sitter::Node,
+) -> Option<Location> {
+    Some(Location {
+        file: path_string.to_string(),
+        start: get_position_in_string(content, node.start_byte()).ok()?,
+        end: get_position_in_string(content, node.end_byte()).ok()?,
+    })
+}
+
 #[derive(Default, Eq, Hash, Clone, Debug, Builder, PartialEq)]
 pub struct MavenProjectInfo {
     pub group_id: Option<String>,
@@ -120,13 +132,46 @@ impl MavenDependency {
         DependencyBuilder::default()
             .group(Some(group_clean.to_string()))
             .name(name_clean.to_string())
-            .version(version_opt)
+            .version(version_opt.clone())
+            .declared_version(self.version.clone())
             .location(self.location.clone())
             .r#type(DependencyType::Library)
-            .purl(valid_purl)
-            .instance_id(instance_id) // 👈 身份证稳稳注入！
+            .purl(valid_purl.clone())
+            .instance_id(instance_id.clone()) // 👈 身份证稳稳注入！
             .build()
-            .unwrap()
+            .unwrap_or_else(|_| Dependency {
+                group: Some(group_clean.to_string()),
+                r#type: DependencyType::Library,
+                name: name_clean.to_string(),
+                version: version_opt,
+                declared_version: self.version.clone(),
+                rust_dependency_scope: None,
+                rust_dependency_relationship: None,
+                rust_is_direct: None,
+                rust_target_conditions: None,
+                rust_activation: None,
+                rust_is_proc_macro: None,
+                rust_project_root: None,
+                rust_source_cargo_lock: None,
+                rust_resolved_graph_confirmed: None,
+                rust_all_target_present: None,
+                rust_host_active: None,
+                python_dependency_scope: None,
+                python_source_type: None,
+                python_manifest_path: None,
+                python_project_root: None,
+                python_confidence: None,
+                python_is_project_package: None,
+                python_dependency_relationship: None,
+                python_is_direct: None,
+                python_marker: None,
+                python_activation: None,
+                purl: valid_purl,
+                instance_id,
+                dependencies: Vec::new(),
+                location: self.location.clone(),
+                ..Dependency::default()
+            })
     }
 }
 
@@ -193,13 +238,7 @@ fn get_dependencies_from_dependency_management(
         }
 
         let element_block = m.captures[0].node;
-        let block_position_opt = Some(Location {
-            file: path_string.clone(),
-            start: get_position_in_string(content, element_block.start_byte())
-                .expect("cannot find start"),
-            end: get_position_in_string(content, element_block.end_byte())
-                .expect("cannot find end"),
-        });
+        let block_position_opt = location_from_node(&path_string, content, element_block);
 
         for i in (5..m.captures.len()).step_by(2) {
             if m.captures[i].index != 4 {
@@ -213,24 +252,12 @@ fn get_dependencies_from_dependency_management(
 
             if tag_slice == ARTIFACT_ID {
                 artifact_id_opt = Some(value_str.to_string());
-                name_position_opt = Some(Location {
-                    file: path_string.clone(),
-                    start: get_position_in_string(content, value_node.start_byte())
-                        .expect("cannot find start"),
-                    end: get_position_in_string(content, value_node.end_byte())
-                        .expect("cannot find end"),
-                });
+                name_position_opt = location_from_node(&path_string, content, value_node);
             } else if tag_slice == GROUP_ID {
                 group_id_opt = Some(value_str.to_string());
             } else if tag_slice == VERSION {
                 version_opt = Some(value_str.to_string());
-                version_position_opt = Some(Location {
-                    file: path_string.clone(),
-                    start: get_position_in_string(content, value_node.start_byte())
-                        .expect("cannot find start"),
-                    end: get_position_in_string(content, value_node.end_byte())
-                        .expect("cannot find end"),
-                });
+                version_position_opt = location_from_node(&path_string, content, value_node);
             } else if tag_slice == TYPE {
                 type_opt = MavenDependencyType::from_str(value_str).ok();
             } else if tag_slice == SCOPE {
@@ -251,17 +278,17 @@ fn get_dependencies_from_dependency_management(
                 None
             };
 
-            dependencies.push(
-                MavenDependencyBuilder::default()
-                    .group_id(group_id)
-                    .artifact_id(artifact_id)
-                    .version(version_opt)
-                    .location(location)
-                    .r#type(type_opt)
-                    .scope(scope_opt)
-                    .build()
-                    .unwrap(),
-            );
+            if let Ok(dep) = MavenDependencyBuilder::default()
+                .group_id(group_id)
+                .artifact_id(artifact_id)
+                .version(version_opt)
+                .location(location)
+                .r#type(type_opt)
+                .scope(scope_opt)
+                .build()
+            {
+                dependencies.push(dep);
+            }
         }
     }
 
@@ -299,13 +326,7 @@ fn get_dependencies(
         }
 
         let element_block = m.captures[0].node;
-        let block_position_opt = Some(Location {
-            file: path_string.clone(),
-            start: get_position_in_string(content, element_block.start_byte())
-                .expect("cannot find start"),
-            end: get_position_in_string(content, element_block.end_byte())
-                .expect("cannot find end"),
-        });
+        let block_position_opt = location_from_node(&path_string, content, element_block);
 
         for i in (0..m.captures.len()).step_by(2) {
             if m.captures[i].index != 3 {
@@ -319,24 +340,12 @@ fn get_dependencies(
 
             if tag_slice == ARTIFACT_ID {
                 artifact_id_opt = Some(value_str.to_string());
-                name_position_opt = Some(Location {
-                    file: path_string.clone(),
-                    start: get_position_in_string(content, value_node.start_byte())
-                        .expect("cannot find start"),
-                    end: get_position_in_string(content, value_node.end_byte())
-                        .expect("cannot find end"),
-                });
+                name_position_opt = location_from_node(&path_string, content, value_node);
             } else if tag_slice == GROUP_ID {
                 group_id_opt = Some(value_str.to_string());
             } else if tag_slice == VERSION {
                 version_opt = Some(value_str.to_string());
-                version_position_opt = Some(Location {
-                    file: path_string.clone(),
-                    start: get_position_in_string(content, value_node.start_byte())
-                        .expect("cannot find start"),
-                    end: get_position_in_string(content, value_node.end_byte())
-                        .expect("cannot find end"),
-                });
+                version_position_opt = location_from_node(&path_string, content, value_node);
             } else if tag_slice == SCOPE {
                 scope_opt = MavenDependencyScope::from_str(value_str).ok();
             }
@@ -355,16 +364,16 @@ fn get_dependencies(
                 None
             };
 
-            dependencies.push(
-                MavenDependencyBuilder::default()
-                    .group_id(group_id)
-                    .artifact_id(artifact_id)
-                    .version(version_opt)
-                    .scope(scope_opt)
-                    .location(location)
-                    .build()
-                    .unwrap(),
-            );
+            if let Ok(dep) = MavenDependencyBuilder::default()
+                .group_id(group_id)
+                .artifact_id(artifact_id)
+                .version(version_opt)
+                .scope(scope_opt)
+                .location(location)
+                .build()
+            {
+                dependencies.push(dep);
+            }
         }
     }
 

@@ -4,6 +4,7 @@ use crate::analyze::producers::maven::context::MavenProducerContext;
 use crate::analyze::producers::maven::maven_file::MavenFile;
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::Dependency;
+use crate::utils::file_utils::get_manifest_rel_path;
 use derive_builder::Builder;
 
 // 【新增1】引入上一轮写好的 CLI 驱动器
@@ -24,8 +25,12 @@ impl MavenProducer {
 
         // First pass, we are getting the dependency files
         for p in paths.iter() {
-            let maven_file = MavenFile::new(p, &maven_context).expect("maven file is parsed");
-            maven_context.add_maven_file(&maven_file);
+            match MavenFile::new(p, &maven_context) {
+                Ok(maven_file) => maven_context.add_maven_file(&maven_file),
+                Err(err) => {
+                    tracing::warn!("Maven static parser skipped {}: {}", p.display(), err);
+                }
+            }
         }
 
         // Second pass, we are resolving variables and extracting dependencies
@@ -33,7 +38,10 @@ impl MavenProducer {
             let deps: Vec<Dependency> = maven_file
                 .get_dependencies_for_sbom(&maven_context)
                 .iter()
-                .map(|d| d.into())
+                .map(|d| {
+                    let file_salt = get_manifest_rel_path(base_path, &maven_file.path);
+                    d.to_isolated_dependency(&file_salt)
+                })
                 .collect();
 
             result.extend(deps)

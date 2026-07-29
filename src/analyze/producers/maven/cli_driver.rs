@@ -1,11 +1,13 @@
 use crate::model::dependency::{Dependency, DependencyType};
+use crate::utils::command::run_with_timeout;
 use crate::utils::file_utils::make_instance_id;
 use regex::Regex;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
+use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::LazyLock;
-use std::{env, fs};
+use std::time::Duration;
 
 // 全局静态预编译正则，省去每次调用都在堆内存重复解析状态机的开销
 static MAVEN_COORD_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -15,199 +17,44 @@ static MAVEN_COORD_RE: LazyLock<Regex> = LazyLock::new(|| {
 pub struct MavenCliDriver;
 
 impl MavenCliDriver {
-    /// 获取缓存文件的存放绝对路径 (存放在 C:\Users\你的用户名\.sbom_mvn_cache.txt)
-    fn get_cache_file_path() -> PathBuf {
-        let home_dir = env::var("USERPROFILE").unwrap_or_else(|_| r"C:\".to_string());
-        PathBuf::from(home_dir).join(".sbom_mvn_cache.txt")
-    }
+    fn resolve_maven_path() -> Result<PathBuf, String> {
+        let path_var = env::var_os("PATH").ok_or_else(|| "PATH is not set".to_string())?;
+        let candidates: &[&str] = if cfg!(windows) {
+            &["mvn.cmd", "mvn.bat", "mvn"]
+        } else {
+            &["mvn"]
+        };
 
-    /// 尝试读取缓存
-    fn read_cache() -> Option<String> {
-        let cache_file = Self::get_cache_file_path();
-        if let Ok(content) = fs::read_to_string(&cache_file) {
-            let path_str = content.trim();
-            // 【安全校验】哪怕有缓存，也要确认那个路径的文件还没被用户删掉
-            if Path::new(path_str).exists() {
-                eprintln!("⚡ [缓存命中] 读取到已保存的 Maven 路径: {}", path_str);
-                return Some(path_str.to_string());
-            } else {
-                eprintln!("⚠️ [缓存失效] 发现残留的 Maven 路径已被移动或删除，准备重新扫描...");
-            }
-        }
-        None
-    }
-
-    /// 写入缓存
-    fn write_cache(mvn_path: &str) {
-        let cache_file = Self::get_cache_file_path();
-        if fs::write(&cache_file, mvn_path).is_ok() {
-            eprintln!(
-                "💾 [缓存保存] Maven 路径已持久化到: {}",
-                cache_file.display()
-            );
-        }
-    }
-
-    /// 阶段一：快速定点排查 IDEA 默认路径 (耗时只需几毫秒)
-    fn scan_idea_fast() -> Option<String> {
-        let local_app_data = env::var("LOCALAPPDATA").unwrap_or_default();
-        let program_files =
-            env::var("ProgramFiles").unwrap_or_else(|_| r"C:\Program Files".to_string());
-
-        let base_dirs = vec![
-            PathBuf::from(&program_files).join("JetBrains"),
-            PathBuf::from(&local_app_data).join("Programs"),
-            PathBuf::from(&local_app_data)
-                .join("JetBrains")
-                .join("Toolbox")
-                .join("apps"),
-        ];
-
-        let maven_rel_path = r"plugins\maven\lib\maven3\bin\mvn.cmd";
-
-        for base_dir in base_dirs {
-            if !base_dir.exists() {
-                continue;
-            }
-            let mut queue = VecDeque::new();
-            queue.push_back(base_dir);
-
-            // 在 IDEA 目录下进行限制深度的扫描
-            let mut depth_limit = 50;
-            while let Some(current_dir) = queue.pop_front() {
-                depth_limit -= 1;
-                if depth_limit == 0 {
-                    break;
-                }
-
-                if let Ok(entries) = fs::read_dir(&current_dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.is_dir() {
-                            let target = path.join(maven_rel_path);
-                            if target.exists() {
-                                return Some(target.to_string_lossy().to_string());
-                            }
-                            queue.push_back(path);
-                        }
-                    }
+        for dir in env::split_paths(&path_var) {
+            for candidate in candidates {
+                let path = dir.join(candidate);
+                if path.is_file() {
+                    return Ok(path);
                 }
             }
         }
-        None
-    }
 
-    /// 阶段二：全盘暴力扫描 (利用 BFS 广度优先，避开系统权限死区，耗时 1~3 分钟)
-    fn scan_system_deep() -> Option<String> {
-        eprintln!(
-            "⏳ [全盘扫描] 正在跨越所有磁盘深度搜索 mvn.cmd，这可能需要几分钟，请耐心等待..."
-        );
-        let mut queue = VecDeque::new();
-
-        // 将你常用的盘符加入队列起始点
-        let roots = vec![r"C:\", r"D:\", r"E:\"];
-        for root in roots {
-            let p = PathBuf::from(root);
-            if p.exists() {
-                queue.push_back(p);
-            }
-        }
-
-        let target_file = "mvn.cmd";
-
-        while let Some(current_dir) = queue.pop_front() {
-            // 忽略没有权限读的系统级目录，直接 continue
-            let entries = match fs::read_dir(&current_dir) {
-                Ok(e) => e,
-                Err(_) => continue,
-            };
-
-            for entry in entries.flatten() {
-                let path = entry.path();
-
-                if path.is_dir() {
-                    let dir_name = path
-                        .file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy()
-                        .to_lowercase();
-                    // 智能避障：跳过明显不可能存在 Maven 且文件海量的系统文件夹
-                    if dir_name == "windows"
-                        || dir_name == "$recycle.bin"
-                        || dir_name == "system volume information"
-                    {
-                        continue;
-                    }
-                    queue.push_back(path);
-                // 👇 [优化点]: 修复 Clippy 的嵌套过深警告 (collapsible_if)
-                } else if path.is_file()
-                    && path
-                        .file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy()
-                        .to_lowercase()
-                        == target_file
-                {
-                    // 防止重名文件，判断它是否在 /bin/ 目录下
-                    if let Some(parent) = path.parent() {
-                        if parent
-                            .file_name()
-                            .unwrap_or_default()
-                            .to_string_lossy()
-                            .to_lowercase()
-                            == "bin"
-                        {
-                            let found = path.to_string_lossy().to_string();
-                            eprintln!("✅ [全盘扫描命中] 在深层目录发现: {}", found);
-                            return Some(found);
-                        }
-                    }
-                }
-            }
-        }
-        None
-    }
-
-    /// 统筹中枢：缓存 -> 快速扫描 -> 深度扫描
-    fn resolve_maven_path() -> String {
-        // 1. 优先查缓存
-        if let Some(cached) = Self::read_cache() {
-            return cached;
-        }
-
-        // 2. 缓存失效，先花几十毫秒快速扫 IDEA 目录
-        if let Some(idea_mvn) = Self::scan_idea_fast() {
-            eprintln!("✅ [快速拦截] 嗅探到 IDEA 内置 Maven: {}", idea_mvn);
-            Self::write_cache(&idea_mvn);
-            return idea_mvn;
-        }
-
-        // 3. 实在没有，启动核弹级全盘扫描
-        if let Some(deep_mvn) = Self::scan_system_deep() {
-            Self::write_cache(&deep_mvn);
-            return deep_mvn;
-        }
-
-        eprintln!("❌ 致命错误: 已执行全系统穿透扫描，仍未找到任何 mvn.cmd！请确保你的系统或 IDEA 中安装了 Maven。");
-        std::process::exit(1);
+        Err("mvn was not found on PATH".to_string())
     }
 
     /// 构造 Maven 命令
-    fn build_mvn_command() -> Command {
-        Command::new(Self::resolve_maven_path())
+    fn build_mvn_command() -> Result<Command, String> {
+        Ok(Command::new(Self::resolve_maven_path()?))
     }
 
     pub fn is_available() -> bool {
-        Self::build_mvn_command()
-            .arg("-v")
-            .output()
+        let Ok(mut cmd) = Self::build_mvn_command() else {
+            return false;
+        };
+        cmd.arg("-v");
+        run_with_timeout(&mut cmd, Duration::from_secs(10))
             .map(|out| out.status.success())
             .unwrap_or(false)
     }
 
     /// 核心依赖生成模块 (强制暴露底层报错，开启 verbose 穿透隐藏节点)
     pub fn generate_dependencies(project_dir: &Path) -> Result<Vec<Dependency>, String> {
-        let mut cmd = Self::build_mvn_command();
+        let mut cmd = Self::build_mvn_command()?;
         // 💡 核心优化：加入 -Dverbose=true 强制 Maven 吐出所有 omitted 和 conflict 的完整树结构
         cmd.args([
             "dependency:tree",
@@ -219,21 +66,16 @@ impl MavenCliDriver {
 
         eprintln!("🚀 正在启动动态 Maven 解析引擎，请稍候...");
 
-        let output = match cmd.output() {
-            Ok(out) => out,
-            Err(e) => {
-                eprintln!("❌ 致命错误: 无法启动 mvn 进程: {}", e);
-                std::process::exit(1);
-            }
-        };
+        let output = run_with_timeout(&mut cmd, Duration::from_secs(120))
+            .map_err(|e| format!("无法启动或等待 mvn 进程: {}", e))?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
-            eprintln!("❌ 致命错误: Maven 命令执行失败！底层原因如下：");
-            eprintln!("================ MAVEN STDERR ================\n{}", stderr);
-            eprintln!("================ MAVEN STDOUT ================\n{}", stdout);
-            std::process::exit(1);
+            return Err(format!(
+                "Maven 命令执行失败\nSTDERR:\n{}\nSTDOUT:\n{}",
+                stderr, stdout
+            ));
         }
 
         Self::parse_ascii_tree(&String::from_utf8_lossy(&output.stdout))
@@ -308,10 +150,33 @@ impl MavenCliDriver {
                             r#type: DependencyType::Library,
                             name: artifact_id.to_string(),
                             version: Some(version.to_string()),
+                            declared_version: Some(version.to_string()),
+                            rust_dependency_scope: None,
+                            rust_dependency_relationship: None,
+                            rust_is_direct: None,
+                            rust_target_conditions: None,
+                            rust_activation: None,
+                            rust_is_proc_macro: None,
+                            rust_project_root: None,
+                            rust_source_cargo_lock: None,
+                            rust_resolved_graph_confirmed: None,
+                            rust_all_target_present: None,
+                            rust_host_active: None,
+                            python_dependency_scope: None,
+                            python_source_type: None,
+                            python_manifest_path: None,
+                            python_project_root: None,
+                            python_confidence: None,
+                            python_is_project_package: None,
+                            python_dependency_relationship: None,
+                            python_is_direct: None,
+                            python_marker: None,
+                            python_activation: None,
                             purl: valid_purl,
                             instance_id,
                             dependencies: Vec::new(),
                             location: None,
+                            ..Dependency::default()
                         },
                     );
                 }

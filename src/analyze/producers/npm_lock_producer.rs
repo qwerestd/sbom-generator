@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
-use crate::utils::file_utils::make_instance_id;
+use crate::utils::file_utils::{get_manifest_rel_path, make_instance_id};
 // 【新增引入】统一派生算法
 
 #[derive(Clone, Default)]
@@ -21,7 +21,7 @@ impl SbomProducer for NpmLockProducer {
     fn find_dependencies(
         &self,
         paths: &[PathBuf],
-        _config: &SbomProducerConfiguration,
+        config: &SbomProducerConfiguration,
     ) -> anyhow::Result<Vec<Dependency>> {
         let mut result = Vec::new();
 
@@ -32,7 +32,7 @@ impl SbomProducer for NpmLockProducer {
             let clean_content = content.trim_start_matches('\u{FEFF}').trim();
 
             // 【核心修复 1】：提取当前 lock 文件的物理相对路径作为盐
-            let file_salt = p.to_string_lossy().replace('\\', "/");
+            let file_salt = get_manifest_rel_path(&config.base_path, p);
 
             match serde_json::from_str::<serde_json::Value>(clean_content) {
                 Ok(json) => {
@@ -142,7 +142,8 @@ impl NpmLockProducer {
 
             if let Ok(dep) = DependencyBuilder::default()
                 .name(node.name)
-                .version(Some(node.version))
+                .version(Some(node.version.clone()))
+                .declared_version(Some(node.version))
                 .r#type(DependencyType::Library)
                 .purl(node.purl)
                 .instance_id(node.instance_id) // 👈 自身ID稳稳落盘

@@ -4,21 +4,17 @@ use std::path::{Path, PathBuf};
 
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
-use crate::utils::file_utils::make_instance_id;
+use crate::utils::file_utils::{get_manifest_rel_path, make_instance_id};
 
 #[derive(Clone, Default)]
 pub struct NpmProducer {}
 
-/// NPM SemVer 范围清洗器
-fn sanitize_semver_range(raw: &str) -> &str {
+fn is_exact_semver(raw: &str) -> bool {
     let s = raw.trim();
-    let cleaned = s.trim_start_matches(['^', '~', '>', '<', '=', ' ']);
-
-    if cleaned == "*" || cleaned.eq_ignore_ascii_case("x") {
-        ""
-    } else {
-        cleaned
-    }
+    !s.is_empty()
+        && !s.starts_with(['^', '~', '>', '<', '=', '*'])
+        && !s.eq_ignore_ascii_case("x")
+        && !s.contains([' ', '|'])
 }
 
 impl SbomProducer for NpmProducer {
@@ -30,7 +26,7 @@ impl SbomProducer for NpmProducer {
     fn find_dependencies(
         &self,
         paths: &[PathBuf],
-        _config: &SbomProducerConfiguration,
+        config: &SbomProducerConfiguration,
     ) -> anyhow::Result<Vec<Dependency>> {
         let mut result = vec![];
 
@@ -39,7 +35,7 @@ impl SbomProducer for NpmProducer {
                 let clean_content = content.trim_start_matches('\u{FEFF}').trim();
 
                 // 【核心修复 1】：获取当前 package.json 的物理路径作为作用域盐
-                let file_salt = p.to_string_lossy().replace('\\', "/");
+                let file_salt = get_manifest_rel_path(&config.base_path, p);
 
                 match serde_json::from_str::<serde_json::Value>(clean_content) {
                     Ok(json) => {
@@ -105,14 +101,13 @@ impl NpmProducer {
                         continue;
                     }
 
-                    let clean_ver = sanitize_semver_range(raw_ver_str);
-                    let (ver_opt, purl_str) = if clean_ver.is_empty() {
-                        (None, format!("pkg:npm/{}", name))
-                    } else {
+                    let (ver_opt, purl_str) = if is_exact_semver(raw_ver_str) {
                         (
-                            Some(clean_ver.to_string()),
-                            format!("pkg:npm/{}@{}", name, clean_ver),
+                            Some(raw_ver_str.to_string()),
+                            format!("pkg:npm/{}@{}", name, raw_ver_str),
                         )
+                    } else {
+                        (None, format!("pkg:npm/{}", name))
                     };
 
                     let valid_purl = Dependency::auto_fix_and_validate_purl(&purl_str);
@@ -122,33 +117,37 @@ impl NpmProducer {
                     child_ids.push(child_id.clone());
 
                     // 【精髓 B】：接生叶子节点实体（CycloneDX1.6要求被牵引的子边自身也必须注册为空边）
-                    let leaf = DependencyBuilder::default()
+                    if let Ok(leaf) = DependencyBuilder::default()
                         .name(name.clone())
                         .version(ver_opt)
+                        .declared_version(Some(raw_ver_str.to_string()))
                         .r#type(DependencyType::Library)
                         .purl(valid_purl)
                         .instance_id(child_id) // 👈 自身ID显式入库
                         .dependencies(vec![]) // 👈 叶子节点没有后代
                         .location(None)
                         .build()
-                        .unwrap();
-
-                    leaf_deps.push(leaf);
+                    {
+                        leaf_deps.push(leaf);
+                    }
                 }
             }
         }
 
         // 2. 构建工程主体 Node（把亲生父母和孩子连上血脉线）
-        let root_dep = DependencyBuilder::default()
+        let Ok(root_dep) = DependencyBuilder::default()
             .name(app_name)
             .version(Some(app_ver.to_string()))
+            .declared_version(Some(app_ver.to_string()))
             .r#type(DependencyType::Library) // 后续方向四可优化为 Application
             .purl(app_purl)
             .instance_id(app_instance_id)
             .dependencies(child_ids) // 👈 亲生父母的 dependsOn 指向所有叶子节点ID
             .location(None)
             .build()
-            .unwrap();
+        else {
+            return Ok(leaf_deps);
+        };
 
         let mut all_deps = Vec::with_capacity(leaf_deps.len() + 1);
         all_deps.push(root_dep); // 根节点排头
@@ -159,6 +158,8 @@ impl NpmProducer {
 }
 #[test]
 fn test_npm_producer_find_dependencies_extended() {
+    use crate::model::configuration::RustScopeFilter;
+
     let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     d.push("resources/npm/package.json");
 
@@ -166,21 +167,25 @@ fn test_npm_producer_find_dependencies_extended() {
     let config = SbomProducerConfiguration {
         use_debug: false,
         base_path: d.parent().unwrap().to_path_buf(),
+        rust_scope: RustScopeFilter::Prod,
+        dynamic: false,
     };
 
     let deps = producer
         .find_dependencies(&[d], &config)
         .expect("Failed to parse package.json");
 
-    // 验证 peerDependencies 被合规清洗并提取 ( ^18.0.0 -> 18.0.0 )
-    assert!(deps
-        .iter()
-        .any(|d| d.name == "react" && d.version.as_deref() == Some("18.0.0")));
+    // 验证 peerDependencies 保留声明版本，不伪装成确定版本
+    assert!(deps.iter().any(|d| {
+        d.name == "react" && d.version.is_none() && d.declared_version.as_deref() == Some("^18.0.0")
+    }));
 
-    // 验证 optionalDependencies 被合规清洗并提取 ( ~2.3.2 -> 2.3.2 )
-    assert!(deps
-        .iter()
-        .any(|d| d.name == "fsevents" && d.version.as_deref() == Some("2.3.2")));
+    // 验证 optionalDependencies 保留声明版本，不伪装成确定版本
+    assert!(deps.iter().any(|d| {
+        d.name == "fsevents"
+            && d.version.is_none()
+            && d.declared_version.as_deref() == Some("~2.3.2")
+    }));
 
     // 验证 git+ 协议前缀的依赖被正确跳过
     assert!(!deps.iter().any(|d| d.name == "git-dep"));

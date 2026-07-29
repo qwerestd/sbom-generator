@@ -1,0 +1,1222 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "properties": [
+      {
+        "name": "sbom-generator:warning:0",
+        "value": "[Cargo] dynamic detection failed and static fallback will be used: command timed out after 60 seconds"
+      }
+    ],
+    "timestamp": "2026-07-07T06:46:15Z",
+    "tools": [
+      {
+        "name": "sbom-generator",
+        "vendor": "BNBU_DS",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:cargo/aho-corasick@0.6.10?package-id=1642dc4f8ad73872",
+      "name": "aho-corasick",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.6.10"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/aho-corasick@0.6.10",
+      "type": "library",
+      "version": "0.6.10"
+    },
+    {
+      "bom-ref": "pkg:cargo/ascii@0.9.1?package-id=c19afbe84d20a1f9",
+      "name": "ascii",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.9.1"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/ascii@0.9.1",
+      "type": "library",
+      "version": "0.9.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/autocfg@0.1.2?package-id=765d76a19589d03c",
+      "name": "autocfg",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.2"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/autocfg@0.1.2",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "bom-ref": "pkg:cargo/backtrace-sys@0.1.28?package-id=e4c3aa9bff0dd3f8",
+      "name": "backtrace-sys",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.28"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/backtrace-sys@0.1.28",
+      "type": "library",
+      "version": "0.1.28"
+    },
+    {
+      "bom-ref": "pkg:cargo/backtrace@0.3.14?package-id=bd438bbd0043ce82",
+      "name": "backtrace",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.3.14"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/backtrace@0.3.14",
+      "type": "library",
+      "version": "0.3.14"
+    },
+    {
+      "bom-ref": "pkg:cargo/byteorder@1.3.1?package-id=e8523e4544497de1",
+      "name": "byteorder",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.3.1"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/byteorder@1.3.1",
+      "type": "library",
+      "version": "1.3.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/cc@1.0.30?package-id=40875fad269f22c1",
+      "name": "cc",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.0.30"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/cc@1.0.30",
+      "type": "library",
+      "version": "1.0.30"
+    },
+    {
+      "bom-ref": "pkg:cargo/cesu8@1.1.0?package-id=20086b5461ea1fef",
+      "name": "cesu8",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.1.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/cesu8@1.1.0",
+      "type": "library",
+      "version": "1.1.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/cfg-if@0.1.6?package-id=4d6a2bacd28a1f0e",
+      "name": "cfg-if",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.6"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/cfg-if@0.1.6",
+      "type": "library",
+      "version": "0.1.6"
+    },
+    {
+      "bom-ref": "pkg:cargo/combine@3.6.7?package-id=b4aec21e52050e2e",
+      "name": "combine",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "3.6.7"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/combine@3.6.7",
+      "type": "library",
+      "version": "3.6.7"
+    },
+    {
+      "bom-ref": "pkg:cargo/ctor@0.1.9?package-id=b4057d7f4838a3bd",
+      "name": "ctor",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.9"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/ctor@0.1.9",
+      "type": "library",
+      "version": "0.1.9"
+    },
+    {
+      "bom-ref": "pkg:cargo/either@1.5.1?package-id=7e3f0d45737936c6",
+      "name": "either",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.5.1"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/either@1.5.1",
+      "type": "library",
+      "version": "1.5.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/error-chain@0.12.0?package-id=3da4e4bd81683e86",
+      "name": "error-chain",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.12.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/error-chain@0.12.0",
+      "type": "library",
+      "version": "0.12.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/ghost@0.1.0?package-id=548238b707bd2720",
+      "name": "ghost",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/ghost@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/inventory-impl@0.1.3?package-id=daa62198ddae9d65",
+      "name": "inventory-impl",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.3"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/inventory-impl@0.1.3",
+      "type": "library",
+      "version": "0.1.3"
+    },
+    {
+      "bom-ref": "pkg:cargo/inventory@0.1.3?package-id=fe0dd8849c50b0fa",
+      "name": "inventory",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.3"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/inventory@0.1.3",
+      "type": "library",
+      "version": "0.1.3"
+    },
+    {
+      "bom-ref": "pkg:cargo/jni-sys@0.3.0?package-id=fc674f7823749e82",
+      "name": "jni-sys",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.3.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/jni-sys@0.3.0",
+      "type": "library",
+      "version": "0.3.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/jni@0.11.0?package-id=f5789b88b7dbf7a0",
+      "name": "jni",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.11.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/jni@0.11.0",
+      "type": "library",
+      "version": "0.11.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/lazy_static@1.3.0?package-id=7ad8bba972923d88",
+      "name": "lazy_static",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.3.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/lazy_static@1.3.0",
+      "type": "library",
+      "version": "1.3.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/libc@0.2.49?package-id=ecd33bb64a13dd8c",
+      "name": "libc",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.2.49"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/libc@0.2.49",
+      "type": "library",
+      "version": "0.2.49"
+    },
+    {
+      "bom-ref": "pkg:cargo/log@0.4.6?package-id=3f7ecb5afe4e87e4",
+      "name": "log",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.4.6"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/log@0.4.6",
+      "type": "library",
+      "version": "0.4.6"
+    },
+    {
+      "bom-ref": "pkg:cargo/mashup-impl@0.1.9?package-id=ffdc9943ee041169",
+      "name": "mashup-impl",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.9"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/mashup-impl@0.1.9",
+      "type": "library",
+      "version": "0.1.9"
+    },
+    {
+      "bom-ref": "pkg:cargo/mashup@0.1.9?package-id=888c47e301b0973a",
+      "name": "mashup",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.9"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/mashup@0.1.9",
+      "type": "library",
+      "version": "0.1.9"
+    },
+    {
+      "bom-ref": "pkg:cargo/memchr@2.2.0?package-id=5add0c774f38a6ad",
+      "name": "memchr",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "2.2.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/memchr@2.2.0",
+      "type": "library",
+      "version": "2.2.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/num-traits@0.2.6?package-id=9ccc35a86f90752f",
+      "name": "num-traits",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.2.6"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/num-traits@0.2.6",
+      "type": "library",
+      "version": "0.2.6"
+    },
+    {
+      "bom-ref": "pkg:cargo/proc-macro-hack-impl@0.4.1?package-id=86c04c7804ccb073",
+      "name": "proc-macro-hack-impl",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.4.1"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/proc-macro-hack-impl@0.4.1",
+      "type": "library",
+      "version": "0.4.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/proc-macro-hack@0.4.1?package-id=97e211d0f1b760d9",
+      "name": "proc-macro-hack",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.4.1"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/proc-macro-hack@0.4.1",
+      "type": "library",
+      "version": "0.4.1"
+    },
+    {
+      "bom-ref": "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e",
+      "name": "proc-macro2",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.4.27"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/proc-macro2@0.4.27",
+      "type": "library",
+      "version": "0.4.27"
+    },
+    {
+      "bom-ref": "pkg:cargo/pyo3-derive-backend@0.6.0?package-id=ede551014f81f810",
+      "name": "pyo3-derive-backend",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.6.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/pyo3-derive-backend@0.6.0",
+      "type": "library",
+      "version": "0.6.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/pyo3@0.6.0?package-id=f7ea41dec9cb0880",
+      "name": "pyo3",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.6.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/pyo3@0.6.0",
+      "type": "library",
+      "version": "0.6.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/pyo3cls@0.6.0?package-id=21f5d1d6856de251",
+      "name": "pyo3cls",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.6.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/pyo3cls@0.6.0",
+      "type": "library",
+      "version": "0.6.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/quote@0.6.11?package-id=5fbbe8323f2cf5fb",
+      "name": "quote",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.6.11"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/quote@0.6.11",
+      "type": "library",
+      "version": "0.6.11"
+    },
+    {
+      "bom-ref": "pkg:cargo/regex-syntax@0.6.5?package-id=1058e5cd34240b57",
+      "name": "regex-syntax",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.6.5"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/regex-syntax@0.6.5",
+      "type": "library",
+      "version": "0.6.5"
+    },
+    {
+      "bom-ref": "pkg:cargo/regex@1.1.2?package-id=84c33ca0030e626b",
+      "name": "regex",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.1.2"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/regex@1.1.2",
+      "type": "library",
+      "version": "1.1.2"
+    },
+    {
+      "bom-ref": "pkg:cargo/rs-divider-py@0.1.0?package-id=1949ec413a709a53",
+      "name": "rs-divider-py",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/rs-divider-py@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/rsdivider@0.1.0?package-id=e967927905ec57f9",
+      "name": "rsdivider",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/rsdivider@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/rsdividerjava@0.1.0?package-id=fd44503a472221d1",
+      "name": "rsdividerjava",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/rsdividerjava@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/rustc-demangle@0.1.13?package-id=604ceecc3887fc77",
+      "name": "rustc-demangle",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.13"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/rustc-demangle@0.1.13",
+      "type": "library",
+      "version": "0.1.13"
+    },
+    {
+      "bom-ref": "pkg:cargo/same-file@1.0.4?package-id=9e6e9539e60b4802",
+      "name": "same-file",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.0.4"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/same-file@1.0.4",
+      "type": "library",
+      "version": "1.0.4"
+    },
+    {
+      "bom-ref": "pkg:cargo/spin@0.5.0?package-id=8ea731bc63272f9d",
+      "name": "spin",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.5.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/spin@0.5.0",
+      "type": "library",
+      "version": "0.5.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/syn@0.15.27?package-id=a185264c030142de",
+      "name": "syn",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.15.27"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/syn@0.15.27",
+      "type": "library",
+      "version": "0.15.27"
+    },
+    {
+      "bom-ref": "pkg:cargo/thread_local@0.3.6?package-id=e076166055f372a6",
+      "name": "thread_local",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.3.6"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/thread_local@0.3.6",
+      "type": "library",
+      "version": "0.3.6"
+    },
+    {
+      "bom-ref": "pkg:cargo/ucd-util@0.1.3?package-id=4945918614f45798",
+      "name": "ucd-util",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.3"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/ucd-util@0.1.3",
+      "type": "library",
+      "version": "0.1.3"
+    },
+    {
+      "bom-ref": "pkg:cargo/unicode-xid@0.1.0?package-id=e01102ceecfeed96",
+      "name": "unicode-xid",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/unicode-xid@0.1.0",
+      "type": "library",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/unreachable@1.0.0?package-id=3d6205566de1ce9a",
+      "name": "unreachable",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.0.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/unreachable@1.0.0",
+      "type": "library",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/utf8-ranges@1.0.2?package-id=1a8430582f8df8e7",
+      "name": "utf8-ranges",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.0.2"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/utf8-ranges@1.0.2",
+      "type": "library",
+      "version": "1.0.2"
+    },
+    {
+      "bom-ref": "pkg:cargo/version_check@0.1.5?package-id=95a4beb462b0dd22",
+      "name": "version_check",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.5"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/version_check@0.1.5",
+      "type": "library",
+      "version": "0.1.5"
+    },
+    {
+      "bom-ref": "pkg:cargo/void@1.0.2?package-id=24cf1bce83918f86",
+      "name": "void",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "1.0.2"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/void@1.0.2",
+      "type": "library",
+      "version": "1.0.2"
+    },
+    {
+      "bom-ref": "pkg:cargo/walkdir@2.2.7?package-id=969548af8867b92b",
+      "name": "walkdir",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "2.2.7"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/walkdir@2.2.7",
+      "type": "library",
+      "version": "2.2.7"
+    },
+    {
+      "bom-ref": "pkg:cargo/winapi-i686-pc-windows-gnu@0.4.0?package-id=253adaa82c045070",
+      "name": "winapi-i686-pc-windows-gnu",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.4.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/winapi-i686-pc-windows-gnu@0.4.0",
+      "type": "library",
+      "version": "0.4.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/winapi-util@0.1.2?package-id=bf9e9508f936218c",
+      "name": "winapi-util",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.1.2"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/winapi-util@0.1.2",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "bom-ref": "pkg:cargo/winapi-x86_64-pc-windows-gnu@0.4.0?package-id=a1db93a81537fdf7",
+      "name": "winapi-x86_64-pc-windows-gnu",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.4.0"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/winapi-x86_64-pc-windows-gnu@0.4.0",
+      "type": "library",
+      "version": "0.4.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/winapi@0.3.6?package-id=0a67895eb3903468",
+      "name": "winapi",
+      "properties": [
+        {
+          "name": "sbom-generator:declaredVersion",
+          "value": "0.3.6"
+        },
+        {
+          "name": "sbom-generator:rust:dependencyScope",
+          "value": "unknown"
+        }
+      ],
+      "purl": "pkg:cargo/winapi@0.3.6",
+      "type": "library",
+      "version": "0.3.6"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "pkg:cargo/memchr@2.2.0?package-id=5add0c774f38a6ad"
+      ],
+      "ref": "pkg:cargo/aho-corasick@0.6.10?package-id=1642dc4f8ad73872"
+    },
+    {
+      "ref": "pkg:cargo/ascii@0.9.1?package-id=c19afbe84d20a1f9"
+    },
+    {
+      "ref": "pkg:cargo/autocfg@0.1.2?package-id=765d76a19589d03c"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/cc@1.0.30?package-id=40875fad269f22c1",
+        "pkg:cargo/libc@0.2.49?package-id=ecd33bb64a13dd8c"
+      ],
+      "ref": "pkg:cargo/backtrace-sys@0.1.28?package-id=e4c3aa9bff0dd3f8"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/autocfg@0.1.2?package-id=765d76a19589d03c",
+        "pkg:cargo/backtrace-sys@0.1.28?package-id=e4c3aa9bff0dd3f8",
+        "pkg:cargo/cfg-if@0.1.6?package-id=4d6a2bacd28a1f0e",
+        "pkg:cargo/libc@0.2.49?package-id=ecd33bb64a13dd8c",
+        "pkg:cargo/rustc-demangle@0.1.13?package-id=604ceecc3887fc77",
+        "pkg:cargo/winapi@0.3.6?package-id=0a67895eb3903468"
+      ],
+      "ref": "pkg:cargo/backtrace@0.3.14?package-id=bd438bbd0043ce82"
+    },
+    {
+      "ref": "pkg:cargo/byteorder@1.3.1?package-id=e8523e4544497de1"
+    },
+    {
+      "ref": "pkg:cargo/cc@1.0.30?package-id=40875fad269f22c1"
+    },
+    {
+      "ref": "pkg:cargo/cesu8@1.1.0?package-id=20086b5461ea1fef"
+    },
+    {
+      "ref": "pkg:cargo/cfg-if@0.1.6?package-id=4d6a2bacd28a1f0e"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/ascii@0.9.1?package-id=c19afbe84d20a1f9",
+        "pkg:cargo/byteorder@1.3.1?package-id=e8523e4544497de1",
+        "pkg:cargo/either@1.5.1?package-id=7e3f0d45737936c6",
+        "pkg:cargo/memchr@2.2.0?package-id=5add0c774f38a6ad",
+        "pkg:cargo/unreachable@1.0.0?package-id=3d6205566de1ce9a"
+      ],
+      "ref": "pkg:cargo/combine@3.6.7?package-id=b4aec21e52050e2e"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/quote@0.6.11?package-id=5fbbe8323f2cf5fb",
+        "pkg:cargo/syn@0.15.27?package-id=a185264c030142de"
+      ],
+      "ref": "pkg:cargo/ctor@0.1.9?package-id=b4057d7f4838a3bd"
+    },
+    {
+      "ref": "pkg:cargo/either@1.5.1?package-id=7e3f0d45737936c6"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/backtrace@0.3.14?package-id=bd438bbd0043ce82"
+      ],
+      "ref": "pkg:cargo/error-chain@0.12.0?package-id=3da4e4bd81683e86"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e",
+        "pkg:cargo/quote@0.6.11?package-id=5fbbe8323f2cf5fb",
+        "pkg:cargo/syn@0.15.27?package-id=a185264c030142de"
+      ],
+      "ref": "pkg:cargo/ghost@0.1.0?package-id=548238b707bd2720"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e",
+        "pkg:cargo/quote@0.6.11?package-id=5fbbe8323f2cf5fb",
+        "pkg:cargo/syn@0.15.27?package-id=a185264c030142de"
+      ],
+      "ref": "pkg:cargo/inventory-impl@0.1.3?package-id=daa62198ddae9d65"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/ctor@0.1.9?package-id=b4057d7f4838a3bd",
+        "pkg:cargo/ghost@0.1.0?package-id=548238b707bd2720",
+        "pkg:cargo/inventory-impl@0.1.3?package-id=daa62198ddae9d65"
+      ],
+      "ref": "pkg:cargo/inventory@0.1.3?package-id=fe0dd8849c50b0fa"
+    },
+    {
+      "ref": "pkg:cargo/jni-sys@0.3.0?package-id=fc674f7823749e82"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/cesu8@1.1.0?package-id=20086b5461ea1fef",
+        "pkg:cargo/combine@3.6.7?package-id=b4aec21e52050e2e",
+        "pkg:cargo/error-chain@0.12.0?package-id=3da4e4bd81683e86",
+        "pkg:cargo/jni-sys@0.3.0?package-id=fc674f7823749e82",
+        "pkg:cargo/log@0.4.6?package-id=3f7ecb5afe4e87e4",
+        "pkg:cargo/walkdir@2.2.7?package-id=969548af8867b92b"
+      ],
+      "ref": "pkg:cargo/jni@0.11.0?package-id=f5789b88b7dbf7a0"
+    },
+    {
+      "ref": "pkg:cargo/lazy_static@1.3.0?package-id=7ad8bba972923d88"
+    },
+    {
+      "ref": "pkg:cargo/libc@0.2.49?package-id=ecd33bb64a13dd8c"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/cfg-if@0.1.6?package-id=4d6a2bacd28a1f0e"
+      ],
+      "ref": "pkg:cargo/log@0.4.6?package-id=3f7ecb5afe4e87e4"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/proc-macro-hack@0.4.1?package-id=97e211d0f1b760d9",
+        "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e"
+      ],
+      "ref": "pkg:cargo/mashup-impl@0.1.9?package-id=ffdc9943ee041169"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/mashup-impl@0.1.9?package-id=ffdc9943ee041169",
+        "pkg:cargo/proc-macro-hack@0.4.1?package-id=97e211d0f1b760d9"
+      ],
+      "ref": "pkg:cargo/mashup@0.1.9?package-id=888c47e301b0973a"
+    },
+    {
+      "ref": "pkg:cargo/memchr@2.2.0?package-id=5add0c774f38a6ad"
+    },
+    {
+      "ref": "pkg:cargo/num-traits@0.2.6?package-id=9ccc35a86f90752f"
+    },
+    {
+      "ref": "pkg:cargo/proc-macro-hack-impl@0.4.1?package-id=86c04c7804ccb073"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/proc-macro-hack-impl@0.4.1?package-id=86c04c7804ccb073"
+      ],
+      "ref": "pkg:cargo/proc-macro-hack@0.4.1?package-id=97e211d0f1b760d9"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/unicode-xid@0.1.0?package-id=e01102ceecfeed96"
+      ],
+      "ref": "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e",
+        "pkg:cargo/quote@0.6.11?package-id=5fbbe8323f2cf5fb",
+        "pkg:cargo/syn@0.15.27?package-id=a185264c030142de"
+      ],
+      "ref": "pkg:cargo/pyo3-derive-backend@0.6.0?package-id=ede551014f81f810"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/inventory@0.1.3?package-id=fe0dd8849c50b0fa",
+        "pkg:cargo/libc@0.2.49?package-id=ecd33bb64a13dd8c",
+        "pkg:cargo/mashup@0.1.9?package-id=888c47e301b0973a",
+        "pkg:cargo/num-traits@0.2.6?package-id=9ccc35a86f90752f",
+        "pkg:cargo/pyo3cls@0.6.0?package-id=21f5d1d6856de251",
+        "pkg:cargo/regex@1.1.2?package-id=84c33ca0030e626b",
+        "pkg:cargo/spin@0.5.0?package-id=8ea731bc63272f9d",
+        "pkg:cargo/version_check@0.1.5?package-id=95a4beb462b0dd22"
+      ],
+      "ref": "pkg:cargo/pyo3@0.6.0?package-id=f7ea41dec9cb0880"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e",
+        "pkg:cargo/pyo3-derive-backend@0.6.0?package-id=ede551014f81f810",
+        "pkg:cargo/quote@0.6.11?package-id=5fbbe8323f2cf5fb",
+        "pkg:cargo/syn@0.15.27?package-id=a185264c030142de"
+      ],
+      "ref": "pkg:cargo/pyo3cls@0.6.0?package-id=21f5d1d6856de251"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e"
+      ],
+      "ref": "pkg:cargo/quote@0.6.11?package-id=5fbbe8323f2cf5fb"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/ucd-util@0.1.3?package-id=4945918614f45798"
+      ],
+      "ref": "pkg:cargo/regex-syntax@0.6.5?package-id=1058e5cd34240b57"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/aho-corasick@0.6.10?package-id=1642dc4f8ad73872",
+        "pkg:cargo/memchr@2.2.0?package-id=5add0c774f38a6ad",
+        "pkg:cargo/regex-syntax@0.6.5?package-id=1058e5cd34240b57",
+        "pkg:cargo/thread_local@0.3.6?package-id=e076166055f372a6",
+        "pkg:cargo/utf8-ranges@1.0.2?package-id=1a8430582f8df8e7"
+      ],
+      "ref": "pkg:cargo/regex@1.1.2?package-id=84c33ca0030e626b"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/pyo3@0.6.0?package-id=f7ea41dec9cb0880",
+        "pkg:cargo/rsdivider@0.1.0?package-id=e967927905ec57f9"
+      ],
+      "ref": "pkg:cargo/rs-divider-py@0.1.0?package-id=1949ec413a709a53"
+    },
+    {
+      "ref": "pkg:cargo/rsdivider@0.1.0?package-id=e967927905ec57f9"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/jni@0.11.0?package-id=f5789b88b7dbf7a0",
+        "pkg:cargo/rsdivider@0.1.0?package-id=e967927905ec57f9"
+      ],
+      "ref": "pkg:cargo/rsdividerjava@0.1.0?package-id=fd44503a472221d1"
+    },
+    {
+      "ref": "pkg:cargo/rustc-demangle@0.1.13?package-id=604ceecc3887fc77"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/winapi-util@0.1.2?package-id=bf9e9508f936218c"
+      ],
+      "ref": "pkg:cargo/same-file@1.0.4?package-id=9e6e9539e60b4802"
+    },
+    {
+      "ref": "pkg:cargo/spin@0.5.0?package-id=8ea731bc63272f9d"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/proc-macro2@0.4.27?package-id=efbe4023e3b0965e",
+        "pkg:cargo/quote@0.6.11?package-id=5fbbe8323f2cf5fb",
+        "pkg:cargo/unicode-xid@0.1.0?package-id=e01102ceecfeed96"
+      ],
+      "ref": "pkg:cargo/syn@0.15.27?package-id=a185264c030142de"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/lazy_static@1.3.0?package-id=7ad8bba972923d88"
+      ],
+      "ref": "pkg:cargo/thread_local@0.3.6?package-id=e076166055f372a6"
+    },
+    {
+      "ref": "pkg:cargo/ucd-util@0.1.3?package-id=4945918614f45798"
+    },
+    {
+      "ref": "pkg:cargo/unicode-xid@0.1.0?package-id=e01102ceecfeed96"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/void@1.0.2?package-id=24cf1bce83918f86"
+      ],
+      "ref": "pkg:cargo/unreachable@1.0.0?package-id=3d6205566de1ce9a"
+    },
+    {
+      "ref": "pkg:cargo/utf8-ranges@1.0.2?package-id=1a8430582f8df8e7"
+    },
+    {
+      "ref": "pkg:cargo/version_check@0.1.5?package-id=95a4beb462b0dd22"
+    },
+    {
+      "ref": "pkg:cargo/void@1.0.2?package-id=24cf1bce83918f86"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/same-file@1.0.4?package-id=9e6e9539e60b4802",
+        "pkg:cargo/winapi@0.3.6?package-id=0a67895eb3903468",
+        "pkg:cargo/winapi-util@0.1.2?package-id=bf9e9508f936218c"
+      ],
+      "ref": "pkg:cargo/walkdir@2.2.7?package-id=969548af8867b92b"
+    },
+    {
+      "ref": "pkg:cargo/winapi-i686-pc-windows-gnu@0.4.0?package-id=253adaa82c045070"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/winapi@0.3.6?package-id=0a67895eb3903468"
+      ],
+      "ref": "pkg:cargo/winapi-util@0.1.2?package-id=bf9e9508f936218c"
+    },
+    {
+      "ref": "pkg:cargo/winapi-x86_64-pc-windows-gnu@0.4.0?package-id=a1db93a81537fdf7"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/winapi-i686-pc-windows-gnu@0.4.0?package-id=253adaa82c045070",
+        "pkg:cargo/winapi-x86_64-pc-windows-gnu@0.4.0?package-id=a1db93a81537fdf7"
+      ],
+      "ref": "pkg:cargo/winapi@0.3.6?package-id=0a67895eb3903468"
+    }
+  ]
+}

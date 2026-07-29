@@ -1,7 +1,7 @@
 // src/report.rs
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
 use std::fs;
 
 // 逻辑聚合模型
@@ -18,6 +18,8 @@ pub struct LogicalComponent {
     pub version: Option<String>,
     pub instance_count: usize,
     pub instances: Vec<String>, // 存储所有对应的 bom-ref
+    pub rust_scopes: Vec<String>,
+    pub python_scopes: Vec<String>,
 }
 
 /// 读取 SBOM 文件并生成聚合报表
@@ -47,10 +49,15 @@ pub fn generate_report(sbom_path: &str) -> anyhow::Result<LogicalReport> {
                 version,
                 instance_count: 0,
                 instances: Vec::new(),
+                rust_scopes: Vec::new(),
+                python_scopes: Vec::new(),
             });
 
         entry.instances.push(bom_ref);
         entry.instance_count += 1;
+        entry.rust_scopes = merge_scopes(&entry.rust_scopes, extract_scopes(comp, "rust"));
+        let merged_scopes = merge_python_scopes(&entry.python_scopes, extract_python_scopes(comp));
+        entry.python_scopes = merged_scopes;
     }
 
     let components_list: Vec<LogicalComponent> = map.into_values().collect();
@@ -60,6 +67,52 @@ pub fn generate_report(sbom_path: &str) -> anyhow::Result<LogicalReport> {
         total_physical_instances: components.len(),
         components: components_list,
     })
+}
+
+fn extract_scopes(component: &serde_json::Value, ecosystem: &str) -> Vec<String> {
+    let scopes_name = format!("sbom-generator:{}:dependencyScopes", ecosystem);
+    let scope_name = format!("sbom-generator:{}:dependencyScope", ecosystem);
+    component["properties"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|property| {
+            property["name"].as_str() == Some(scopes_name.as_str())
+                || property["name"].as_str() == Some(scope_name.as_str())
+        })
+        .filter_map(|property| property["value"].as_str())
+        .flat_map(|value| value.split(','))
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+fn extract_python_scopes(component: &serde_json::Value) -> Vec<String> {
+    component["properties"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter(|property| {
+            property["name"].as_str() == Some("sbom-generator:python:scopes")
+                || property["name"].as_str() == Some("sbom-generator:python:dependencyScope")
+        })
+        .filter_map(|property| property["value"].as_str())
+        .flat_map(|value| value.split(','))
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .collect()
+}
+
+fn merge_python_scopes(existing: &[String], incoming: Vec<String>) -> Vec<String> {
+    merge_scopes(existing, incoming)
+}
+
+fn merge_scopes(existing: &[String], incoming: Vec<String>) -> Vec<String> {
+    let mut scopes: BTreeSet<String> = existing.iter().cloned().collect();
+    scopes.extend(incoming);
+    scopes.into_iter().collect()
 }
 
 /// 在控制台优雅展示报表

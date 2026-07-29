@@ -1,12 +1,14 @@
 use crate::analyze::producers::dynamic_producer::DynamicProducer;
 use crate::model::configuration::Configuration;
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
+use crate::utils::command::run_with_timeout;
 use crate::utils::file_utils::make_instance_id;
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 
 lazy_static! {
     static ref REQ_NAME_RE: Regex = Regex::new(r"(?i)^\s*([A-Z0-9][A-Z0-9_\-\.]*)").unwrap();
@@ -21,14 +23,40 @@ impl PypiDynamicProducer {
         PEP503_RE.replace_all(&raw.to_lowercase(), "-").to_string()
     }
 
-    fn probe_python_binary() -> Option<&'static str> {
-        for bin in ["python3", "python"] {
-            if let Ok(out) = Command::new(bin).arg("--version").output() {
-                if out.status.success() {
-                    return Some(bin);
-                }
+    fn probe_python_binary(bin: &Path) -> bool {
+        let mut cmd = Command::new(bin);
+        cmd.arg("--version");
+        run_with_timeout(&mut cmd, Duration::from_secs(5))
+            .map(|out| out.status.success())
+            .unwrap_or(false)
+    }
+
+    fn project_python_binary(config: &Configuration) -> Option<PathBuf> {
+        let dir = PathBuf::from(&config.directory);
+        let venv_python = if cfg!(windows) {
+            dir.join(".venv").join("Scripts").join("python.exe")
+        } else {
+            dir.join(".venv").join("bin").join("python")
+        };
+
+        if venv_python.is_file() && Self::probe_python_binary(&venv_python) {
+            return Some(venv_python);
+        }
+
+        if let Some(virtual_env) = std::env::var_os("VIRTUAL_ENV") {
+            let py = if cfg!(windows) {
+                PathBuf::from(virtual_env)
+                    .join("Scripts")
+                    .join("python.exe")
+            } else {
+                PathBuf::from(virtual_env).join("bin").join("python")
+            };
+
+            if py.is_file() && Self::probe_python_binary(&py) {
+                return Some(py);
             }
         }
+
         None
     }
 }
@@ -41,17 +69,17 @@ impl DynamicProducer for PypiDynamicProducer {
             || dir.join("setup.py").exists()
             || dir.join("Pipfile").exists();
 
-        has_manifest && Self::probe_python_binary().is_some()
+        has_manifest && Self::project_python_binary(config).is_some()
     }
 
     fn detect_dependencies(&self, config: &Configuration) -> anyhow::Result<Vec<Dependency>> {
-        let py_bin = Self::probe_python_binary()
-            .ok_or_else(|| anyhow::anyhow!("当前宿主机未找到 python / python3 解释器"))?;
+        let py_bin = Self::project_python_binary(config)
+            .ok_or_else(|| anyhow::anyhow!("未找到项目 .venv 或 VIRTUAL_ENV 中的 Python 解释器"))?;
 
-        let output = Command::new(py_bin)
-            .args(["-m", "pip", "inspect"])
-            .current_dir(&config.directory)
-            .output()?;
+        let mut cmd = Command::new(py_bin);
+        cmd.args(["-m", "pip", "inspect"])
+            .current_dir(&config.directory);
+        let output = run_with_timeout(&mut cmd, Duration::from_secs(30))?;
 
         if !output.status.success() {
             let err_msg = String::from_utf8_lossy(&output.stderr);
@@ -148,7 +176,8 @@ impl DynamicProducer for PypiDynamicProducer {
 
             if let Ok(dep) = DependencyBuilder::default()
                 .name(dist.orig_name)
-                .version(Some(dist.version))
+                .version(Some(dist.version.clone()))
+                .declared_version(Some(dist.version))
                 .r#type(DependencyType::Library)
                 .purl(dist.purl)
                 .instance_id(dist.instance_id) // 👈 稳稳注入自身ID

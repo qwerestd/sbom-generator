@@ -1,93 +1,60 @@
+#!/usr/bin/env python
+
 import json
-import os
+import sys
 
-def load_json(file_path):
-    if not os.path.exists(file_path):
-        print(f"错误: 找不到文件 {file_path}")
-        return None
-    with open(file_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+if len(sys.argv) != 3:
+    print("pass two files in parameter")
+    sys.exit(1)
 
-def extract_components(bom_data):
-    """提取所有含有 PURL 的组件信息"""
-    components_dict = {}
-    components = bom_data.get("components", [])
+first_file = sys.argv[1]
+second_file = sys.argv[2]
 
-    # 兼容处理 CycloneDX 1.6 和 1.7 的 tools 结构差异
-    for comp in components:
-        purl = comp.get("purl")
-        if purl:
-            components_dict[purl] = {
-                "group": comp.get("group", ""),
-                "name": comp.get("name", ""),
-                "version": comp.get("version", ""),
-                "type": comp.get("type", "")
-            }
-    return components_dict
+def load_components(path: str):
+    res = {}
+    with open(path, 'r') as file:
+        first_data = json.load(file)
 
-def analyze_dependencies(bom_data):
-    """分析依赖关系数量"""
-    dependencies = bom_data.get("dependencies", [])
-    total_relations = 0
-    for dep in dependencies:
-        total_relations += len(dep.get("dependsOn", []))
-    return len(dependencies), total_relations
+        first_components = first_data.get("components")
+        for component in first_components:
+            name = component.get("name")
+            type = component.get("type")
+            version = component.get("version")
+            purl = component.get("purl")
+            if type == "library" and purl is not None and "maven" in purl:
+                res[name] = version
 
-def main():
-    sbom_file = "sbom.json"
-    trivy_file = "trivy.json"
+    return res
 
-    sbom_data = load_json(sbom_file)
-    trivy_data = load_json(trivy_file)
+first_file_components = load_components(first_file)
+second_file_components = load_components(second_file)
 
-    if not sbom_data or not trivy_data:
-        return
+errors = 0
 
-    # 提取组件
-    sbom_comps = extract_components(sbom_data)
-    trivy_comps = extract_components(trivy_data)
+## Let's find components common two both with different versions
+for name, version in first_file_components.items():
+    if name in second_file_components and version != second_file_components[name]:
+        print(f"Component {name} has different versions: {version} (in {first_file}) and {second_file_components[name]} (in {second_file})")
+        errors = errors + 1
 
-    sbom_set = set(sbom_comps.keys())
-    trivy_set = set(trivy_comps.keys())
 
-    # 计算集合关系
-    shared_components = sbom_set.intersection(trivy_set)
-    only_sbom = sbom_set - trivy_set
-    only_trivy = trivy_set - sbom_set
+## Let's find components in the first file absent from the second
+for name, version in first_file_components.items():
+    if name not in second_file_components:
+        print(f"Component {name} is in the first file ({first_file}) but not in the second ({second_file})")
+        errors = errors + 1
 
-    # 依赖关系分析
-    sbom_nodes, sbom_edges = analyze_dependencies(sbom_data)
-    trivy_nodes, trivy_edges = analyze_dependencies(trivy_data)
+## Let's find components in the second file absent from the first
+for name, version in second_file_components.items():
+    if name not in first_file_components:
+        print(f"Component {name} is in the second file ({second_file}) but not in the first ({first_file})")
+        errors = errors + 1
 
-    # 打印可视化报表
-    print("=" * 70)
-    print("          SBOM GENERATOR VS AQUA TRIVY DETAILED COMPARISON")
-    print("=" * 70)
+max_components = max(len(first_file_components), len(second_file_components))
+if errors > 0:
+    accuracy = (abs(max_components - errors)/max_components) * 100
+    print(f"{errors} errors found, tool accuracy {accuracy:.2f} (first file has {len(first_file_components)} components, second file has {len(second_file_components)} components)")
+    sys.exit(errors)
 
-    print(f"{'Analysis Metric (分析指标)':<40} | {'Our Tool (SBOM)':<12} | {'Trivy Baseline':<12}")
-    print("-" * 70)
-    print(f"{'Total Library Components (Total PURLs)':<40} | {len(sbom_comps):<12} | {len(trivy_comps):<12}")
-    print(f"{'Dependency Graph Nodes (声明依赖库)':<40} | {sbom_nodes:<12} | {trivy_nodes:<12}")
-    print(f"{'Dependency Graph Edges (直接+透传依赖链)':<40} | {sbom_edges:<12} | {trivy_edges:<12}")
-    print("-" * 70)
-
-    print(f"\n[+] Shared Components (双方共同检出): {len(shared_components)}")
-    print(f"[+] Unique to Our Tool (我方工具独有 - 提升召回率): {len(only_sbom)}")
-    print(f"[+] Unique to Trivy (Trivy 独有): {len(only_trivy)}")
-
-    # 详细列出我方工具高召回率的具体组件（用于论文中证明 Static Producer + Dynamic Probe 的优势）
-    if only_sbom:
-        print("\n" + "─" * 20 + " 💡 DETAILED OVER-RECALL (UNIQUE TO OUR TOOL) " + "─" * 20)
-        print(f"{'Component PURL':<55} | {'Version':<10}")
-        print("-" * 70)
-        # 按 group 排序打印，方便归类展示
-        for purl in sorted(only_sbom):
-            print(f"{purl:<55} | {sbom_comps[purl]['version']:<10}")
-
-    if only_trivy:
-        print("\n" + "─" * 20 + " 🔍 UNIQUE TO TRIVY " + "─" * 20)
-        for purl in sorted(only_trivy):
-            print(f" - {purl}")
-
-if __name__ == "__main__":
-    main()
+print("no error found")
+sys.exit(0)

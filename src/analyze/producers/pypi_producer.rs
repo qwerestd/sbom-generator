@@ -1,6 +1,8 @@
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
+use crate::analyze::producers::python::discovery::discover_python_projects;
+use crate::analyze::producers::python::merge::{resolve_python_project, to_existing_dependencies};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
-use crate::utils::file_utils::make_instance_id;
+use crate::utils::file_utils::{get_manifest_rel_path, make_instance_id};
 use lazy_static::lazy_static;
 use regex::Regex;
 use std::path::{Path, PathBuf};
@@ -18,21 +20,53 @@ pub struct PypiProducer {}
 
 impl SbomProducer for PypiProducer {
     fn use_file(&self, path: &Path, _config: &SbomProducerConfiguration) -> bool {
-        path.file_name()
-            .is_some_and(|n| n.eq_ignore_ascii_case("requirements.txt"))
+        let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+            return false;
+        };
+
+        matches!(
+            file_name,
+            "uv.lock"
+                | "pyproject.toml"
+                | "requirements.txt"
+                | "poetry.lock"
+                | "Pipfile.lock"
+                | "setup.py"
+                | "setup.cfg"
+                | "conda-lock.yml"
+                | "conda-lock.yaml"
+        ) || (file_name.starts_with("requirements-") && file_name.ends_with(".txt"))
+            || path
+                .parent()
+                .and_then(|p| p.file_name())
+                .and_then(|n| n.to_str())
+                .is_some_and(|dir| dir == "requirements" && file_name.ends_with(".txt"))
     }
 
     fn find_dependencies(
         &self,
         paths: &[PathBuf],
-        _config: &SbomProducerConfiguration,
+        config: &SbomProducerConfiguration,
     ) -> anyhow::Result<Vec<Dependency>> {
+        let projects = discover_python_projects(paths);
+        if !projects.is_empty() {
+            let mut result = Vec::new();
+            for project in projects {
+                let resolved = resolve_python_project(&project);
+                for warning in &resolved.warnings {
+                    eprintln!("[Python] {}", warning);
+                }
+                result.extend(to_existing_dependencies(&resolved, &config.base_path));
+            }
+            return Ok(result);
+        }
+
         let mut result = vec![];
 
         for p in paths {
             if let Ok(content) = std::fs::read_to_string(p) {
                 // 【核心修复 1】：获取当前 requirements.txt 的物理路径作为作用域盐
-                let file_salt = p.to_string_lossy().replace('\\', "/");
+                let file_salt = get_manifest_rel_path(&config.base_path, p);
 
                 if let Ok(file_deps) = Self::parse_single_requirements(&content, &file_salt, p) {
                     result.extend(file_deps);
@@ -94,13 +128,22 @@ impl PypiProducer {
 
             if let Some(caps) = PYPI_LINE_RE.captures(clean_line) {
                 let raw_name = caps.get(1).unwrap().as_str();
+                let raw_op = caps.get(2).map(|m| m.as_str());
                 let raw_ver = caps.get(3).map(|m| m.as_str());
 
                 let normalized_name = PEP503_NORM_RE
                     .replace_all(&raw_name.to_lowercase(), "-")
                     .to_string();
 
-                let ver_opt = raw_ver.map(|v| v.to_string());
+                let declared_version = raw_ver.map(|v| match raw_op {
+                    Some(op) => format!("{}{}", op, v),
+                    None => v.to_string(),
+                });
+                let ver_opt = match (raw_op, raw_ver) {
+                    (Some("=="), Some(v)) if !v.contains('*') => Some(v.to_string()),
+                    (None, Some(v)) if !v.contains('*') => Some(v.to_string()),
+                    _ => None,
+                };
 
                 let purl_str = match ver_opt {
                     Some(ref v) if !v.contains('*') => {
@@ -116,18 +159,19 @@ impl PypiProducer {
                 child_ids.push(child_id.clone());
 
                 // 【精髓 B】：接生叶子实体
-                leaf_deps.push(
-                    DependencyBuilder::default()
-                        .name(raw_name.to_string())
-                        .version(ver_opt)
-                        .r#type(DependencyType::Library)
-                        .purl(valid_purl)
-                        .instance_id(child_id) // 👈 自身ID显式入库
-                        .dependencies(vec![]) // 👈 叶子没有后代
-                        .location(None)
-                        .build()
-                        .unwrap(),
-                );
+                if let Ok(dep) = DependencyBuilder::default()
+                    .name(raw_name.to_string())
+                    .version(ver_opt)
+                    .declared_version(declared_version)
+                    .r#type(DependencyType::Library)
+                    .purl(valid_purl)
+                    .instance_id(child_id) // 👈 自身ID显式入库
+                    .dependencies(vec![]) // 👈 叶子没有后代
+                    .location(None)
+                    .build()
+                {
+                    leaf_deps.push(dep);
+                }
             }
         }
 
@@ -137,16 +181,19 @@ impl PypiProducer {
         }
 
         // 2. 接生工程根节点自身（把清单和10个包连上血脉）
-        let root_dep = DependencyBuilder::default()
+        let Ok(root_dep) = DependencyBuilder::default()
             .name(app_name)
             .version(Some("0.0.0".to_string()))
+            .declared_version(Some("0.0.0".to_string()))
             .r#type(DependencyType::Library) // 后续方向四可优化为 Application
             .purl(root_purl)
             .instance_id(root_instance_id)
             .dependencies(child_ids) // 👈 根节点的 dependsOn 指向下方所有叶子包
             .location(None)
             .build()
-            .unwrap();
+        else {
+            return Ok(leaf_deps);
+        };
 
         let mut all_deps = Vec::with_capacity(leaf_deps.len() + 1);
         all_deps.push(root_dep); // 根排头
@@ -158,6 +205,8 @@ impl PypiProducer {
 
 #[test]
 fn test_pypi_producer_find_dependencies_extended() {
+    use crate::model::configuration::RustScopeFilter;
+
     let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     d.push("resources/py/requirements.txt");
 
@@ -165,30 +214,37 @@ fn test_pypi_producer_find_dependencies_extended() {
     let config = SbomProducerConfiguration {
         use_debug: false,
         base_path: d.parent().unwrap().to_path_buf(),
+        rust_scope: RustScopeFilter::Prod,
+        dynamic: false,
     };
 
     let deps = producer
         .find_dependencies(&[d], &config)
         .expect("Failed to parse requirements.txt");
 
-    assert!(deps
-        .iter()
-        .any(|d| d.name == "Django" && d.version.as_deref() == Some("4.2.1")));
+    assert!(deps.iter().any(|d| {
+        d.name == "Django"
+            && d.version.is_none()
+            && d.declared_version.as_deref() == Some("~=4.2.1")
+    }));
 
-    assert!(deps
-        .iter()
-        .any(|d| d.name == "numpy" && d.version.as_deref() == Some("1.24.0")));
+    assert!(deps.iter().any(|d| {
+        d.name == "numpy"
+            && d.version.is_none()
+            && d.declared_version.as_deref() == Some("!=1.24.0")
+    }));
 
-    assert!(deps
-        .iter()
-        .any(|d| d.name == "my_custom-pkg.ext" && d.version.as_deref() == Some("1.0.0-alpha1")));
+    assert!(deps.iter().any(|d| {
+        d.name == "my_custom-pkg.ext"
+            && d.version.is_none()
+            && d.declared_version.as_deref() == Some(">=1.0.0-alpha1")
+    }));
 
-    // 🚨 【核心修改】：总数由 10 变更为 11！
-    // 10(原有解析出的第三方包) + 1(本txt文件代表的项目根节点本身) = 11
+    // 新 Python pipeline 不再为 requirements.txt 虚构项目根组件，只输出真实声明依赖。
     assert_eq!(
         deps.len(),
-        11,
-        "Expected 11 dependencies, found {}",
+        10,
+        "Expected 10 dependencies, found {}",
         deps.len()
     );
 }

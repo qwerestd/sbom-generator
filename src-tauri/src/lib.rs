@@ -1,7 +1,7 @@
 use tauri::command;
 // 引入你外层库所需的分析函数和配置结构体
 use sbom_generator::analyze::sbom_generate::analyze;
-use sbom_generator::model::configuration::Configuration;
+use sbom_generator::model::configuration::{Configuration, RustScopeFilter};
 use std::fs;
 // 1. 在参数里增加 output_path
 #[command]
@@ -13,6 +13,7 @@ async fn run_sbom_analyze(directory: String, output_path: String) -> Result<Stri
         output: output_path.clone(), // 动态设定保存位置
         use_debug: false,
         dynamic: true,
+        rust_scope: RustScopeFilter::Prod,
     };
 
     // 调用核心逻辑生成文件

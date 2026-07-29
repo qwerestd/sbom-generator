@@ -2,9 +2,10 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use crate::analyze::producers::cargo_metadata::metadata_dependencies_for_project;
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
-use crate::utils::file_utils::make_instance_id;
+use crate::utils::file_utils::{get_manifest_rel_path, make_instance_id};
 
 #[derive(Clone, Default)]
 pub struct CargoProducer {}
@@ -19,15 +20,41 @@ impl SbomProducer for CargoProducer {
     fn find_dependencies(
         &self,
         paths: &[PathBuf],
-        _config: &SbomProducerConfiguration,
+        config: &SbomProducerConfiguration,
     ) -> anyhow::Result<Vec<Dependency>> {
         let mut all_dependencies = Vec::new();
 
         for lock_path in paths {
+            if let Some(project_dir) = lock_path.parent() {
+                if project_dir.join("Cargo.toml").exists() {
+                    match metadata_dependencies_for_project(
+                        project_dir,
+                        &config.base_path,
+                        config.rust_scope,
+                    ) {
+                        Ok(deps) => {
+                            all_dependencies.extend(deps);
+                            continue;
+                        }
+                        Err(err) => {
+                            eprintln!(
+                                "[Cargo] metadata graph failed for {}; static Cargo.lock fallback will be used: {}",
+                                project_dir.display(),
+                                err
+                            );
+                        }
+                    }
+                }
+            }
+
+            if !config.rust_scope.includes("unknown") {
+                continue;
+            }
+
             let content = fs::read_to_string(lock_path)?;
 
             // 1. 将当前锁文件的物理路径标准 POSIX 化作为绝对隔离盐
-            let file_salt = lock_path.to_string_lossy().replace('\\', "/");
+            let file_salt = get_manifest_rel_path(&config.base_path, lock_path);
 
             let file_deps = Self::parse_cargo_lock(&content, &file_salt)?;
             all_dependencies.extend(file_deps);
@@ -174,7 +201,9 @@ impl CargoProducer {
 
             if let Ok(dep) = DependencyBuilder::default()
                 .name(node.name)
-                .version(Some(node.version))
+                .version(Some(node.version.clone()))
+                .declared_version(Some(node.version.clone()))
+                .rust_dependency_scope(Some("unknown".to_string()))
                 .r#type(DependencyType::Library)
                 .purl(node.purl)
                 .instance_id(node.instance_id)

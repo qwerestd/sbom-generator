@@ -1,10 +1,12 @@
 use crate::analyze::producers::dynamic_producer::DynamicProducer;
 use crate::model::configuration::Configuration;
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
+use crate::utils::command::run_with_timeout;
 use crate::utils::file_utils::make_instance_id;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::Duration;
 
 #[derive(Default)]
 pub struct NpmDynamicProducer {}
@@ -26,10 +28,15 @@ impl DynamicProducer for NpmDynamicProducer {
             "npm"
         };
 
-        let output = Command::new(npm_cmd)
-            .args(["ls", "--json", "--all"])
-            .current_dir(&config.directory)
-            .output()?;
+        let mut cmd = Command::new(npm_cmd);
+        cmd.args(["ls", "--json", "--all"])
+            .current_dir(&config.directory);
+        let output = run_with_timeout(&mut cmd, Duration::from_secs(60))?;
+
+        if !output.status.success() && output.stdout.is_empty() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow::anyhow!("npm ls failed: {}", stderr));
+        }
 
         let stdout_str = String::from_utf8_lossy(&output.stdout);
         let json: serde_json::Value = serde_json::from_str(&stdout_str)?;
@@ -125,13 +132,46 @@ impl NpmDynamicProducer {
                 DependencyBuilder::default()
                     .name(name.to_string())
                     .version(Some(version.to_string()))
+                    .declared_version(Some(version.to_string()))
                     .r#type(DependencyType::Library)
-                    .purl(valid_purl)
-                    .instance_id(instance_id) // 👈 稳稳落盘
-                    .dependencies(child_instance_ids) // 👈 注入的是 ID 列表
+                    .purl(valid_purl.clone())
+                    .instance_id(instance_id.clone()) // 👈 稳稳落盘
+                    .dependencies(child_instance_ids.clone()) // 👈 注入的是 ID 列表
                     .location(None)
                     .build()
-                    .unwrap()
+                    .unwrap_or_else(|_| Dependency {
+                        group: None,
+                        r#type: DependencyType::Library,
+                        name: name.to_string(),
+                        version: Some(version.to_string()),
+                        declared_version: Some(version.to_string()),
+                        rust_dependency_scope: None,
+                        rust_dependency_relationship: None,
+                        rust_is_direct: None,
+                        rust_target_conditions: None,
+                        rust_activation: None,
+                        rust_is_proc_macro: None,
+                        rust_project_root: None,
+                        rust_source_cargo_lock: None,
+                        rust_resolved_graph_confirmed: None,
+                        rust_all_target_present: None,
+                        rust_host_active: None,
+                        python_dependency_scope: None,
+                        python_source_type: None,
+                        python_manifest_path: None,
+                        python_project_root: None,
+                        python_confidence: None,
+                        python_is_project_package: None,
+                        python_dependency_relationship: None,
+                        python_is_direct: None,
+                        python_marker: None,
+                        python_activation: None,
+                        purl: valid_purl,
+                        instance_id,
+                        dependencies: child_instance_ids,
+                        location: None,
+                        ..Dependency::default()
+                    })
             });
     }
 }

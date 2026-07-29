@@ -1,0 +1,9 @@
+go 1.22
+
+use (
+    ./service-a
+    ./service-b
+    ./shared
+)
+
+replace example.com/shared => ./shared
