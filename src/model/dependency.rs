@@ -3,13 +3,16 @@ use packageurl::PackageUrl;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
+use std::path::Path;
 use std::str::FromStr;
 
 use crate::model::location::Location;
+use crate::model::position::Position;
 
-#[derive(Clone, Copy, Default, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DependencyType {
+    Application,
     #[default]
     Library,
 }
@@ -27,6 +30,23 @@ pub struct DependencyLocation {
     #[allow(dead_code)]
     #[builder(default)]
     pub version: Option<Location>,
+}
+
+impl DependencyLocation {
+    /// 从清单文件路径快速构建位置元数据（用于注入 syft:location:0:path）
+    pub fn from_file(path: &Path) -> Self {
+        let file_str = path.display().to_string();
+        let loc = Location {
+            file: file_str,
+            start: Position::default(),
+            end: Position::default(),
+        };
+        Self {
+            block: loc.clone(),
+            name: loc,
+            version: None,
+        }
+    }
 }
 
 #[derive(Builder, Clone, Default, Debug, Serialize, Deserialize)]
@@ -73,18 +93,20 @@ pub struct Dependency {
 impl Dependency {
     /// 自动检测并修正有问题的 PURL
     pub fn auto_fix_and_validate_purl(raw_purl: &str) -> String {
-        match PackageUrl::from_str(raw_purl) {
-            Ok(parsed_purl) => parsed_purl.to_string(),
-            Err(_) => {
-                eprintln!("[自动修复拦截器] 发现不合规的 PURL: {}", raw_purl);
-                let fixed_purl = raw_purl.replace(['^', '~', '='], "");
-                if PackageUrl::from_str(&fixed_purl).is_ok() {
-                    fixed_purl
-                } else {
-                    raw_purl.split('@').next().unwrap_or(raw_purl).to_string()
-                }
-            }
+        if let Ok(parsed_purl) = PackageUrl::from_str(raw_purl) {
+            return parsed_purl.to_string();
         }
+
+        // 处理常见的范围符或特殊字符（如 ^, ~, =, +incompatible 等）
+        let fixed_purl = raw_purl
+            .replace(['^', '~', '='], "")
+            .replace("+incompatible", "");
+        if let Ok(parsed) = PackageUrl::from_str(&fixed_purl) {
+            return parsed.to_string();
+        }
+
+        eprintln!("[自动修复拦截器] 发现不合规的 PURL: {}", raw_purl);
+        raw_purl.split('@').next().unwrap_or(raw_purl).to_string()
     }
 
     /// 兜底派生唯一 ID 算法

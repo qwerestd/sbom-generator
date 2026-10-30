@@ -1,0 +1,10 @@
+{
+  "name": "web-dashboard-npm",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "18.2.0",
+    "express": "4.18.2",
+    "lodash": "4.17.19",
+    "axios": "1.5.0"
+  }
+}

@@ -2,7 +2,7 @@ use crate::analyze::producers::dynamic_producer::DynamicProducer;
 use crate::model::configuration::Configuration;
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
 use crate::utils::file_utils::make_instance_id;
-use std::collections::{HashMap, HashSet, VecDeque}; // 👈 新增 HashSet 和 VecDeque 用于图遍历
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -43,7 +43,6 @@ impl DynamicProducer for CargoDynamicProducer {
 
         let mut id_to_meta: HashMap<String, PkgMeta> = HashMap::new();
 
-        // 1. 获取所有项目实体信息
         if let Some(packages) = json.get("packages").and_then(|p| p.as_array()) {
             for pkg in packages {
                 if let (Some(id), Some(name), Some(version)) = (
@@ -68,8 +67,7 @@ impl DynamicProducer for CargoDynamicProducer {
             }
         }
 
-        // 2. 提取工作区根节点 (Workspace Members) —— 这是溯源的起点
-        let mut workspace_members: Vec<String> = vec![];
+        let mut workspace_members: HashSet<String> = HashSet::new();
         if let Some(members) = json.get("workspace_members").and_then(|m| m.as_array()) {
             workspace_members = members
                 .iter()
@@ -77,7 +75,6 @@ impl DynamicProducer for CargoDynamicProducer {
                 .collect();
         }
 
-        // 3. 构建依赖的边关系（收集所有依赖，不再过滤 dev 和 build）
         let mut id_to_child_ids: HashMap<String, Vec<String>> = HashMap::new();
 
         if let Some(nodes) = json
@@ -91,7 +88,6 @@ impl DynamicProducer for CargoDynamicProducer {
 
                     if let Some(deps) = node.get("deps").and_then(|d| d.as_array()) {
                         for dep_obj in deps {
-                            // 直接提取所有的子依赖 ID，不论其属于 normal、dev 还是 build
                             if let Some(cid) = dep_obj.get("pkg").and_then(|p| p.as_str()) {
                                 child_ids.push(cid.to_string());
                             }
@@ -102,14 +98,12 @@ impl DynamicProducer for CargoDynamicProducer {
             }
         }
 
-        // 4. 可达性分析 (BFS)
-        // 从根节点出发，顺着所有的依赖路径往下找
         let mut reachable_ids: HashSet<String> = HashSet::new();
         let mut queue: VecDeque<String> = VecDeque::new();
 
-        for member_id in workspace_members {
+        for member_id in &workspace_members {
             reachable_ids.insert(member_id.clone());
-            queue.push_back(member_id);
+            queue.push_back(member_id.clone());
         }
 
         while let Some(current_id) = queue.pop_front() {
@@ -123,7 +117,6 @@ impl DynamicProducer for CargoDynamicProducer {
             }
         }
 
-        // 5. 组装最终结果
         let mut final_deps = vec![];
 
         for id in &reachable_ids {
@@ -134,17 +127,22 @@ impl DynamicProducer for CargoDynamicProducer {
                     for child_id in children {
                         if reachable_ids.contains(child_id) {
                             if let Some(child_meta) = id_to_meta.get(child_id) {
-                                // 收集所有相连的子节点
                                 edge_instance_ids.push(child_meta.instance_id.clone());
                             }
                         }
                     }
                 }
 
+                let dep_type = if workspace_members.contains(id) {
+                    DependencyType::Application
+                } else {
+                    DependencyType::Library
+                };
+
                 if let Ok(dep) = DependencyBuilder::default()
                     .name(meta.name.clone())
                     .version(Some(meta.version.clone()))
-                    .r#type(DependencyType::Library)
+                    .r#type(dep_type)
                     .purl(meta.purl.clone())
                     .instance_id(meta.instance_id.clone())
                     .dependencies(edge_instance_ids)

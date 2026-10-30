@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
 
@@ -7,6 +8,7 @@ use serde_cyclonedx::cyclonedx::v_1_6::{
 
 use crate::model::configuration::Configuration;
 use crate::model::dependency::Dependency;
+use crate::utils::osv_scanner::{OsvScanner, VulnerabilityInfo};
 
 // =====================================================================
 // 【视觉定序神器】：利用 Rust 结构体声明顺序 = JSON输出顺序 的特性
@@ -21,6 +23,8 @@ struct TopOrderedSbom<'a> {
     metadata: serde_json::Value,
     components: serde_json::Value,
     dependencies: serde_json::Value,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    vulnerabilities: Vec<serde_json::Value>,
 }
 
 pub fn generate_sbom(
@@ -31,6 +35,13 @@ pub fn generate_sbom(
 
     let mut components = Vec::new();
     let mut cdx_dependencies = Vec::new();
+
+    // 🚨 启动 OSV 漏洞联动扫描引擎（融合在线 OSV.dev Batch API + 毫秒级离线知识库）
+    let vuln_map = OsvScanner::scan_dependencies(
+        &dependencies,
+        Some(configuration.directory.as_str()),
+        configuration.dynamic,
+    );
 
     // 🚨 注意：这里改为借用引用 `&dependencies`，为了后续 JSON 增强时依然能读取原始数据
     for d in &dependencies {
@@ -116,20 +127,80 @@ pub fn generate_sbom(
                     .replace('"', "");
                 comp_obj.insert("type".to_string(), serde_json::json!(cdx_type));
 
-                // 【方向二兑现：注入文件物理路径 (Properties)】
+                // 【方向二兑现：注入文件物理路径与 OSV 风险标签 (Properties)】
+                let mut props = Vec::new();
                 if let Some(loc) = &d.location {
-                    comp_obj.insert(
-                        "properties".to_string(),
-                        serde_json::json!([
-                            {
-                                "name": "syft:location:0:path",
-                                "value": loc.block.file
-                            }
-                        ]),
-                    );
+                    props.push(serde_json::json!({
+                        "name": "syft:location:0:path",
+                        "value": loc.block.file
+                    }));
+                }
+                if let Some(vulns) = vuln_map.get(&d.instance_id) {
+                    let ids: Vec<&str> = vulns.iter().map(|v| v.id.as_str()).collect();
+                    props.push(serde_json::json!({
+                        "name": "osv:vulnerabilities",
+                        "value": ids.join(", ")
+                    }));
+                }
+                if !props.is_empty() {
+                    comp_obj.insert("properties".to_string(), serde_json::Value::Array(props));
                 }
             }
         }
+    }
+
+    // 组装 CycloneDX 1.6 标准 `vulnerabilities` 列表（按漏洞 ID 归并受影响的实例 ref）
+    let mut grouped_vulns: BTreeMap<String, (VulnerabilityInfo, Vec<String>)> = BTreeMap::new();
+    for (instance_id, vulns) in &vuln_map {
+        for v in vulns {
+            let entry = grouped_vulns
+                .entry(v.id.clone())
+                .or_insert_with(|| (v.clone(), Vec::new()));
+            if !entry.1.contains(instance_id) {
+                entry.1.push(instance_id.clone());
+            }
+        }
+    }
+
+    let cdx_vulnerabilities: Vec<serde_json::Value> = grouped_vulns
+        .into_values()
+        .map(|(info, affected_refs)| {
+            let affects: Vec<serde_json::Value> = affected_refs
+                .into_iter()
+                .map(|r| serde_json::json!({ "ref": r }))
+                .collect();
+            let recommendation = info
+                .fixed_version
+                .as_ref()
+                .map(|fv| format!("建议升级至安全版本 >= {}", fv))
+                .unwrap_or_else(|| "请关注上游官方安全补丁".to_string());
+
+            serde_json::json!({
+                "id": info.id,
+                "source": {
+                    "name": info.source,
+                    "url": "https://osv.dev"
+                },
+                "ratings": [
+                    {
+                        "severity": info.severity.to_lowercase(),
+                        "score": info.score,
+                        "method": "CVSSv3"
+                    }
+                ],
+                "description": info.summary,
+                "recommendation": recommendation,
+                "affects": affects
+            })
+        })
+        .collect();
+
+    if !cdx_vulnerabilities.is_empty() {
+        println!(
+            " -> 🚨 [OSV 漏洞扫描器] 检出 {} 个高危/中危 CVE/GHSA 漏洞，波及 {} 个组件实例！",
+            cdx_vulnerabilities.len(),
+            vuln_map.len()
+        );
     }
 
     // --- [过继给定序结构体] ---
@@ -144,6 +215,7 @@ pub fn generate_sbom(
         dependencies: raw_obj
             .remove("dependencies")
             .unwrap_or(serde_json::Value::Null),
+        vulnerabilities: cdx_vulnerabilities,
     };
 
     let value_to_write = serde_json::to_string_pretty(&final_output)?;

@@ -1,0 +1,8 @@
+[package]
+name = "demo-rust-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = "1.0.210"
+anyhow = "1.0.89"

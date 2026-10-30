@@ -2,39 +2,69 @@ use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use walkdir::WalkDir;
+use walkdir::{DirEntry, WalkDir};
+
+/// 需要跳过的构建产物、缓存与版本控制目录，避免无意义的深层遍历与误扫
+const IGNORED_DIRS: &[&str] = &[
+    ".git",
+    ".hg",
+    ".svn",
+    ".idea",
+    ".vscode",
+    ".gradle",
+    ".vendor",
+    ".venv",
+    "venv",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    "__pycache__",
+    "bower_components",
+];
+
+fn is_ignored_dir(entry: &DirEntry, root: &Path) -> bool {
+    if entry.path() == root {
+        return false;
+    }
+    if entry.file_type().is_dir() {
+        if let Some(name) = entry.file_name().to_str() {
+            return IGNORED_DIRS
+                .iter()
+                .any(|ignored| name.eq_ignore_ascii_case(ignored));
+        }
+    }
+    false
+}
 
 pub fn get_files(directory: &str) -> Result<Vec<PathBuf>> {
+    let root_path = Path::new(directory);
+    if !root_path.exists() {
+        anyhow::bail!("directory does not exist: {}", directory);
+    }
+
     let mut files_to_return: Vec<PathBuf> = vec![];
 
-    // This is the directory that contains the .git files, we do not need to keep them.
-    let git_directory = format!("{}/.git", &directory);
+    let walker = WalkDir::new(root_path)
+        .follow_links(false)
+        .into_iter()
+        .filter_entry(|e| !is_ignored_dir(e, root_path));
 
-    let directories_to_walk: Vec<String> = vec![directory.to_string()];
+    for entry in walker {
+        let dir_entry = entry?;
+        let path = dir_entry.path();
 
-    for directory_to_walk in directories_to_walk {
-        for entry in WalkDir::new(directory_to_walk.as_str()) {
-            let dir_entry = entry?;
-            let entry = dir_entry.path();
-
-            // we only include if this is a file and not a symlink
-            // we should NEVER follow symlink for security reason (an attacker could then
-            // attempt to add a symlink outside the repo and read content outside of the
-            // repo with a custom rule.
-            let mut should_include = entry.is_file() && !entry.is_symlink();
-
-            // do not include the git directory.
-            if entry.starts_with(git_directory.as_str()) {
-                should_include = false;
-            }
-
-            if should_include {
-                files_to_return.push(entry.to_path_buf());
-            }
+        // we only include if this is a file and not a symlink
+        // we should NEVER follow symlink for security reason (an attacker could then
+        // attempt to add a symlink outside the repo and read content outside of the
+        // repo with a custom rule.
+        if dir_entry.file_type().is_file() && !path.is_symlink() {
+            files_to_return.push(path.to_path_buf());
         }
     }
     Ok(files_to_return)
 }
+
 pub fn make_instance_id(purl: &str, manifest_rel_path: &str) -> String {
     let mut hasher = DefaultHasher::new();
     purl.hash(&mut hasher);

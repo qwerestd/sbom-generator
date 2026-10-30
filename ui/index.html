@@ -2,321 +2,1497 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>SBOM 依赖网络图谱</title>
-    <!-- 引入强大的 ECharts -->
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBOM Studio - 工业级依赖拓扑分析与安全审计工作台</title>
+    <!-- 引入 ECharts 5 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f4f6f8;
-            color: #333;
+        :root {
+            /* 沉稳工业风调色板 (深灰/钢蓝/碳纤维黑) */
+            --bg-body: #0d1117;
+            --bg-panel: #161b22;
+            --bg-toolbar: #1c2128;
+            --bg-surface: #21262d;
+            --bg-input: #0d1117;
+            --border-subtle: #30363d;
+            --border-strong: #484f58;
+            --border-active: #58a6ff;
+            --text-main: #f0f6fc;
+            --text-secondary: #c9d1d9;
+            --text-muted: #8b949e;
+            
+            /* 功能态颜色 */
+            --industrial-blue: #1f6feb;
+            --industrial-blue-hover: #388bfd;
+            --accent-cyan: #38bdf8;
+            --danger-red: #f85149;
+            --danger-bg: rgba(248, 81, 73, 0.12);
+            --danger-border: #da3633;
+            --warning-amber: #d29922;
+            --success-green: #238636;
+            --success-green-hover: #2ea043;
+            
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            --font-mono: "JetBrains Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace;
         }
 
-        .control-panel {
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            margin-bottom: 20px;
-            padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+            user-select: none;
         }
-        .input-row {
+
+        /* 紧凑型工业顶栏 */
+        .industrial-header {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 44px;
+            flex-shrink: 0;
+        }
+
+        .header-brand {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-        .input-row label {
-            width: 120px;
-            font-weight: bold;
-            color: #444;
+
+        .header-logo-box {
+            width: 26px;
+            height: 26px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-cyan);
         }
-        .input-row input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #ccc;
-            border-radius: 6px;
+
+        .header-title {
             font-size: 14px;
-            font-family: monospace;
-            transition: border-color 0.3s;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .input-row input[type="text"]:focus {
-            border-color: #007acc;
+
+        .header-tag {
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            border: 1px solid var(--border-subtle);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-family: var(--font-mono);
+            font-weight: normal;
+        }
+
+        /* 顶部紧凑型控制区 */
+        .industrial-control-bar {
+            background: var(--bg-toolbar);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .input-group-compact {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            min-width: 280px;
+            position: relative;
+        }
+
+        .input-label-tag {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-right: none;
+            border-radius: 4px 0 0 4px;
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 10px;
+            white-space: nowrap;
+        }
+
+        .input-compact {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-right: none;
+            color: var(--text-main);
+            font-family: var(--font-mono);
+            font-size: 12px;
+            padding: 6px 10px;
+            outline: none;
+            height: 32px;
+        }
+
+        .input-compact:focus {
+            border-color: var(--border-active);
+        }
+
+        .btn-input-browse {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 0 4px 4px 0;
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0 12px;
+            height: 32px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            transition: all 0.15s;
+        }
+
+        .btn-input-browse:hover {
+            background: #2d333b;
+            color: #ffffff;
+            border-color: var(--border-strong);
+        }
+
+        .control-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .btn-industrial-primary {
+            background: var(--success-green);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0 18px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.15s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .btn-industrial-primary:hover {
+            background: var(--success-green-hover);
+        }
+
+        .btn-industrial-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-industrial-default {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 12px;
+            padding: 0 12px;
+            height: 32px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+
+        .btn-industrial-default:hover {
+            background: #2d333b;
+            color: #ffffff;
+            border-color: var(--border-strong);
+        }
+
+        /* 状态与指标紧凑通栏 (Status Bar) */
+        .industrial-status-bar {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 4px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            font-family: var(--font-mono);
+            flex-shrink: 0;
+            height: 32px;
+        }
+
+        .metric-badge-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .metric-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+        }
+
+        .metric-val {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .metric-val.alert {
+            color: var(--danger-red);
+        }
+
+        .status-indicator-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            font-family: var(--font-ui);
+            font-size: 12px;
+        }
+
+        .status-dot-sm {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #2ea043;
+        }
+
+        .status-dot-sm.busy {
+            background: var(--warning-amber);
+        }
+
+        .status-dot-sm.danger {
+            background: var(--danger-red);
+        }
+
+        /* 主体工作区 (自适应占满全部剩余纵向空间) */
+        .industrial-workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 标签头与右侧图谱控制器 */
+        .view-tab-nav {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            height: 38px;
+            flex-shrink: 0;
+        }
+
+        .tab-buttons {
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .view-tab-btn {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 0 14px;
+            height: 100%;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s;
+        }
+
+        .view-tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .view-tab-btn.active {
+            color: var(--text-main);
+            border-bottom-color: var(--industrial-blue-hover);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .nav-badge-pill {
+            background: rgba(248, 81, 73, 0.2);
+            color: #ff7b72;
+            padding: 0 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            font-weight: 700;
+        }
+
+        .graph-quick-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-box-sm {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .search-box-sm input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            color: var(--text-main);
+            font-size: 11px;
+            padding: 4px 8px 4px 24px;
+            width: 170px;
             outline: none;
         }
 
-        button {
-            border: none;
+        .search-box-sm input:focus {
+            border-color: var(--border-active);
+            width: 220px;
+        }
+
+        .search-box-sm svg {
+            position: absolute;
+            left: 6px;
+            width: 12px;
+            height: 12px;
+            fill: var(--text-muted);
+        }
+
+        .tool-btn-sm {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
             cursor: pointer;
-            border-radius: 6px;
-            font-weight: bold;
-            transition: all 0.3s;
-        }
-        .btn-primary {
-            background-color: #007acc;
-            color: white;
-            padding: 12px 30px;
-            font-size: 16px;
-            box-shadow: 0 4px 6px rgba(0, 122, 204, 0.2);
-        }
-        .btn-primary:hover {
-            background-color: #005999;
-            transform: translateY(-1px);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        #status-display {
-            font-size: 14px;
-            color: #666;
-            margin-left: 15px;
-            font-weight: bold;
+        .tool-btn-sm:hover {
+            background: #2d333b;
+            color: #ffffff;
         }
 
+        /* 视图容器 (绝对填满) */
+        .tab-panel-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: none;
+        }
+
+        .tab-panel-container.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 核心依赖树画布：最大化撑满屏幕 */
         #chart-container {
             width: 100%;
-            height: calc(100vh - 220px);
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border: 1px solid #e0e0e0;
-            overflow: hidden;
+            height: 100%;
+            flex: 1;
+            background: #0d1117;
         }
 
-        .tip {
+        /* 表格通用工业样式 */
+        .industrial-table-scroll {
+            flex: 1;
+            overflow: auto;
+            padding: 0;
+            background: var(--bg-body);
+        }
+
+        .industrial-table {
+            width: 100%;
+            border-collapse: collapse;
             font-size: 12px;
-            color: #888;
-            margin-top: -5px;
-            margin-left: 130px;
+            text-align: left;
+        }
+
+        .industrial-table th {
+            background: var(--bg-panel);
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .industrial-table td {
+            padding: 9px 14px;
+            border-bottom: 1px solid rgba(48, 54, 61, 0.6);
+            color: var(--text-secondary);
+            vertical-align: middle;
+        }
+
+        .industrial-table tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-main);
+        }
+
+        .badge-sev {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            display: inline-block;
+        }
+
+        .badge-sev.critical { background: #b62324; color: #fff; }
+        .badge-sev.high { background: #d29922; color: #fff; }
+        .badge-sev.medium { background: #1f6feb; color: #fff; }
+        .badge-sev.low { background: #388bfd; color: #fff; }
+
+        .badge-eco-tag {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+        }
+
+        /* JSON 原始视图 */
+        .json-code-view {
+            flex: 1;
+            background: #090d13;
+            color: #79c0ff;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 16px;
+            overflow: auto;
+            border: none;
+            white-space: pre;
+        }
+
+        /* 侧边审查抽屉 (Drawer) */
+        .industrial-drawer {
+            position: absolute;
+            top: 0;
+            right: -460px;
+            width: 440px;
+            height: 100%;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-subtle);
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.6);
+            z-index: 100;
+            transition: right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .industrial-drawer.open {
+            right: 0;
+        }
+
+        .drawer-header {
+            padding: 12px 16px;
+            background: var(--bg-toolbar);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .drawer-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .drawer-content {
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            font-size: 12px;
+        }
+
+        .detail-block {
+            background: var(--bg-body);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            padding: 10px 12px;
+        }
+
+        .detail-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .detail-val {
+            font-family: var(--font-mono);
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        .detail-vuln-box {
+            background: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            border-radius: 4px;
+            padding: 10px 12px;
+        }
+
+        /* 轻量系统提示条 */
+        .toast-notify {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            background: var(--bg-toolbar);
+            border: 1px solid var(--border-strong);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-main);
+            transform: translateY(60px);
+            opacity: 0;
+            transition: all 0.2s;
+            z-index: 999;
+            pointer-events: none;
+        }
+
+        .toast-notify.show {
+            transform: translateY(0);
+            opacity: 1;
         }
     </style>
 </head>
 <body>
 
-<div class="control-panel">
-    <div class="input-row">
-        <label for="input-dir">📂 项目文件夹:</label>
-        <input type="text" id="input-dir" placeholder="请粘贴绝对路径，例如: C:\Users\zw\RustroverProjects\my-app" />
-    </div>
-    <div class="tip">提示：在 Windows 文件夹中按住 Shift 键右击，选择“复制文件地址”即可快速获取路径。</div>
+    <!-- 1. 紧凑型工业顶栏 -->
+    <header class="industrial-header">
+        <div class="header-brand">
+            <div class="header-logo-box">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 4.2L19.4 19H4.6L12 6.2zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+            </div>
+            <div class="header-title">
+                <span>SBOM Studio</span>
+                <span class="header-tag">CycloneDX 1.6</span>
+                <span class="header-tag">OSV.dev</span>
+            </div>
+        </div>
 
-    <div class="input-row">
-        <label for="input-save">💾 保存位置:</label>
-        <input type="text" id="input-save" placeholder="请粘贴包含文件名的绝对路径，例如: C:\Users\zw\Desktop\result.json" />
-    </div>
+        <div class="control-actions">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer;" title="开启后调用编译器/包管理器 CLI 提取真实运行时 DAG；关闭则为纯静态分析">
+                <input type="checkbox" id="toggle-dynamic" checked />
+                <span>动态探针</span>
+            </label>
+            <button id="btn-open-explorer" class="btn-industrial-default" title="在 Windows 资源管理器中高亮定位生成的文件">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                <span>资源管理器</span>
+            </button>
+            <button id="analyze-btn" class="btn-industrial-primary">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                <span>执行分析构建</span>
+            </button>
+        </div>
+    </header>
 
-    <div style="display: flex; align-items: center; margin-top: 10px;">
-        <button id="analyze-btn" class="btn-primary">🚀 深度分析与构建图谱</button>
-        <span id="status-display">准备就绪，等待输入...</span>
-    </div>
-</div>
+    <!-- 2. 紧凑型路径输入与操作条 -->
+    <section class="industrial-control-bar">
+        <div class="input-group-compact">
+            <span class="input-label-tag">📂 工程目录</span>
+            <input type="text" id="input-dir" class="input-compact" placeholder="点击右侧按钮选择项目根目录..." />
+            <button type="button" class="btn-input-browse" id="btn-browse-dir" title="唤起系统窗口选择待分析的代码目录">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                <span>打开文件夹</span>
+            </button>
+        </div>
 
-<div id="chart-container"></div>
+        <div class="input-group-compact">
+            <span class="input-label-tag">💾 输出文件</span>
+            <input type="text" id="input-save" class="input-compact" placeholder="点击右侧按钮指定生成的 JSON 保存路径..." />
+            <button type="button" class="btn-input-browse" id="btn-browse-save" title="唤起系统保存窗口指定输出文件路径">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+                <span>指定输出路径</span>
+            </button>
+        </div>
+    </section>
 
-<script>
-    const chartDom = document.getElementById('chart-container');
-    const myChart = echarts.init(chartDom);
-    const { invoke } = window.__TAURI__.core;
+    <!-- 3. 紧凑状态与指标栏 -->
+    <section class="industrial-status-bar">
+        <div class="metric-badge-group">
+            <div class="metric-item">
+                <span>组件实例:</span>
+                <span id="metric-components" class="metric-val">0</span>
+            </div>
+            <div class="metric-item">
+                <span>OSV 漏洞告警:</span>
+                <span id="metric-vulns" class="metric-val">0</span>
+            </div>
+            <div class="metric-item">
+                <span>语言生态:</span>
+                <span id="metric-ecos" class="metric-val">0</span>
+            </div>
+            <div class="metric-item">
+                <span>DAG 拓扑边:</span>
+                <span id="metric-links" class="metric-val">0</span>
+            </div>
+        </div>
 
-    // 🌟 核心算法升级：带依赖热度计算和虚拟根节点的 Graph 生成器
-    function convertCycloneDXToGraph(sbom) {
-        if (!sbom || !sbom.components || !sbom.dependencies) {
-            throw new Error("不是合法的 CycloneDX 格式数据");
+        <div class="status-indicator-text">
+            <div id="status-dot" class="status-dot-sm"></div>
+            <span id="status-text">系统就绪，请选择项目目录后点击「执行分析构建」</span>
+        </div>
+    </section>
+
+    <!-- 4. 主体全视口工作区 (最大化显示拓扑网络) -->
+    <main class="industrial-workspace">
+        <div class="view-tab-nav">
+            <div class="tab-buttons">
+                <button class="view-tab-btn active" data-tab="tab-graph">
+                    <span>拓扑依赖网络图</span>
+                </button>
+                <button class="view-tab-btn" data-tab="tab-vulns">
+                    <span>漏洞安全雷达</span>
+                    <span id="tab-vuln-badge" class="nav-badge-pill" style="display: none;">0</span>
+                </button>
+                <button class="view-tab-btn" data-tab="tab-components">
+                    <span>组件全量清单</span>
+                </button>
+                <button class="view-tab-btn" data-tab="tab-json">
+                    <span>CycloneDX 1.6 原文</span>
+                </button>
+            </div>
+
+            <div class="graph-quick-tools">
+                <div class="search-box-sm">
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <input type="text" id="node-search" placeholder="搜索组件包名/CVE..." />
+                </div>
+                <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); cursor: pointer;" title="开启后只保留命中漏洞的节点及直接依赖链">
+                    <input type="checkbox" id="filter-vuln-only" />
+                    <span>仅看漏洞</span>
+                </label>
+                <button class="tool-btn-sm" id="btn-zoom-in" title="放大画布">+</button>
+                <button class="tool-btn-sm" id="btn-zoom-out" title="缩小画布">-</button>
+                <button class="tool-btn-sm" id="btn-reset-view" title="重置图谱比例与居中">1:1 重置</button>
+                <button class="tool-btn-sm" id="btn-export-png" title="导出高分辨率 PNG 图片">导出图片</button>
+            </div>
+        </div>
+
+        <!-- 视图 1: 拓扑网络图谱 (超大视口) -->
+        <div id="tab-graph" class="tab-panel-container active">
+            <div id="chart-container"></div>
+        </div>
+
+        <!-- 视图 2: 漏洞列表 -->
+        <div id="tab-vulns" class="tab-panel-container industrial-table-scroll">
+            <table class="industrial-table">
+                <thead>
+                    <tr>
+                        <th style="width: 140px;">漏洞编号</th>
+                        <th style="width: 90px;">严重等级</th>
+                        <th style="width: 70px;">CVSS</th>
+                        <th style="width: 260px;">波及组件实例 (bom-ref)</th>
+                        <th>漏洞机理与影响范围</th>
+                        <th style="width: 200px;">修复版本建议</th>
+                        <th style="width: 80px; text-align: center;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="vuln-table-body">
+                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 视图 3: 组件全量清单 -->
+        <div id="tab-components" class="tab-panel-container industrial-table-scroll">
+            <table class="industrial-table">
+                <thead>
+                    <tr>
+                        <th style="width: 240px;">组件名称</th>
+                        <th style="width: 120px;">版本</th>
+                        <th style="width: 110px;">语言生态</th>
+                        <th>标准 PURL 坐标</th>
+                        <th>清单物理路径 (syft:location:0:path)</th>
+                        <th style="width: 90px; text-align: center;">状态</th>
+                    </tr>
+                </thead>
+                <tbody id="comp-table-body">
+                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 视图 4: JSON 原文 -->
+        <div id="tab-json" class="tab-panel-container" style="background: #090d13;">
+            <div style="background: var(--bg-panel); border-bottom: 1px solid var(--border-subtle); padding: 6px 16px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button class="tool-btn-sm" id="btn-copy-json">📋 复制全部 JSON</button>
+                <button class="tool-btn-sm" id="btn-download-json">💾 下载 SBOM 文件</button>
+            </div>
+            <pre id="raw-json-block" class="json-code-view">// 尚未生成 SBOM 数据...</pre>
+        </div>
+
+        <!-- 侧边节点详情抽屉 -->
+        <aside id="node-drawer" class="industrial-drawer">
+            <div class="drawer-header">
+                <div class="drawer-title">
+                    <span id="drawer-eco-tag" class="badge-eco-tag">ECOSYSTEM</span>
+                    <span id="drawer-node-name">组件详情</span>
+                </div>
+                <button id="btn-close-drawer" class="tool-btn-sm" style="border: none; background: transparent; cursor: pointer;">✕</button>
+            </div>
+            <div class="drawer-content" id="drawer-body">
+                <!-- 动态注入 -->
+            </div>
+        </aside>
+    </main>
+
+    <!-- 轻量提示 -->
+    <div id="toast" class="toast-notify">操作成功</div>
+
+    <script>
+        const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
+        async function tauriInvoke(cmd, args) {
+            if (tauriCore && tauriCore.invoke) {
+                return await tauriCore.invoke(cmd, args);
+            }
+            throw new Error("当前处于浏览器预览环境，Tauri 后端未连接。");
         }
 
-        const nodes = [];
-        const links = [];
+        let currentSbomData = null;
+        let currentGraphData = null;
 
-        // 1. 统计每个包被依赖的次数 (计算节点的"重力"与"体积")
-        const dependedCountMap = new Map();
-        sbom.dependencies.forEach(dep => {
-            if (dep.dependsOn) {
-                dep.dependsOn.forEach(childRef => {
-                    dependedCountMap.set(childRef, (dependedCountMap.get(childRef) || 0) + 1);
+        const chartDom = document.getElementById('chart-container');
+        const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
 
-                    // 构建基础有向边: 依赖者 -> 被依赖者
-                    links.push({
-                        source: dep.ref,
-                        target: childRef,
-                        lineStyle: { curveness: 0.2, width: 1.5, opacity: 0.6 }
-                    });
-                });
+        // 工业风高对比度分类色标（干净实用，摒弃浮夸渐变）
+        const CATEGORIES = [
+            { name: '📦 项目根节点', itemStyle: { color: '#38bdf8' } },
+            { name: '🚨 漏洞告警 (CVE/GHSA)', itemStyle: { color: '#f85149' } },
+            { name: 'Rust (Cargo)', itemStyle: { color: '#fb923c' } },
+            { name: 'Go (Golang)', itemStyle: { color: '#22d3ee' } },
+            { name: 'Node.js (NPM)', itemStyle: { color: '#eab308' } },
+            { name: 'Java/Kotlin (Maven/Gradle)', itemStyle: { color: '#f43f5e' } },
+            { name: 'Python (PyPI)', itemStyle: { color: '#60a5fa' } },
+            { name: '其他语言生态', itemStyle: { color: '#94a3b8' } }
+        ];
+
+        function detectCategoryIndex(purl) {
+            if (!purl) return 7;
+            if (purl.startsWith('pkg:cargo/')) return 2;
+            if (purl.startsWith('pkg:golang/')) return 3;
+            if (purl.startsWith('pkg:npm/')) return 4;
+            if (purl.startsWith('pkg:maven/')) return 5;
+            if (purl.startsWith('pkg:pypi/')) return 6;
+            return 7;
+        }
+
+        function showToast(msg, isErr = false) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.borderColor = isErr ? 'var(--danger-border)' : 'var(--border-strong)';
+            toast.style.color = isErr ? '#ff7b72' : 'var(--text-main)';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2600);
+        }
+
+        // 1. 文件夹与文件路径选择器绑定
+        document.getElementById('btn-browse-dir').addEventListener('click', async () => {
+            try {
+                const dir = await tauriInvoke('pick_directory');
+                if (dir) {
+                    document.getElementById('input-dir').value = dir;
+                    const curSave = document.getElementById('input-save').value.trim();
+                    if (!curSave) {
+                        const sep = dir.includes('/') ? '/' : '\\';
+                        document.getElementById('input-save').value = `${dir.replace(/[\\/]$/, '')}${sep}sbom_result.json`;
+                    }
+                    showToast(`已选择目录: ${dir}`);
+                }
+            } catch (e) {
+                showToast("打开文件夹失败: " + e, true);
             }
         });
 
-        const componentRefs = new Set();
+        document.getElementById('btn-browse-save').addEventListener('click', async () => {
+            try {
+                const dir = document.getElementById('input-dir').value.trim();
+                let defaultName = "sbom_result.json";
+                if (dir) {
+                    const parts = dir.replace(/[\\/]$/, '').split(/[\\/]/);
+                    const last = parts[parts.length - 1];
+                    if (last) defaultName = `${last}_sbom.json`;
+                }
+                const file = await tauriInvoke('pick_save_file', { defaultName });
+                if (file) {
+                    document.getElementById('input-save').value = file;
+                    showToast(`已指定输出: ${file}`);
+                }
+            } catch (e) {
+                showToast("指定输出失败: " + e, true);
+            }
+        });
 
-        // 2. 生成常规组件节点
-        sbom.components.forEach(c => {
-            componentRefs.add(c['bom-ref']);
-            const count = dependedCountMap.get(c['bom-ref']) || 0;
+        document.getElementById('btn-open-explorer').addEventListener('click', async () => {
+            const path = document.getElementById('input-save').value.trim() || document.getElementById('input-dir').value.trim();
+            if (!path) {
+                showToast("请先指定工程目录或输出文件", true);
+                return;
+            }
+            try {
+                await tauriInvoke('open_in_explorer', { path });
+                showToast(`已在 Windows 资源管理器中打开`);
+            } catch (e) {
+                showToast("打开失败: " + e, true);
+            }
+        });
 
-            // 动态计算节点大小：基础大小 12，每多一个依赖者加 3，最高不超过 60
-            const nodeSize = Math.min(12 + count * 3, 60);
-
-            nodes.push({
-                id: c['bom-ref'],
-                name: `${c.name}\n(v${c.version || '未知'})`,
-                symbolSize: nodeSize,
-                value: count, // 把被依赖次数存入 value，方便 tooltip 显示
-                itemStyle: {
-                    borderColor: '#fff',
-                    borderWidth: 1,
-                    shadowBlur: count > 5 ? 15 : 5, // 核心节点发光更亮
-                    shadowColor: 'rgba(0, 0, 0, 0.3)'
+        // 2. 标签页切换
+        document.querySelectorAll('.view-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.view-tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-panel-container').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                const targetId = btn.getAttribute('data-tab');
+                const target = document.getElementById(targetId);
+                if (target) target.classList.add('active');
+                if (targetId === 'tab-graph') {
+                    setTimeout(() => myChart.resize(), 30);
                 }
             });
         });
 
-        // 3. 构建 "虚拟项目根节点"
-        const VIRTUAL_ROOT_ID = '__VIRTUAL_PROJECT_ROOT__';
-        nodes.push({
-            id: VIRTUAL_ROOT_ID,
-            name: '📦 项目根节点\n(Project Root)',
-            symbolSize: 65, // 根节点是最大的
-            itemStyle: {
-                color: '#ff4d4f', // 醒目的红色
-                borderColor: '#fff',
-                borderWidth: 3,
-                shadowBlur: 20,
-                shadowColor: 'rgba(255, 77, 79, 0.6)'
-            }
+        document.getElementById('btn-close-drawer').addEventListener('click', () => {
+            document.getElementById('node-drawer').classList.remove('open');
         });
 
-        // 4. 将虚拟根节点与所有 "顶级包" 连接
-        // 所谓顶级包，就是从未在别人的 dependsOn 里出现过的包 (count === 0)
-        componentRefs.forEach(ref => {
-            if (!dependedCountMap.has(ref)) {
-                links.push({
-                    source: VIRTUAL_ROOT_ID,
-                    target: ref,
-                    lineStyle: {
-                        curveness: 0.1,
-                        width: 2,
-                        type: 'dashed', // 虚线表示这是系统自动推导的顶层连线
-                        opacity: 0.8,
-                        color: '#ff4d4f'
+        // 3. 图谱数据转换 (内容与节点大幅放大，排布更宽广)
+        function convertCycloneDXToGraph(sbom, filterVulnOnly = false) {
+            if (!sbom || !sbom.components || !sbom.dependencies) {
+                throw new Error("不是合法的 CycloneDX 数据");
+            }
+
+            const nodes = [];
+            const links = [];
+
+            // 漏洞索引表
+            const vulnMap = new Map();
+            const allVulns = [];
+            if (Array.isArray(sbom.vulnerabilities)) {
+                sbom.vulnerabilities.forEach(v => {
+                    const rating = (v.ratings && v.ratings[0]) || {};
+                    const detail = {
+                        id: v.id || 'VULN-ID',
+                        severity: (rating.severity || 'HIGH').toUpperCase(),
+                        score: rating.score !== undefined ? rating.score : 0,
+                        description: v.description || '命中 OSV 安全漏洞',
+                        recommendation: v.recommendation || '建议升级至安全版本'
+                    };
+                    allVulns.push({ ...detail, raw: v });
+                    (v.affects || []).forEach(aff => {
+                        if (aff && aff.ref) {
+                            if (!vulnMap.has(aff.ref)) vulnMap.set(aff.ref, []);
+                            vulnMap.get(aff.ref).push(detail);
+                        }
+                    });
+                });
+            }
+
+            // 依赖关系统计
+            const dependedCountMap = new Map();
+            const childToParentsMap = new Map();
+            const parentToChildrenMap = new Map();
+
+            sbom.dependencies.forEach(dep => {
+                const parentRef = dep.ref;
+                if (dep.dependsOn) {
+                    parentToChildrenMap.set(parentRef, dep.dependsOn);
+                    dep.dependsOn.forEach(childRef => {
+                        dependedCountMap.set(childRef, (dependedCountMap.get(childRef) || 0) + 1);
+
+                        if (!childToParentsMap.has(childRef)) childToParentsMap.set(childRef, []);
+                        childToParentsMap.get(childRef).push(parentRef);
+
+                        const isTargetVuln = vulnMap.has(childRef);
+                        links.push({
+                            source: parentRef,
+                            target: childRef,
+                            lineStyle: isTargetVuln
+                                ? { curveness: 0.15, width: 2.2, opacity: 0.95, color: '#f85149' }
+                                : { curveness: 0.15, width: 1.5, opacity: 0.4, color: '#64748b' }
+                        });
+                    });
+                }
+            });
+
+            const componentRefs = new Set();
+            const ecosystemsFound = new Set();
+            let vulnerableNodeCount = 0;
+
+            sbom.components.forEach(c => {
+                const ref = c['bom-ref'];
+                componentRefs.add(ref);
+                const count = dependedCountMap.get(ref) || 0;
+                const vulns = vulnMap.get(ref) || [];
+                const isVulnerable = vulns.length > 0;
+                if (isVulnerable) vulnerableNodeCount++;
+
+                let locationPath = 'runtime/manifest';
+                if (Array.isArray(c.properties)) {
+                    const loc = c.properties.find(p => p.name === 'syft:location:0:path');
+                    if (loc) locationPath = loc.value;
+                }
+
+                const ecoIdx = detectCategoryIndex(c.purl);
+                if (ecoIdx >= 2 && ecoIdx <= 6) {
+                    ecosystemsFound.add(CATEGORIES[ecoIdx].name);
+                }
+
+                if (filterVulnOnly && !isVulnerable) return;
+
+                // 🌟 大幅放大节点尺寸：基础 28，最高可达 75，字体清晰可见
+                const baseSize = Math.min(26 + count * 4, 68);
+                const nodeSize = isVulnerable ? Math.max(baseSize + 10, 42) : baseSize;
+                const verLabel = c.version ? (c.version.startsWith('v') ? c.version : `v${c.version}`) : '';
+
+                nodes.push({
+                    id: ref,
+                    rawComponent: c,
+                    name: isVulnerable ? `🚨 ${c.name}\n${verLabel}` : `${c.name}\n${verLabel}`,
+                    cleanName: c.name,
+                    version: c.version || '',
+                    purl: c.purl || '',
+                    locationPath,
+                    ecoName: CATEGORIES[ecoIdx]?.name || '其他组件',
+                    category: isVulnerable ? 1 : ecoIdx,
+                    symbolSize: nodeSize,
+                    value: count,
+                    vulns: vulns,
+                    callers: childToParentsMap.get(ref) || [],
+                    dependencies: parentToChildrenMap.get(ref) || [],
+                    // 默认显示清晰工业风标签
+                    label: {
+                        show: isVulnerable || count >= 2,
+                        position: 'bottom',
+                        color: isVulnerable ? '#ff7b72' : '#e6edf3',
+                        fontSize: 12,
+                        fontWeight: isVulnerable ? 'bold' : 'normal',
+                        backgroundColor: 'rgba(22, 27, 34, 0.92)',
+                        borderColor: isVulnerable ? '#f85149' : '#30363d',
+                        borderWidth: 1,
+                        borderRadius: 3,
+                        padding: [3, 6]
+                    },
+                    itemStyle: isVulnerable ? {
+                        color: '#da3633',
+                        borderColor: '#ffeb3b',
+                        borderWidth: 3,
+                        shadowBlur: 20,
+                        shadowColor: 'rgba(248, 81, 73, 0.8)'
+                    } : {
+                        borderColor: '#30363d',
+                        borderWidth: 1.5,
+                        shadowBlur: count > 3 ? 10 : 3,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+                    }
+                });
+            });
+
+            // 虚拟项目根节点 (尺寸加大为 85)
+            const VIRTUAL_ROOT_ID = '__VIRTUAL_PROJECT_ROOT__';
+            if (!filterVulnOnly) {
+                nodes.push({
+                    id: VIRTUAL_ROOT_ID,
+                    name: '📦 项目根节点\n(Root)',
+                    cleanName: '项目根节点',
+                    category: 0,
+                    symbolSize: 85,
+                    vulns: [],
+                    label: {
+                        show: true,
+                        position: 'inside',
+                        color: '#ffffff',
+                        fontSize: 13,
+                        fontWeight: 'bold'
+                    },
+                    itemStyle: {
+                        color: '#1f6feb',
+                        borderColor: '#58a6ff',
+                        borderWidth: 3,
+                        shadowBlur: 25,
+                        shadowColor: 'rgba(31, 111, 235, 0.5)'
+                    }
+                });
+
+                componentRefs.forEach(ref => {
+                    if (!dependedCountMap.has(ref)) {
+                        const isTargetVuln = vulnMap.has(ref);
+                        links.push({
+                            source: VIRTUAL_ROOT_ID,
+                            target: ref,
+                            lineStyle: {
+                                curveness: 0.1,
+                                width: isTargetVuln ? 2.5 : 1.8,
+                                type: 'dashed',
+                                opacity: 0.8,
+                                color: isTargetVuln ? '#f85149' : '#38bdf8'
+                            }
+                        });
                     }
                 });
             }
-        });
 
-        return { nodes, links };
-    }
-
-    document.getElementById('analyze-btn').addEventListener('click', async function() {
-        let directory = document.getElementById('input-dir').value.trim();
-        let outputPath = document.getElementById('input-save').value.trim();
-        const statusDisplay = document.getElementById('status-display');
-
-        // 去掉引号和补全文件名逻辑
-        if (directory.startsWith('"') && directory.endsWith('"')) directory = directory.slice(1, -1);
-        if (outputPath.startsWith('"') && outputPath.endsWith('"')) outputPath = outputPath.slice(1, -1);
-        if (outputPath && !outputPath.endsWith('.json') && !outputPath.endsWith('.sbom')) {
-            const separator = outputPath.includes('\\') ? '\\' : '/';
-            outputPath = outputPath.replace(/[\\/]$/, '') + separator + 'sbom_result.json';
+            return {
+                nodes,
+                links,
+                vulnerableNodeCount,
+                totalCves: Array.isArray(sbom.vulnerabilities) ? sbom.vulnerabilities.length : 0,
+                ecosystemsCount: ecosystemsFound.size,
+                ecosystemsList: Array.from(ecosystemsFound),
+                allVulns
+            };
         }
 
-        document.getElementById('input-dir').value = directory;
-        document.getElementById('input-save').value = outputPath;
-
-        if (!directory || !outputPath) {
-            alert("请完整粘贴项目文件夹路径和 JSON 保存位置！");
-            return;
-        }
-
-        try {
-            statusDisplay.style.color = '#007acc';
-            statusDisplay.innerText = `⏳ 正在深度构建项目宇宙，请稍候...`;
-            myChart.showLoading();
-
-            const jsonString = await invoke('run_sbom_analyze', { directory, outputPath });
-            const rawData = JSON.parse(jsonString);
-
-            // 执行带两大优化的转换逻辑
-            const graphData = convertCycloneDXToGraph(rawData);
-
-            statusDisplay.style.color = 'green';
-            statusDisplay.innerText = `✅ 图谱构建成功！共汇聚 ${graphData.nodes.length - 1} 个依赖项。`;
-            myChart.hideLoading();
-
+        // 4. 渲染大尺寸力导向网络图
+        function renderGraph(graphData) {
             myChart.setOption({
+                backgroundColor: '#0d1117',
+                legend: [{
+                    data: CATEGORIES.map(a => a.name),
+                    top: 10,
+                    textStyle: { color: '#8b949e', fontSize: 12 },
+                    itemGap: 16,
+                    icon: 'roundRect'
+                }],
                 tooltip: {
                     trigger: 'item',
+                    backgroundColor: '#161b22',
+                    borderColor: '#30363d',
+                    borderWidth: 1,
+                    textStyle: { color: '#f0f6fc', fontSize: 12 },
+                    extraCssText: 'box-shadow: 0 8px 24px rgba(0,0,0,0.7); border-radius: 4px; max-width: 460px; white-space: normal;',
                     formatter: function (params) {
                         if (params.dataType === 'node') {
                             if (params.data.id === '__VIRTUAL_PROJECT_ROOT__') {
-                                return `<b>📦 项目本身</b><br/>它直接包含了所有的顶级依赖`;
+                                return `<b>📦 项目根节点</b><br/><span style="color:#8b949e;">统一统辖各个多语言模块的直接顶层依赖</span>`;
                             }
-                            return `<div style="padding: 4px;">
-                                        <b>${params.data.name.replace('\n', ' ')}</b><br/>
-                                        <hr style="margin: 5px 0; border: 0; border-top: 1px solid #ccc;" />
-                                        被其他组件依赖了 <strong style="color:#e91e63;">${params.data.value}</strong> 次
+                            const vulns = params.data.vulns || [];
+                            let vulnSection = '';
+                            if (vulns.length > 0) {
+                                vulnSection = `<div style="margin-top:8px; border-top:1px solid #30363d; padding-top:6px;">
+                                                <div style="color:#f85149; font-weight:bold; font-size:12px;">🚨 命中 ${vulns.length} 项 OSV 漏洞告警:</div>
+                                                ${vulns.map(v => `
+                                                    <div style="margin-top:4px; padding:4px 6px; background:rgba(248,81,73,0.1); border-left:3px solid #f85149;">
+                                                        <div style="font-weight:bold; color:#ff7b72; font-size:11px;">[${v.severity} ${v.score || ''}] ${v.id}</div>
+                                                        <div style="color:#c9d1d9; font-size:11px;">${v.description}</div>
+                                                        <div style="color:#3fb950; font-size:11px;">修复建议: ${v.recommendation}</div>
+                                                    </div>
+                                                `).join('')}
+                                               </div>`;
+                            }
+                            return `<div style="padding:2px;">
+                                        <b style="font-size:14px; color:#58a6ff;">${params.data.cleanName}</b> 
+                                        <span style="color:#8b949e; font-size:12px;">(${params.data.version || '未知'})</span><br/>
+                                        <span style="color:#8b949e; font-size:11px;">生态: ${params.data.ecoName}</span><br/>
+                                        <span style="color:#6e7681; font-size:10px; font-family:var(--font-mono); word-break:break-all;">${params.data.purl}</span>
+                                        <div style="margin-top:4px; color:#c9d1d9; font-size:11px;">被下游依赖: <strong style="color:#f0883e;">${params.data.value}</strong> 次</div>
+                                        ${vulnSection}
                                     </div>`;
                         }
-                        // 如果鼠标悬浮在连线上
-                        const sourceName = params.data.source === '__VIRTUAL_PROJECT_ROOT__' ? '项目根节点' : params.data.source.split('?')[0];
-                        const targetName = params.data.target.split('?')[0];
-                        return `<b>依赖关系</b><br/>${sourceName} <br/>⬇ 依赖于<br/> ${targetName}`;
+                        return `<b>依赖链路调用</b><br/>${params.data.source.split('?')[0]}<br/>⬇<br/>${params.data.target.split('?')[0]}`;
                     }
                 },
-                color: [
-                    '#5470c6', '#91cc75', '#fac858', '#ee6666',
-                    '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'
-                ],
                 series: [
                     {
                         type: 'graph',
                         layout: 'force',
                         data: graphData.nodes,
                         links: graphData.links,
+                        categories: CATEGORIES,
                         roam: true,
                         draggable: true,
-                        // 🌟 添加单向箭头，大小为 8
                         edgeSymbol: ['none', 'arrow'],
-                        edgeSymbolSize: [0, 8],
-                        label: {
-                            show: false,
-                            position: 'right',
-                            formatter: '{b}'
+                        edgeSymbolSize: [0, 9],
+                        // 🌟 工业级开阔物理引擎：更大排斥力与边长，图谱铺满整个屏幕
+                        force: {
+                            repulsion: 520,
+                            edgeLength: 130,
+                            gravity: 0.08
                         },
                         emphasis: {
-                            focus: 'adjacency', // 悬浮高亮相关链路
-                            lineStyle: {
-                                width: 4,
-                                opacity: 1
-                            },
+                            focus: 'adjacency',
+                            lineStyle: { width: 3.5, opacity: 1 },
                             label: {
                                 show: true,
                                 fontSize: 13,
                                 fontWeight: 'bold',
-                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                padding: 5,
-                                borderRadius: 4,
-                                color: '#333'
+                                color: '#ffffff',
+                                backgroundColor: '#161b22',
+                                borderColor: '#58a6ff',
+                                borderWidth: 1,
+                                padding: [4, 8]
                             }
-                        },
-                        force: {
-                            repulsion: 200,   // 排斥力调大，给箭头和粗线留出空间
-                            edgeLength: 70,   // 连线长度
-                            gravity: 0.1      // 向心力
                         }
                     }
                 ]
             });
-
-        } catch (error) {
-            myChart.hideLoading();
-            statusDisplay.style.color = 'red';
-            statusDisplay.innerText = `❌ 分析失败。`;
-            alert("执行失败，错误信息:\n" + error);
         }
-    });
 
-    window.addEventListener('resize', function() {
-        myChart.resize();
-    });
-</script>
+        // 5. 渲染表格数据
+        function renderVulnTable(sbom) {
+            const tbody = document.getElementById('vuln-table-body');
+            const vulns = sbom.vulnerabilities || [];
+            if (vulns.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#3fb950; padding:40px; font-weight:600;">
+                                    ✅ 安全审计通过：当前项目全部组件未发现已知 CVE / GHSA 漏洞！
+                                   </td></tr>`;
+                return;
+            }
+
+            let html = '';
+            vulns.forEach(v => {
+                const rating = (v.ratings && v.ratings[0]) || {};
+                const sev = (rating.severity || 'HIGH').toUpperCase();
+                const score = rating.score !== undefined ? Number(rating.score).toFixed(1) : '-';
+                const sevClass = sev === 'CRITICAL' ? 'critical' : (sev === 'HIGH' ? 'high' : (sev === 'MEDIUM' ? 'medium' : 'low'));
+                const affectedRefs = (v.affects || []).map(a => a.ref.split('?')[0]).join(', ');
+
+                html += `<tr>
+                            <td><b style="color:#ffffff; font-family:var(--font-mono);">${v.id}</b></td>
+                            <td><span class="badge-sev ${sevClass}">${sev}</span></td>
+                            <td><b style="font-family:var(--font-mono); color:#ff7b72;">${score}</b></td>
+                            <td style="font-family:var(--font-mono); color:#79c0ff; word-break:break-all;">${affectedRefs}</td>
+                            <td>${v.description || '无详细描述'}</td>
+                            <td style="color:#3fb950;">${v.recommendation || '关注官方安全通报'}</td>
+                            <td style="text-align:center;">
+                                <button class="tool-btn-sm" onclick="locateNode('${affectedRefs}')">定位</button>
+                            </td>
+                         </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderComponentTable(sbom) {
+            const tbody = document.getElementById('comp-table-body');
+            const components = sbom.components || [];
+            if (components.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px;">暂无数据</td></tr>`;
+                return;
+            }
+
+            const vulnRefs = new Set();
+            if (Array.isArray(sbom.vulnerabilities)) {
+                sbom.vulnerabilities.forEach(v => {
+                    (v.affects || []).forEach(a => { if (a.ref) vulnRefs.add(a.ref); });
+                });
+            }
+
+            let html = '';
+            components.forEach(c => {
+                const isVuln = vulnRefs.has(c['bom-ref']);
+                let locPath = 'runtime/manifest';
+                if (Array.isArray(c.properties)) {
+                    const p = c.properties.find(x => x.name === 'syft:location:0:path');
+                    if (p) locPath = p.value;
+                }
+                const ecoIdx = detectCategoryIndex(c.purl);
+                const ecoName = CATEGORIES[ecoIdx]?.name || '其他';
+
+                html += `<tr>
+                            <td><b style="color:#ffffff;">${c.name}</b></td>
+                            <td style="font-family:var(--font-mono); color:#79c0ff;">${c.version || '-'}</td>
+                            <td><span class="badge-eco-tag">${ecoName}</span></td>
+                            <td style="font-family:var(--font-mono); color:#8b949e; font-size:11px; word-break:break-all;">${c.purl || '-'}</td>
+                            <td style="font-family:var(--font-mono); color:#6e7681; font-size:11px;">${locPath}</td>
+                            <td style="text-align:center;">
+                                ${isVuln ? '<span style="color:#f85149; font-weight:bold;">🚨 风险</span>' : '<span style="color:#3fb950;">正常</span>'}
+                            </td>
+                         </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // 定位并高亮节点
+        window.locateNode = function(refOrName) {
+            document.querySelector('[data-tab="tab-graph"]').click();
+            document.getElementById('node-search').value = refOrName;
+            filterAndFocus(refOrName);
+        };
+
+        function filterAndFocus(keyword) {
+            if (!keyword || !currentGraphData) return;
+            const term = keyword.toLowerCase().trim();
+            const matched = currentGraphData.nodes.find(n => 
+                (n.cleanName && n.cleanName.toLowerCase().includes(term)) ||
+                (n.purl && n.purl.toLowerCase().includes(term)) ||
+                (n.id && n.id.toLowerCase().includes(term))
+            );
+
+            if (matched) {
+                myChart.dispatchAction({
+                    type: 'focusNodeAdjacency',
+                    dataIndex: currentGraphData.nodes.indexOf(matched)
+                });
+                openDrawer(matched);
+                showToast(`已定位: ${matched.cleanName}`);
+            } else {
+                showToast("未找到匹配节点", true);
+            }
+        }
+
+        document.getElementById('node-search').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') filterAndFocus(e.target.value);
+        });
+
+        // 仅看漏洞过滤
+        document.getElementById('filter-vuln-only').addEventListener('change', (e) => {
+            if (!currentSbomData) return;
+            const filtered = convertCycloneDXToGraph(currentSbomData, e.target.checked);
+            renderGraph(filtered);
+            showToast(e.target.checked ? "已过滤为仅展示漏洞拓扑" : "已展示全量依赖网络");
+        });
+
+        // 抽屉详情
+        myChart.on('click', function(params) {
+            if (params.dataType === 'node' && params.data.id !== '__VIRTUAL_PROJECT_ROOT__') {
+                openDrawer(params.data);
+            }
+        });
+
+        function openDrawer(nodeData) {
+            const drawer = document.getElementById('node-drawer');
+            const drawerBody = document.getElementById('drawer-body');
+            document.getElementById('drawer-node-name').innerText = nodeData.cleanName;
+            document.getElementById('drawer-eco-tag').innerText = nodeData.ecoName;
+
+            const vulns = nodeData.vulns || [];
+            let vulnBox = '';
+            if (vulns.length > 0) {
+                vulnBox = `
+                    <div class="detail-vuln-box">
+                        <b style="color:#f85149; font-size:12px;">🚨 命中 ${vulns.length} 项 OSV 漏洞告警</b>
+                        ${vulns.map(v => `
+                            <div style="margin-top:6px; border-top:1px solid rgba(248,81,73,0.3); padding-top:4px;">
+                                <div style="display:flex; justify-content:space-between;">
+                                    <b style="color:#ff7b72;">${v.id}</b>
+                                    <span class="badge-sev ${v.severity.toLowerCase()}">${v.severity} ${v.score || ''}</span>
+                                </div>
+                                <div style="color:#f0f6fc; margin-top:2px;">${v.description}</div>
+                                <div style="color:#3fb950; margin-top:2px; font-weight:600;">修复建议: ${v.recommendation}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            drawerBody.innerHTML = `
+                ${vulnBox}
+                <div class="detail-block">
+                    <div class="detail-title">版本号</div>
+                    <div class="detail-val" style="color:#79c0ff;">${nodeData.version || '未知'}</div>
+                </div>
+                <div class="detail-block">
+                    <div class="detail-title">唯一实例身份证 (instance_id)</div>
+                    <div class="detail-val">${nodeData.id}</div>
+                </div>
+                <div class="detail-block">
+                    <div class="detail-title">标准 PURL 坐标</div>
+                    <div class="detail-val" style="color:#8b949e;">${nodeData.purl}</div>
+                </div>
+                <div class="detail-block">
+                    <div class="detail-title">清单物理位置 (syft:location:0:path)</div>
+                    <div class="detail-val">${nodeData.locationPath}</div>
+                </div>
+                <div class="detail-block">
+                    <div class="detail-title">上游调用者 (被依赖 ${nodeData.callers ? nodeData.callers.length : 0} 次)</div>
+                    <div class="detail-val" style="color:#8b949e;">
+                        ${(nodeData.callers && nodeData.callers.length > 0) ? nodeData.callers.map(c => `<div>• ${c.split('?')[0]}</div>`).join('') : '顶级直接依赖项'}
+                    </div>
+                </div>
+            `;
+            drawer.classList.add('open');
+        }
+
+        // 画布缩放工具
+        document.getElementById('btn-zoom-in').addEventListener('click', () => {
+            const opt = myChart.getOption();
+            const curZoom = (opt.series[0].zoom || 1) * 1.3;
+            myChart.setOption({ series: [{ zoom: curZoom }] });
+        });
+
+        document.getElementById('btn-zoom-out').addEventListener('click', () => {
+            const opt = myChart.getOption();
+            const curZoom = Math.max((opt.series[0].zoom || 1) * 0.7, 0.2);
+            myChart.setOption({ series: [{ zoom: curZoom }] });
+        });
+
+        document.getElementById('btn-reset-view').addEventListener('click', () => {
+            myChart.dispatchAction({ type: 'restore' });
+            showToast("已重置图谱比例");
+        });
+
+        document.getElementById('btn-export-png').addEventListener('click', () => {
+            const url = myChart.getDataURL({ pixelRatio: 2, backgroundColor: '#0d1117' });
+            const a = document.createElement('a');
+            a.download = `sbom-network-${Date.now()}.png`;
+            a.href = url;
+            a.click();
+            showToast("已导出高清 PNG 图片");
+        });
+
+        // 6. 核心分析调用入口
+        document.getElementById('analyze-btn').addEventListener('click', async function() {
+            let directory = document.getElementById('input-dir').value.trim();
+            let outputPath = document.getElementById('input-save').value.trim();
+            const isDynamic = document.getElementById('toggle-dynamic').checked;
+
+            if (directory.startsWith('"') && directory.endsWith('"')) directory = directory.slice(1, -1);
+            if (outputPath.startsWith('"') && outputPath.endsWith('"')) outputPath = outputPath.slice(1, -1);
+
+            if (!directory) {
+                alert("请先点击「打开文件夹」选取需要分析的项目代码根目录！");
+                return;
+            }
+            if (!outputPath) {
+                const sep = directory.includes('/') ? '/' : '\\';
+                outputPath = `${directory.replace(/[\\/]$/, '')}${sep}sbom_result.json`;
+                document.getElementById('input-save').value = outputPath;
+            }
+
+            const btn = document.getElementById('analyze-btn');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = `<span>⏳ 正在分析构建...</span>`;
+                statusDot.className = 'status-dot-sm busy';
+                statusText.innerText = '正在执行跨语言依赖拓扑与 OSV 漏洞库匹配...';
+                myChart.showLoading({
+                    text: '正在构建高密度依赖星系图谱...',
+                    textColor: '#fff',
+                    maskColor: 'rgba(13, 17, 23, 0.85)',
+                    color: '#38bdf8'
+                });
+
+                const jsonString = await tauriInvoke('run_sbom_analyze', {
+                    directory,
+                    outputPath,
+                    dynamic: isDynamic
+                });
+
+                const rawSbom = JSON.parse(jsonString);
+                currentSbomData = rawSbom;
+
+                const graphData = convertCycloneDXToGraph(rawSbom);
+                currentGraphData = graphData;
+                renderGraph(graphData);
+
+                // 更新状态栏与徽标
+                document.getElementById('metric-components').innerText = rawSbom.components ? rawSbom.components.length : 0;
+                document.getElementById('metric-vulns').innerText = graphData.totalCves;
+                if (graphData.totalCves > 0) {
+                    document.getElementById('metric-vulns').classList.add('alert');
+                    document.getElementById('tab-vuln-badge').style.display = 'inline-block';
+                    document.getElementById('tab-vuln-badge').innerText = graphData.totalCves;
+                } else {
+                    document.getElementById('metric-vulns').classList.remove('alert');
+                    document.getElementById('tab-vuln-badge').style.display = 'none';
+                }
+                document.getElementById('metric-ecos').innerText = graphData.ecosystemsCount;
+                document.getElementById('metric-links').innerText = graphData.links.length;
+
+                renderVulnTable(rawSbom);
+                renderComponentTable(rawSbom);
+                document.getElementById('raw-json-block').textContent = JSON.stringify(rawSbom, null, 2);
+
+                myChart.hideLoading();
+                btn.disabled = false;
+                btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>重新分析</span>`;
+
+                if (graphData.totalCves > 0) {
+                    statusDot.className = 'status-dot-sm danger';
+                    statusText.innerText = `完成！识别 ${rawSbom.components.length} 个依赖实例，检出 ${graphData.totalCves} 项漏洞告警 (已标红)`;
+                    showToast(`分析完成！检出 ${graphData.totalCves} 项漏洞告警`);
+                } else {
+                    statusDot.className = 'status-dot-sm';
+                    statusText.innerText = `完成！识别 ${rawSbom.components.length} 个依赖实例，未发现已知漏洞`;
+                    showToast("分析完成！全部依赖关系图谱已呈现");
+                }
+
+            } catch (err) {
+                myChart.hideLoading();
+                btn.disabled = false;
+                btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>重新分析</span>`;
+                statusDot.className = 'status-dot-sm danger';
+                statusText.innerText = '分析失败';
+                showToast("分析发生异常: " + err, true);
+                alert("构建失败: " + err);
+            }
+        });
+
+        // 复制与下载 JSON
+        document.getElementById('btn-copy-json').addEventListener('click', () => {
+            const code = document.getElementById('raw-json-block').textContent;
+            navigator.clipboard.writeText(code).then(() => showToast("已复制 SBOM JSON 到剪贴板"));
+        });
+
+        document.getElementById('btn-download-json').addEventListener('click', () => {
+            const code = document.getElementById('raw-json-block').textContent;
+            const blob = new Blob([code], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.download = `cyclonedx-sbom-${Date.now()}.json`;
+            a.href = url;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("已下载 SBOM JSON 文件");
+        });
+
+        window.addEventListener('resize', () => {
+            myChart && myChart.resize();
+        });
+    </script>
 </body>
 </html>

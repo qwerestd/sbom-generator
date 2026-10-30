@@ -1,25 +1,30 @@
-use crate::analyze::producers::cargo_producer::CargoProducer;
-use crate::analyze::producers::dynamic::cargo_dynamic::CargoDynamicProducer;
-use crate::analyze::producers::dynamic::npm_dynamic::NpmDynamicProducer;
-use crate::analyze::producers::dynamic::pypi_dynamic::PypiDynamicProducer;
-// 【新增】引入 Gradle 的动态与静态解析器
-use crate::analyze::producers::dynamic::gradle_dynamic::GradleDynamicProducer;
+use std::collections::HashMap;
+use std::path::PathBuf;
+
+use crate::analyze::producers::cargo::cargo_dynamic::CargoDynamicProducer;
+use crate::analyze::producers::cargo::cargo_lock_producer::CargoProducer;
+use crate::analyze::producers::cargo::cargo_toml_producer::CargoTomlProducer;
 use crate::analyze::producers::dynamic_producer::DynamicProducer;
-use crate::analyze::producers::gradle_producer::GradleProducer;
+use crate::analyze::producers::go::go_dynamic::GoDynamicProducer;
+use crate::analyze::producers::go::go_producer::GoProducer;
+use crate::analyze::producers::gradle::gradle_dynamic::GradleDynamicProducer;
+use crate::analyze::producers::gradle::gradle_producer::GradleProducer;
+use crate::analyze::producers::maven::maven_dynamic::MavenDynamicProducer;
 use crate::analyze::producers::maven::maven_producer::MavenProducerBuilder;
-use crate::analyze::producers::npm_lock_producer::NpmLockProducer;
-use crate::analyze::producers::npm_producer::NpmProducer;
+use crate::analyze::producers::npm::npm_dynamic::NpmDynamicProducer;
+use crate::analyze::producers::npm::npm_lock_producer::NpmLockProducer;
+use crate::analyze::producers::npm::npm_producer::NpmProducer;
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
-use crate::analyze::producers::pypi_producer::PypiProducer;
-// use crate::analyze::producers::poetry_lock_producer::PoetryLockProducer;
+use crate::analyze::producers::pypi::pypi_dynamic::PypiDynamicProducer;
+use crate::analyze::producers::pypi::pypi_lock_producer::PypiLockProducer;
+use crate::analyze::producers::pypi::pypi_producer::PypiProducer;
+use crate::analyze::producers::pypi::pyproject_producer::PyprojectProducer;
 
 use crate::model::configuration::Configuration;
 use crate::model::dependency::Dependency;
 use crate::report::{generate_report, print_report};
 use crate::sbom::generate::generate_sbom;
 use crate::utils::file_utils::get_files;
-use std::collections::HashMap; // 【新增引入】
-use std::path::PathBuf;
 
 /// Analyze paths, find dependencies and write the SBOM to disk.
 pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<()> {
@@ -29,14 +34,14 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
         configuration.print_configuration();
     }
 
-    let all_files = get_files(configuration.directory.as_str()).expect("cannot read directory");
+    let all_files = get_files(configuration.directory.as_str())?;
     let producer_cfg = SbomProducerConfiguration {
         base_path: PathBuf::from(&configuration.directory),
         use_debug: configuration.use_debug,
     };
 
     // =====================================================================
-    // 工业级编排引擎：支持 [动态探针 -> 按项目父目录聚类 -> 静态责任链降级]
+    // 工业级编排引擎：支持 [动态探针 -> 按项目父目录聚类 -> 多级静态责任链降级]
     // =====================================================================
     let mut run_ecosystem_chain =
         |eco_name: &str,
@@ -70,30 +75,46 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
                 }
             }
 
-            // --- 轨道二：静态责任链队列（核心重构：下沉到“单个子项目文件夹”粒度） ---
+            // --- 轨道二：静态责任链队列 ---
             if !resolved_dynamically {
                 // 步骤 A：筛选出全仓库内当前生态的所有潜在清单文件
-                let candidate_files: Vec<&PathBuf> = all_files
+                let candidate_files: Vec<PathBuf> = all_files
                     .iter()
                     .filter(|f| {
                         static_producers
                             .iter()
                             .any(|p| p.use_file(f, &producer_cfg))
                     })
+                    .cloned()
                     .collect();
 
-                // 步骤 B：按文件所在的父文件夹（即各个独立微服务的根目录）聚类
+                if candidate_files.is_empty() {
+                    return;
+                }
+
+                // 若当前生态仅有一个静态解析器（如 Maven 需跨目录构建父子 POM 上下文、Gradle 需跨目录共享属性或 Go 协同 go.work+go.mod+go.sum），
+                // 直接将全部候选文件整体移交，保证多模块继承不丢失上下文。
+                if static_producers.len() == 1 {
+                    if let Ok(deps) =
+                        static_producers[0].find_dependencies(&candidate_files, &producer_cfg)
+                    {
+                        raw_collected_deps.extend(deps);
+                    }
+                    return;
+                }
+
+                // 步骤 B：当存在多级回退链（如 Lockfile -> Manifest）时，按各自父目录独立竞争
                 let mut project_dirs: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
                 for f in candidate_files {
                     if let Some(parent) = f.parent() {
                         project_dirs
                             .entry(parent.to_path_buf())
                             .or_default()
-                            .push(f.clone());
+                            .push(f);
                     }
                 }
 
-                // 步骤 C：遍历每一个独立的微服务领地，在【单文件夹作用域】内跑责任链！
+                // 步骤 C：在【单文件夹作用域】内跑责任链
                 for (_proj_dir, files_in_dir) in project_dirs {
                     for producer in static_producers {
                         let matched: Vec<PathBuf> = files_in_dir
@@ -106,11 +127,10 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
                             match producer.find_dependencies(&matched, &producer_cfg) {
                                 Ok(deps) if !deps.is_empty() => {
                                     raw_collected_deps.extend(deps);
-                                    // 🚀 【绝杀点】：只截断当前子文件夹的队列！
-                                    // 保证了 /apps/web 认领 Lock 后 break，绝不阻碍 /apps/docs 去认领 Json！
+                                    // 只截断当前子文件夹的队列，保证其他子项目可独立降级
                                     break;
                                 }
-                                _ => {} // 本文件夹下解析失败，让位给队列后置位（如 Lock 降级为 Json）
+                                _ => {}
                             }
                         }
                     }
@@ -118,45 +138,56 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
             }
         };
 
-    // 1. Cargo 生态
+    // 1. Cargo (Rust) 生态：动态 metadata -> Cargo.lock -> Cargo.toml (支持 Workspace 继承)
     let cargo_dyn = CargoDynamicProducer::default();
-    let cargo_static = CargoProducer::default();
-    run_ecosystem_chain("Cargo", Some(&cargo_dyn), &[&cargo_static]);
+    let cargo_lock = CargoProducer::default();
+    let cargo_toml = CargoTomlProducer::default();
+    run_ecosystem_chain("Cargo", Some(&cargo_dyn), &[&cargo_lock, &cargo_toml]);
 
-    // 2. NPM 生态
+    // 2. NPM (JavaScript/TypeScript) 生态：动态 npm ls -> package-lock.json -> package.json (支持 Catalog 继承)
     let npm_dyn = NpmDynamicProducer::default();
     let npm_lock = NpmLockProducer::default();
     let npm_json = NpmProducer::default();
     run_ecosystem_chain("NPM", Some(&npm_dyn), &[&npm_lock, &npm_json]);
 
-    // 3. Maven 生态
+    // 3. Maven (Java) 生态：动态 dependency:tree -> 静态双趟 pom.xml AST
+    let maven_dyn = MavenDynamicProducer::default();
     let maven_static = MavenProducerBuilder::default().build().unwrap();
-    run_ecosystem_chain("Maven", None, &[&maven_static]);
+    run_ecosystem_chain("Maven", Some(&maven_dyn), &[&maven_static]);
 
-    // 4. PyPI 生态
+    // 4. PyPI (Python) 生态：动态虚拟环境 pip inspect (带根可达剪枝) -> poetry.lock/uv.lock/Pipfile.lock -> requirements.txt -> pyproject.toml/Pipfile
     let pypi_dyn = PypiDynamicProducer::default();
-    let pypi_static = PypiProducer::default();
-    run_ecosystem_chain("PyPI", Some(&pypi_dyn), &[&pypi_static]);
+    let pypi_lock = PypiLockProducer::default();
+    let pypi_req = PypiProducer::default();
+    let pyproject = PyprojectProducer::default();
+    run_ecosystem_chain(
+        "PyPI",
+        Some(&pypi_dyn),
+        &[&pypi_lock, &pypi_req, &pyproject],
+    );
 
-    // 5. Gradle 生态 【新增】
+    // 5. Gradle (Java/Kotlin) 生态：动态 gradlew dependencies -> 静态构建脚本与 Version Catalog (支持变量插值与 BOM 继承)
     let gradle_dyn = GradleDynamicProducer::default();
     let gradle_static = GradleProducer::default();
-    // Gradle 生态同理，先尝试动态解析树（Wrapper/CLI），失败则退化成直接解析 *.gradle / *.kts / libs.versions.toml
     run_ecosystem_chain("Gradle", Some(&gradle_dyn), &[&gradle_static]);
 
+    // 6. Go (Golang) 生态：动态 go mod graph + MVS -> 静态 go.work + go.mod + go.sum
+    let go_dyn = GoDynamicProducer::default();
+    let go_static = GoProducer::default();
+    run_ecosystem_chain("Go", Some(&go_dyn), &[&go_static]);
+
     // =====================================================================
-    // 终极拓扑去重与边融合引擎（废除原有的字面量 dedup_by 执念）
+    // 终极拓扑去重与边融合引擎
     // =====================================================================
     let initial_count = raw_collected_deps.len();
     let mut merged_map: HashMap<String, Dependency> = HashMap::with_capacity(initial_count);
 
     for dep in raw_collected_deps {
-        let key = dep.instance_id.clone(); // 绝对物理主键
+        let key = dep.instance_id.clone();
 
         merged_map
             .entry(key)
             .and_modify(|existing| {
-                // 拓扑边血脉融合：当公共基础库发生复用碰撞时，取 dependsOn 子边的并集
                 for child_id in &dep.dependencies {
                     if !existing.dependencies.contains(child_id) {
                         existing.dependencies.push(child_id.clone());
@@ -200,10 +231,12 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
             println!("dep: {} [{}]", dep.instance_id, dep_file);
         }
     }
+
+    // 先落盘生成最新 SBOM JSON，再基于新生成的 SBOM 汇总打印逻辑聚合报表
+    generate_sbom(final_dependencies, configuration)?;
     if let Ok(report) = generate_report(configuration.output.as_str()) {
         print_report(&report);
     }
-    generate_sbom(final_dependencies, configuration).expect("cannot generate SBOM");
     Ok(())
 }
 
@@ -214,7 +247,6 @@ mod tests {
     use std::fs;
     use std::path::PathBuf;
 
-    // 1. 这是一个供下方测试用例调用的辅助函数
     fn run_test_for_ecosystem(folder_name: &str) {
         let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         path.push("resources");
@@ -234,7 +266,6 @@ mod tests {
             out_path.set_file_name(new_name);
         }
 
-        // 创建多层测试输出目录，防止 Windows 报 NotFound 错误
         if let Some(parent) = out_path.parent() {
             fs::create_dir_all(parent).expect("无法创建测试输出目录");
         }
@@ -246,16 +277,15 @@ mod tests {
             dynamic: false,
         };
 
-        // 核心：分别用静态轨和动态轨压测该生态，全面染色代码行
-        let _ = analyze(&config, false);
+        // 分别用静态轨和动态轨压测该生态
+        analyze(&config, false).expect("静态分析失败");
+        assert!(out_path.exists(), "SBOM 输出文件应当被创建");
         let _ = analyze(&config, true);
 
         if out_path.exists() {
             let _ = fs::remove_file(out_path);
         }
     }
-
-    // 2. ======= 测试用例区 =======
 
     #[test]
     fn test_analyze_npm_ecosystem() {
@@ -280,5 +310,46 @@ mod tests {
     #[test]
     fn test_analyze_maven_hierarchy_ecosystem() {
         run_test_for_ecosystem("maven/hierarchy");
+    }
+
+    #[test]
+    fn test_analyze_go_ecosystem() {
+        run_test_for_ecosystem("go");
+    }
+
+    #[test]
+    fn test_analyze_polyglot_showcase_with_osv() {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("examples");
+        path.push("polyglot-showcase");
+
+        let mut out_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        out_path.push("target");
+        out_path.push("test_outputs");
+        out_path.push("polyglot_showcase_sbom.json");
+
+        if let Some(parent) = out_path.parent() {
+            fs::create_dir_all(parent).expect("无法创建测试输出目录");
+        }
+
+        let config = Configuration {
+            directory: path.to_string_lossy().to_string(),
+            output: out_path.to_string_lossy().to_string(),
+            use_debug: false,
+            dynamic: false,
+        };
+
+        analyze(&config, false).expect("多语言靶场分析失败");
+        let content = fs::read_to_string(&out_path).expect("读取生成的 SBOM 失败");
+        let json: serde_json::Value = serde_json::from_str(&content).unwrap();
+        let vulns = json["vulnerabilities"]
+            .as_array()
+            .expect("应当包含 vulnerabilities 数组");
+        assert!(
+            vulns.len() >= 10,
+            "多语言靶场应至少检出 10 个跨语言 CVE/GHSA 漏洞，实际: {}",
+            vulns.len()
+        );
+        let _ = fs::remove_file(out_path);
     }
 }

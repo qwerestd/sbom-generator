@@ -82,7 +82,7 @@ fn main() {
 
     let base_dir = env::current_dir().unwrap();
     for proj in &tree_sitter_projects {
-        let project_dir = format!(".vendor/{}@{}", &proj.name, &proj.commit_hash);
+        let project_dir = format!(".vendor/{}@{}", proj.name, proj.commit_hash);
         let project_path = Path::new(&project_dir);
 
         if !project_path.exists() {
