@@ -8,6 +8,7 @@ use serde_cyclonedx::cyclonedx::v_1_6::{
 
 use crate::model::configuration::Configuration;
 use crate::model::dependency::Dependency;
+use crate::utils::license_resolver::LicenseResolver;
 use crate::utils::osv_scanner::{OsvScanner, VulnerabilityInfo};
 
 // =====================================================================
@@ -126,6 +127,20 @@ pub fn generate_sbom(
                     .unwrap_or_else(|_| "\"library\"".to_string())
                     .replace('"', "");
                 comp_obj.insert("type".to_string(), serde_json::json!(cdx_type));
+
+                // 【核心补强 1：开源许可证合规元数据 (License Metadata) 注入】
+                if let Some(spdx_lic) = LicenseResolver::resolve_license(d) {
+                    comp_obj.insert(
+                        "licenses".to_string(),
+                        serde_json::json!([
+                            {
+                                "license": {
+                                    "id": spdx_lic
+                                }
+                            }
+                        ]),
+                    );
+                }
 
                 // 【方向二兑现：注入文件物理路径与 OSV 风险标签 (Properties)】
                 let mut props = Vec::new();

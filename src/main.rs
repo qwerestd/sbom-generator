@@ -30,6 +30,11 @@ pub fn main() {
         "static-only",
         "force static analysis only (disable dynamic detection)",
     );
+    opts.optflag(
+        "t",
+        "tree",
+        "display hierarchical dependency tree summary in console",
+    );
 
     opts.optopt(
         "o",

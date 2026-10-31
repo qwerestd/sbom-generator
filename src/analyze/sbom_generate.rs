@@ -22,7 +22,7 @@ use crate::analyze::producers::pypi::pyproject_producer::PyprojectProducer;
 
 use crate::model::configuration::Configuration;
 use crate::model::dependency::Dependency;
-use crate::report::{generate_report, print_report};
+use crate::report::{generate_report, print_dependency_tree, print_report};
 use crate::sbom::generate::generate_sbom;
 use crate::utils::file_utils::get_files;
 
@@ -232,11 +232,12 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
         }
     }
 
-    // 先落盘生成最新 SBOM JSON，再基于新生成的 SBOM 汇总打印逻辑聚合报表
+    // 先落盘生成最新 SBOM JSON，再基于新生成的 SBOM 汇总打印逻辑聚合报表与依赖树摘要
     generate_sbom(final_dependencies, configuration)?;
     if let Ok(report) = generate_report(configuration.output.as_str()) {
         print_report(&report);
     }
+    let _ = print_dependency_tree(configuration.output.as_str());
     Ok(())
 }
 
@@ -349,6 +350,14 @@ mod tests {
             vulns.len() >= 10,
             "多语言靶场应至少检出 10 个跨语言 CVE/GHSA 漏洞，实际: {}",
             vulns.len()
+        );
+        let comps = json["components"]
+            .as_array()
+            .expect("应当包含 components 数组");
+        let licensed_count = comps.iter().filter(|c| c.get("licenses").is_some()).count();
+        assert!(
+            licensed_count > 0,
+            "组件应当包含解析出的 SPDX licenses 元数据"
         );
         let _ = fs::remove_file(out_path);
     }

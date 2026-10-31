@@ -211,6 +211,7 @@ impl AsciiTreeStackBuilder {
                 instance_id: instance_id.clone(),
                 dependencies: Vec::new(),
                 location: None,
+                license: None,
             });
 
         instance_id

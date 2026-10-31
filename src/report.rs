@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 
 // 逻辑聚合模型
@@ -16,6 +16,7 @@ pub struct LogicalReport {
 pub struct LogicalComponent {
     pub name: String,
     pub version: Option<String>,
+    pub license: Option<String>,
     pub instance_count: usize,
     pub instances: Vec<String>, // 存储所有对应的 bom-ref
 }
@@ -28,6 +29,41 @@ pub struct VulnerabilitySummary {
     pub description: String,
     pub recommendation: String,
     pub affected_components: Vec<String>,
+}
+
+/// 从 CycloneDX 组件 JSON 节点提取 SPDX 许可证标识
+fn extract_component_license(comp: &serde_json::Value) -> Option<String> {
+    comp.get("licenses")?
+        .as_array()?
+        .first()?
+        .get("license")?
+        .get("id")
+        .or_else(|| {
+            comp.get("licenses")?
+                .as_array()?
+                .first()?
+                .get("license")?
+                .get("name")
+        })?
+        .as_str()
+        .map(|s| s.to_string())
+}
+
+/// 根据 PURL 识别简短生态标签
+fn detect_eco_badge(purl: &str) -> &'static str {
+    if purl.starts_with("pkg:cargo/") {
+        "Cargo"
+    } else if purl.starts_with("pkg:golang/") {
+        "Go"
+    } else if purl.starts_with("pkg:npm/") {
+        "NPM"
+    } else if purl.starts_with("pkg:maven/") {
+        "Maven"
+    } else if purl.starts_with("pkg:pypi/") {
+        "PyPI"
+    } else {
+        "Pkg"
+    }
 }
 
 /// 读取 SBOM 文件并生成聚合报表
@@ -46,6 +82,7 @@ pub fn generate_report(sbom_path: &str) -> anyhow::Result<LogicalReport> {
         let name = comp["name"].as_str().unwrap_or("unknown").to_string();
         let version = comp["version"].as_str().map(|s| s.to_string());
         let bom_ref = comp["bom-ref"].as_str().unwrap_or("").to_string();
+        let license = extract_component_license(comp);
 
         let display_label = match &version {
             Some(ver) => format!("{}@{}", name, ver),
@@ -58,10 +95,14 @@ pub fn generate_report(sbom_path: &str) -> anyhow::Result<LogicalReport> {
             .or_insert(LogicalComponent {
                 name,
                 version,
+                license: license.clone(),
                 instance_count: 0,
                 instances: Vec::new(),
             });
 
+        if entry.license.is_none() && license.is_some() {
+            entry.license = license;
+        }
         entry.instances.push(bom_ref);
         entry.instance_count += 1;
     }
@@ -126,28 +167,32 @@ pub fn generate_report(sbom_path: &str) -> anyhow::Result<LogicalReport> {
     })
 }
 
-/// 在控制台优雅展示报表（包含逻辑组件聚合与 OSV 漏洞安全告警）
+/// 在控制台优雅展示报表（包含逻辑组件聚合、SPDX 许可证与 OSV 漏洞安全告警）
 pub fn print_report(report: &LogicalReport) {
-    println!("{:=^68}", " SBOM 逻辑聚合报表 ");
-    println!("{:<32} | {:<16} | {:<10}", "组件名称", "版本", "物理实例数");
-    println!("{:-<68}", "");
+    println!("{:=^86}", " SBOM 逻辑聚合与许可证合规报表 ");
+    println!(
+        "{:<32} | {:<14} | {:<20} | {:<8}",
+        "组件名称", "版本", "开源许可证 (SPDX)", "实例数"
+    );
+    println!("{:-<86}", "");
 
     for comp in &report.components {
         let ver = comp.version.as_deref().unwrap_or("n/a");
+        let lic = comp.license.as_deref().unwrap_or("UNKNOWN");
         println!(
-            "{:<32} | {:<16} | {:<10}",
-            comp.name, ver, comp.instance_count
+            "{:<32} | {:<14} | {:<20} | {:<8}",
+            comp.name, ver, lic, comp.instance_count
         );
     }
 
-    println!("{:-<68}", "");
+    println!("{:-<86}", "");
     println!(
         "总结：识别到 {} 个逻辑组件，共映射 {} 个物理隔离实例。",
         report.total_logical_components, report.total_physical_instances
     );
 
     if !report.vulnerabilities.is_empty() {
-        println!("\n{:=^68}", " 🚨 OSV 开源漏洞联动审计告警 ");
+        println!("\n{:=^86}", " 🚨 OSV 开源漏洞联动审计告警 ");
         for vuln in &report.vulnerabilities {
             println!(
                 "[{}] {:.1} | {} -> 命中组件: {}",
@@ -159,6 +204,204 @@ pub fn print_report(report: &LogicalReport) {
             println!("  ├─ 风险描述: {}", vuln.description);
             println!("  └─ 修复建议: {}", vuln.recommendation);
         }
-        println!("{:=^68}", "");
+        println!("{:=^86}", "");
+    }
+}
+
+struct TreeNodeMeta {
+    name: String,
+    version: String,
+    eco_badge: &'static str,
+    license: String,
+    vulns: Vec<String>,
+}
+
+/// 在命令行终端输出直观的 ASCII 多语言依赖树层级摘要 (Dependency Tree Summary)
+pub fn print_dependency_tree(sbom_path: &str) -> anyhow::Result<()> {
+    let content = fs::read_to_string(sbom_path)?;
+    let v: serde_json::Value = serde_json::from_str(&content)?;
+
+    let Some(components) = v.get("components").and_then(|c| c.as_array()) else {
+        return Ok(());
+    };
+    if components.is_empty() {
+        return Ok(());
+    }
+
+    // 1. 建立 ref -> 漏洞编号列表 索引
+    let mut ref_vulns: HashMap<String, Vec<String>> = HashMap::new();
+    if let Some(vulns_arr) = v.get("vulnerabilities").and_then(|val| val.as_array()) {
+        for vuln in vulns_arr {
+            let id = vuln["id"].as_str().unwrap_or("VULN").to_string();
+            if let Some(affects) = vuln.get("affects").and_then(|a| a.as_array()) {
+                for aff in affects {
+                    if let Some(r) = aff["ref"].as_str() {
+                        ref_vulns.entry(r.to_string()).or_default().push(id.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. 建立 ref -> 节点元数据 索引
+    let mut node_map: HashMap<String, TreeNodeMeta> = HashMap::new();
+    let mut all_refs: Vec<String> = Vec::new();
+    for comp in components {
+        let bom_ref = comp["bom-ref"].as_str().unwrap_or("").to_string();
+        if bom_ref.is_empty() {
+            continue;
+        }
+        let name = comp["name"].as_str().unwrap_or("unknown").to_string();
+        let version = comp["version"].as_str().unwrap_or("n/a").to_string();
+        let purl = comp["purl"].as_str().unwrap_or("");
+        let eco_badge = detect_eco_badge(purl);
+        let license = extract_component_license(comp).unwrap_or_else(|| "UNKNOWN".to_string());
+        let vulns = ref_vulns.remove(&bom_ref).unwrap_or_default();
+
+        node_map.insert(
+            bom_ref.clone(),
+            TreeNodeMeta {
+                name,
+                version,
+                eco_badge,
+                license,
+                vulns,
+            },
+        );
+        all_refs.push(bom_ref);
+    }
+
+    // 3. 建立有向邻接表与入度统计
+    let mut adj: HashMap<String, Vec<String>> = HashMap::new();
+    let mut in_degree: HashMap<String, usize> = HashMap::new();
+    if let Some(deps_arr) = v.get("dependencies").and_then(|d| d.as_array()) {
+        for dep in deps_arr {
+            let parent = dep["ref"].as_str().unwrap_or("").to_string();
+            if parent.is_empty() {
+                continue;
+            }
+            if let Some(children) = dep.get("dependsOn").and_then(|c| c.as_array()) {
+                let mut child_list = Vec::new();
+                for ch in children {
+                    if let Some(ch_ref) = ch.as_str() {
+                        if node_map.contains_key(ch_ref) {
+                            *in_degree.entry(ch_ref.to_string()).or_insert(0) += 1;
+                            child_list.push(ch_ref.to_string());
+                        }
+                    }
+                }
+                adj.insert(parent, child_list);
+            }
+        }
+    }
+
+    // 4. 筛选入度为 0 的顶层根依赖节点
+    let mut roots: Vec<String> = all_refs
+        .iter()
+        .filter(|r| *in_degree.get(*r).unwrap_or(&0) == 0)
+        .cloned()
+        .collect();
+    if roots.is_empty() {
+        roots = all_refs;
+    }
+
+    // 优先将拥有子依赖的节点排在前面，使树形展示更具层次感
+    roots.sort_by(|a, b| {
+        let a_children = adj.get(a).map(|v| v.len()).unwrap_or(0);
+        let b_children = adj.get(b).map(|v| v.len()).unwrap_or(0);
+        b_children.cmp(&a_children).then_with(|| a.cmp(b))
+    });
+
+    println!(
+        "\n{:=^86}",
+        " 🌳 多语言依赖拓扑树摘要 (Dependency Tree Summary) "
+    );
+    println!("📦 项目顶层依赖视图 (共 {} 个顶层入口节点)", roots.len());
+
+    let max_roots_to_display = 25;
+    let display_count = roots.len().min(max_roots_to_display);
+    for (idx, root_ref) in roots.iter().take(display_count).enumerate() {
+        let is_last_root = idx + 1 == display_count && roots.len() <= max_roots_to_display;
+        let mut visited = HashSet::new();
+        print_tree_recursive(root_ref, "", is_last_root, 0, &node_map, &adj, &mut visited);
+    }
+
+    if roots.len() > max_roots_to_display {
+        println!(
+            "└── ... (其余 {} 个顶层直接依赖节点已折叠，完整清单见 SBOM JSON)",
+            roots.len() - max_roots_to_display
+        );
+    }
+    println!("{:=^86}", "");
+
+    Ok(())
+}
+
+fn print_tree_recursive(
+    current_ref: &str,
+    prefix: &str,
+    is_last: bool,
+    depth: usize,
+    node_map: &HashMap<String, TreeNodeMeta>,
+    adj: &HashMap<String, Vec<String>>,
+    visited: &mut HashSet<String>,
+) {
+    let Some(meta) = node_map.get(current_ref) else {
+        return;
+    };
+
+    let connector = if is_last { "└── " } else { "├── " };
+    let vuln_tag = if meta.vulns.is_empty() {
+        String::new()
+    } else {
+        format!(" 🚨 [{}]", meta.vulns.join(", "))
+    };
+
+    println!(
+        "{}{}{}[{}] {}@{} [{}]{}",
+        prefix,
+        connector,
+        if !meta.vulns.is_empty() {
+            "⚠️ "
+        } else {
+            ""
+        },
+        meta.eco_badge,
+        meta.name,
+        meta.version,
+        meta.license,
+        vuln_tag
+    );
+
+    if depth >= 4 || !visited.insert(current_ref.to_string()) {
+        return;
+    }
+
+    if let Some(children) = adj.get(current_ref) {
+        if children.is_empty() {
+            return;
+        }
+        let child_prefix = format!("{}{}", prefix, if is_last { "    " } else { "│   " });
+        let max_children = 12;
+        let show_len = children.len().min(max_children);
+        for (i, ch_ref) in children.iter().take(show_len).enumerate() {
+            let last_child = i + 1 == show_len && children.len() <= max_children;
+            print_tree_recursive(
+                ch_ref,
+                &child_prefix,
+                last_child,
+                depth + 1,
+                node_map,
+                adj,
+                visited,
+            );
+        }
+        if children.len() > max_children {
+            println!(
+                "{}└── ... (其余 {} 个子依赖已折叠)",
+                child_prefix,
+                children.len() - max_children
+            );
+        }
     }
 }

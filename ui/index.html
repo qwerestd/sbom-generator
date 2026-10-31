@@ -750,16 +750,17 @@
             <table class="industrial-table">
                 <thead>
                     <tr>
-                        <th style="width: 240px;">组件名称</th>
-                        <th style="width: 120px;">版本</th>
+                        <th style="width: 220px;">组件名称</th>
+                        <th style="width: 110px;">版本</th>
                         <th style="width: 110px;">语言生态</th>
+                        <th style="width: 150px;">开源许可证 (SPDX)</th>
                         <th>标准 PURL 坐标</th>
                         <th>清单物理路径 (syft:location:0:path)</th>
                         <th style="width: 90px; text-align: center;">状态</th>
                     </tr>
                 </thead>
                 <tbody id="comp-table-body">
-                    <tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
+                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
                 </tbody>
             </table>
         </div>
@@ -984,6 +985,11 @@
                     if (loc) locationPath = loc.value;
                 }
 
+                let license = 'UNKNOWN';
+                if (Array.isArray(c.licenses) && c.licenses[0] && c.licenses[0].license) {
+                    license = c.licenses[0].license.id || c.licenses[0].license.name || 'UNKNOWN';
+                }
+
                 const ecoIdx = detectCategoryIndex(c.purl);
                 if (ecoIdx >= 2 && ecoIdx <= 6) {
                     ecosystemsFound.add(CATEGORIES[ecoIdx].name);
@@ -1002,6 +1008,7 @@
                     name: isVulnerable ? `🚨 ${c.name}\n${verLabel}` : `${c.name}\n${verLabel}`,
                     cleanName: c.name,
                     version: c.version || '',
+                    license,
                     purl: c.purl || '',
                     locationPath,
                     ecoName: CATEGORIES[ecoIdx]?.name || '其他组件',
@@ -1134,7 +1141,7 @@
                             return `<div style="padding:2px;">
                                         <b style="font-size:14px; color:#58a6ff;">${params.data.cleanName}</b> 
                                         <span style="color:#8b949e; font-size:12px;">(${params.data.version || '未知'})</span><br/>
-                                        <span style="color:#8b949e; font-size:11px;">生态: ${params.data.ecoName}</span><br/>
+                                        <span style="color:#8b949e; font-size:11px;">生态: ${params.data.ecoName} | 许可证: <b style="color:#3fb950;">${params.data.license || 'UNKNOWN'}</b></span><br/>
                                         <span style="color:#6e7681; font-size:10px; font-family:var(--font-mono); word-break:break-all;">${params.data.purl}</span>
                                         <div style="margin-top:4px; color:#c9d1d9; font-size:11px;">被下游依赖: <strong style="color:#f0883e;">${params.data.value}</strong> 次</div>
                                         ${vulnSection}
@@ -1238,11 +1245,16 @@
                 }
                 const ecoIdx = detectCategoryIndex(c.purl);
                 const ecoName = CATEGORIES[ecoIdx]?.name || '其他';
+                let license = 'UNKNOWN';
+                if (Array.isArray(c.licenses) && c.licenses[0] && c.licenses[0].license) {
+                    license = c.licenses[0].license.id || c.licenses[0].license.name || 'UNKNOWN';
+                }
 
                 html += `<tr>
                             <td><b style="color:#ffffff;">${c.name}</b></td>
                             <td style="font-family:var(--font-mono); color:#79c0ff;">${c.version || '-'}</td>
                             <td><span class="badge-eco-tag">${ecoName}</span></td>
+                            <td><span class="badge-eco-tag" style="color:#3fb950;">${license}</span></td>
                             <td style="font-family:var(--font-mono); color:#8b949e; font-size:11px; word-break:break-all;">${c.purl || '-'}</td>
                             <td style="font-family:var(--font-mono); color:#6e7681; font-size:11px;">${locPath}</td>
                             <td style="text-align:center;">
@@ -1331,6 +1343,10 @@
                 <div class="detail-block">
                     <div class="detail-title">版本号</div>
                     <div class="detail-val" style="color:#79c0ff;">${nodeData.version || '未知'}</div>
+                </div>
+                <div class="detail-block">
+                    <div class="detail-title">开源许可证 (SPDX License)</div>
+                    <div class="detail-val" style="color:#3fb950;">${nodeData.license || 'UNKNOWN'}</div>
                 </div>
                 <div class="detail-block">
                     <div class="detail-title">唯一实例身份证 (instance_id)</div>
