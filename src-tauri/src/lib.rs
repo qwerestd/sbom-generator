@@ -48,6 +48,37 @@ fn pick_save_file(default_name: Option<String>) -> Result<Option<String>, String
     }
 }
 
+/// 原生打开对话框：选择已有的 SBOM JSON 文件进行查看
+#[command]
+fn pick_open_file() -> Result<Option<String>, String> {
+    let script = r#"Add-Type -AssemblyName System.Windows.Forms; $s = New-Object System.Windows.Forms.OpenFileDialog; $s.Title = '选择已有 CycloneDX SBOM JSON 文件'; $s.Filter = 'CycloneDX JSON (*.json)|*.json|All Files (*.*)|*.*'; if ($s.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::Write($s.FileName) }"#;
+    let output = std::process::Command::new("powershell")
+        .args(["-NoProfile", "-STA", "-Command", script])
+        .output()
+        .map_err(|e| format!("启动文件打开对话框失败: {}", e))?;
+
+    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    if path.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(path))
+    }
+}
+
+/// 读取本地文件文本内容 (自动适应项目根目录与 src-tauri 相对路径)
+#[command]
+fn read_file_content(path: String) -> Result<String, String> {
+    let p = Path::new(&path);
+    if p.exists() {
+        return fs::read_to_string(p).map_err(|e| format!("读取文件失败: {}", e));
+    }
+    let parent_rel = Path::new("..").join(&path);
+    if parent_rel.exists() {
+        return fs::read_to_string(parent_rel).map_err(|e| format!("读取文件失败: {}", e));
+    }
+    fs::read_to_string(&path).map_err(|e| format!("读取文件失败 (尝试了 {} 与 {}): {}", path, Path::new("..").join(&path).display(), e))
+}
+
 /// 在 Windows 资源管理器中高亮定位生成的文件或打开目录
 #[command]
 fn open_in_explorer(path: String) -> Result<(), String> {
@@ -110,6 +141,8 @@ pub fn run() {
             run_sbom_analyze,
             pick_directory,
             pick_save_file,
+            pick_open_file,
+            read_file_content,
             open_in_explorer
         ])
         .setup(|app| {

@@ -171,3 +171,74 @@ impl NpmLockProducer {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_npm_lock_producer_use_file() {
+        let producer = NpmLockProducer::default();
+        let config = SbomProducerConfiguration {
+            base_path: PathBuf::from("."),
+            use_debug: false,
+        };
+        assert!(producer.use_file(Path::new("package-lock.json"), &config));
+        assert!(producer.use_file(Path::new("sub/package-lock.json"), &config));
+        assert!(!producer.use_file(Path::new("package.json"), &config));
+    }
+
+    #[test]
+    fn test_npm_lock_producer_v2_v3_parsing() {
+        let lock_json = serde_json::json!({
+            "name": "my-web-app",
+            "version": "1.0.0",
+            "lockfileVersion": 3,
+            "packages": {
+                "": {
+                    "name": "my-web-app",
+                    "version": "1.0.0",
+                    "dependencies": {
+                        "express": "^4.18.2",
+                        "lodash": "^4.17.21"
+                    }
+                },
+                "node_modules/express": {
+                    "version": "4.18.2",
+                    "dependencies": {
+                        "qs": "6.11.0"
+                    }
+                },
+                "node_modules/express/node_modules/qs": {
+                    "version": "6.11.0"
+                },
+                "node_modules/lodash": {
+                    "version": "4.17.21"
+                }
+            }
+        });
+
+        let deps =
+            NpmLockProducer::parse_npm_lock(&lock_json, "my-web-app/package-lock.json", None)
+                .unwrap();
+
+        assert_eq!(deps.len(), 3);
+        let express_dep = deps
+            .iter()
+            .find(|d| d.name == "express")
+            .expect("must find express");
+        assert_eq!(express_dep.version.as_deref(), Some("4.18.2"));
+        assert_eq!(
+            express_dep.dependencies.len(),
+            1,
+            "express should depend on qs"
+        );
+
+        let lodash_dep = deps
+            .iter()
+            .find(|d| d.name == "lodash")
+            .expect("must find lodash");
+        assert_eq!(lodash_dep.version.as_deref(), Some("4.17.21"));
+        assert!(lodash_dep.dependencies.is_empty());
+    }
+}

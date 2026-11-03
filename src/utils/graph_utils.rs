@@ -212,6 +212,7 @@ impl AsciiTreeStackBuilder {
                 dependencies: Vec::new(),
                 location: None,
                 license: None,
+                dynamic_status: Default::default(),
             });
 
         instance_id

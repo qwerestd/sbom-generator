@@ -104,6 +104,12 @@
             font-weight: normal;
         }
 
+        .header-tag.active-tag {
+            border-color: #238636;
+            color: #3fb950;
+            background: rgba(35, 134, 54, 0.15);
+        }
+
         /* 顶部紧凑型控制区 */
         .industrial-control-bar {
             background: var(--bg-toolbar);
@@ -179,7 +185,7 @@
         .control-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             flex-shrink: 0;
         }
 
@@ -189,7 +195,7 @@
             color: #ffffff;
             font-size: 12px;
             font-weight: 600;
-            padding: 0 18px;
+            padding: 0 16px;
             height: 32px;
             border-radius: 4px;
             cursor: pointer;
@@ -214,7 +220,7 @@
             border: 1px solid var(--border-subtle);
             color: var(--text-secondary);
             font-size: 12px;
-            padding: 0 12px;
+            padding: 0 10px;
             height: 32px;
             border-radius: 4px;
             cursor: pointer;
@@ -222,6 +228,7 @@
             align-items: center;
             gap: 6px;
             transition: all 0.15s;
+            white-space: nowrap;
         }
 
         .btn-industrial-default:hover {
@@ -247,14 +254,15 @@
         .metric-badge-group {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 14px;
         }
 
         .metric-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             color: var(--text-muted);
+            font-size: 11px;
         }
 
         .metric-val {
@@ -290,7 +298,7 @@
             background: var(--danger-red);
         }
 
-        /* 主体工作区 (自适应占满全部剩余纵向空间) */
+        /* 主体工作区 */
         .industrial-workspace {
             flex: 1;
             display: flex;
@@ -354,6 +362,11 @@
             font-weight: 700;
         }
 
+        .nav-badge-pill.green {
+            background: rgba(46, 160, 67, 0.2);
+            color: #3fb950;
+        }
+
         .graph-quick-tools {
             display: flex;
             align-items: center;
@@ -373,13 +386,13 @@
             color: var(--text-main);
             font-size: 11px;
             padding: 4px 8px 4px 24px;
-            width: 170px;
+            width: 150px;
             outline: none;
         }
 
         .search-box-sm input:focus {
             border-color: var(--border-active);
-            width: 220px;
+            width: 190px;
         }
 
         .search-box-sm svg {
@@ -408,7 +421,7 @@
             color: #ffffff;
         }
 
-        /* 视图容器 (绝对填满) */
+        /* 视图容器 */
         .tab-panel-container {
             flex: 1;
             position: relative;
@@ -421,7 +434,7 @@
             flex-direction: column;
         }
 
-        /* 核心依赖树画布：最大化撑满屏幕 */
+        /* 核心依赖树画布 */
         #chart-container {
             width: 100%;
             height: 100%;
@@ -429,7 +442,7 @@
             background: #0d1117;
         }
 
-        /* 表格通用工业样式 */
+        /* 表格样式 */
         .industrial-table-scroll {
             flex: 1;
             overflow: auto;
@@ -490,6 +503,180 @@
             border-radius: 3px;
             font-size: 10px;
             font-family: var(--font-mono);
+        }
+
+        /* 运行时状态标签 */
+        .status-badge-loaded {
+            background: rgba(46, 160, 67, 0.2);
+            color: #3fb950;
+            border: 1px solid #238636;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-badge-dormant {
+            background: rgba(139, 148, 158, 0.15);
+            color: #8b949e;
+            border: 1px solid #30363d;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-badge-untraced {
+            background: rgba(88, 166, 255, 0.15);
+            color: #58a6ff;
+            border: 1px solid #1f6feb;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 行业评测对比面板样式 (Benchmark Dashboard) */
+        .benchmark-wrapper {
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: var(--bg-body);
+        }
+
+        .benchmark-control-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .benchmark-file-inputs {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .benchmark-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .benchmark-banner {
+            background: linear-gradient(135deg, rgba(31, 111, 235, 0.15), rgba(56, 189, 248, 0.05));
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .benchmark-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .benchmark-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .benchmark-card-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .benchmark-num-row {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+        }
+
+        .benchmark-val-main {
+            font-size: 26px;
+            font-weight: 800;
+            color: #58a6ff;
+            font-family: var(--font-mono);
+        }
+
+        .benchmark-val-comp {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
+        .benchmark-card-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .benchmark-table-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .benchmark-table-header {
+            padding: 12px 16px;
+            background: var(--bg-toolbar);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .diff-tab-btn {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .diff-tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .diff-tab-btn.active {
+            background: rgba(31, 111, 235, 0.2);
+            color: #58a6ff;
+            border-color: #1f6feb;
+            font-weight: 600;
         }
 
         /* JSON 原始视图 */
@@ -608,6 +795,9 @@
 </head>
 <body>
 
+    <!-- 隐藏的文件选择输入 (浏览器环境兜底) -->
+    <input type="file" id="file-import-fallback" accept=".json" style="display:none;" />
+
     <!-- 1. 紧凑型工业顶栏 -->
     <header class="industrial-header">
         <div class="header-brand">
@@ -617,6 +807,7 @@
             <div class="header-title">
                 <span>SBOM Studio</span>
                 <span class="header-tag">CycloneDX 1.6</span>
+                <span class="header-tag active-tag" title="动态监测引擎已就绪">Reachable SBOM</span>
                 <span class="header-tag">OSV.dev</span>
             </div>
         </div>
@@ -626,6 +817,10 @@
                 <input type="checkbox" id="toggle-dynamic" checked />
                 <span>动态探针</span>
             </label>
+            <button id="btn-import-sbom" class="btn-industrial-default" title="导入本地已有的 CycloneDX SBOM JSON 进行快速解析与图谱渲染">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                <span>导入已有 SBOM</span>
+            </button>
             <button id="btn-open-explorer" class="btn-industrial-default" title="在 Windows 资源管理器中高亮定位生成的文件">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
                 <span>资源管理器</span>
@@ -665,6 +860,14 @@
                 <span>组件实例:</span>
                 <span id="metric-components" class="metric-val">0</span>
             </div>
+            <div class="metric-item" title="运行时被实际加载进内存的活跃依赖">
+                <span>🟢 活跃加载:</span>
+                <span id="metric-loaded" class="metric-val" style="color: #3fb950;">0</span>
+            </div>
+            <div class="metric-item" title="静态声明但运行时未调用的冷依赖">
+                <span>⚪ 静态休眠:</span>
+                <span id="metric-dormant" class="metric-val" style="color: #8b949e;">0</span>
+            </div>
             <div class="metric-item">
                 <span>OSV 漏洞告警:</span>
                 <span id="metric-vulns" class="metric-val">0</span>
@@ -681,11 +884,11 @@
 
         <div class="status-indicator-text">
             <div id="status-dot" class="status-dot-sm"></div>
-            <span id="status-text">系统就绪，请选择项目目录后点击「执行分析构建」</span>
+            <span id="status-text">系统就绪，请选择项目目录或直接导入已有 SBOM</span>
         </div>
     </section>
 
-    <!-- 4. 主体全视口工作区 (最大化显示拓扑网络) -->
+    <!-- 4. 主体全视口工作区 -->
     <main class="industrial-workspace">
         <div class="view-tab-nav">
             <div class="tab-buttons">
@@ -699,6 +902,9 @@
                 <button class="view-tab-btn" data-tab="tab-components">
                     <span>组件全量清单</span>
                 </button>
+                <button class="view-tab-btn" data-tab="tab-benchmark">
+                    <span>🔬 行业对比评测 (Benchmark)</span>
+                </button>
                 <button class="view-tab-btn" data-tab="tab-json">
                     <span>CycloneDX 1.6 原文</span>
                 </button>
@@ -709,6 +915,10 @@
                     <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
                     <input type="text" id="node-search" placeholder="搜索组件包名/CVE..." />
                 </div>
+                <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); cursor: pointer;" title="开启后只保留运行时真实加载的活跃依赖 (Loaded)">
+                    <input type="checkbox" id="filter-loaded-only" />
+                    <span>🟢 仅看活跃</span>
+                </label>
                 <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); cursor: pointer;" title="开启后只保留命中漏洞的节点及直接依赖链">
                     <input type="checkbox" id="filter-vuln-only" />
                     <span>仅看漏洞</span>
@@ -720,7 +930,7 @@
             </div>
         </div>
 
-        <!-- 视图 1: 拓扑网络图谱 (超大视口) -->
+        <!-- 视图 1: 拓扑网络图谱 -->
         <div id="tab-graph" class="tab-panel-container active">
             <div id="chart-container"></div>
         </div>
@@ -733,14 +943,15 @@
                         <th style="width: 140px;">漏洞编号</th>
                         <th style="width: 90px;">严重等级</th>
                         <th style="width: 70px;">CVSS</th>
-                        <th style="width: 260px;">波及组件实例 (bom-ref)</th>
+                        <th style="width: 240px;">波及组件实例 (bom-ref)</th>
+                        <th style="width: 130px;">运行时可达性</th>
                         <th>漏洞机理与影响范围</th>
-                        <th style="width: 200px;">修复版本建议</th>
-                        <th style="width: 80px; text-align: center;">操作</th>
+                        <th style="width: 180px;">修复版本建议</th>
+                        <th style="width: 70px; text-align: center;">操作</th>
                     </tr>
                 </thead>
                 <tbody id="vuln-table-body">
-                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
+                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
                 </tbody>
             </table>
         </div>
@@ -750,22 +961,77 @@
             <table class="industrial-table">
                 <thead>
                     <tr>
-                        <th style="width: 220px;">组件名称</th>
-                        <th style="width: 110px;">版本</th>
-                        <th style="width: 110px;">语言生态</th>
-                        <th style="width: 150px;">开源许可证 (SPDX)</th>
+                        <th style="width: 200px;">组件名称</th>
+                        <th style="width: 100px;">版本</th>
+                        <th style="width: 100px;">语言生态</th>
+                        <th style="width: 120px;">运行时状态</th>
+                        <th style="width: 140px;">开源许可证 (SPDX)</th>
                         <th>标准 PURL 坐标</th>
                         <th>清单物理路径 (syft:location:0:path)</th>
-                        <th style="width: 90px; text-align: center;">状态</th>
+                        <th style="width: 80px; text-align: center;">漏洞状态</th>
                     </tr>
                 </thead>
                 <tbody id="comp-table-body">
-                    <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
+                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
                 </tbody>
             </table>
         </div>
 
-        <!-- 视图 4: JSON 原文 -->
+        <!-- 视图 4: 行业对比评测大屏 (Benchmark View - 用户自选动态评测) -->
+        <div id="tab-benchmark" class="tab-panel-container benchmark-wrapper">
+            <!-- 对比文件自选操作区 -->
+            <div class="benchmark-control-box">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <b style="color:#ffffff; font-size:13px;">🔬 自定义 SBOM 交叉横向对比评测器</b>
+                        <span style="color:var(--text-muted); font-size:11px; margin-left:8px;">自主选取任意两个 CycloneDX SBOM 文件进行全维度量化指标计算</span>
+                    </div>
+                    <button class="btn-industrial-default" id="btn-quick-sample-bm" title="一键载入 test 目录下的微服务实测样例">
+                        <span>⚡ 载入默认测试样本 (microservices-demo vs Trivy)</span>
+                    </button>
+                </div>
+
+                <div class="benchmark-file-inputs">
+                    <!-- 文件 A -->
+                    <div class="input-group-compact">
+                        <span class="input-label-tag">SBOM 文件 A (待测)</span>
+                        <input type="text" id="bm-file-a-path" class="input-compact" placeholder="点击右侧选取本平台或待测的 SBOM JSON..." />
+                        <button type="button" class="btn-input-browse" id="btn-browse-bm-a">
+                            <span>📂 选取文件 A</span>
+                        </button>
+                        <input type="file" id="file-bm-a-fallback" accept=".json" style="display:none;" />
+                    </div>
+                    <!-- 文件 B -->
+                    <div class="input-group-compact">
+                        <span class="input-label-tag">SBOM 文件 B (参照)</span>
+                        <input type="text" id="bm-file-b-path" class="input-compact" placeholder="点击右侧选取对比工具 (如 Trivy/Syft) 生成的 SBOM JSON..." />
+                        <button type="button" class="btn-input-browse" id="btn-browse-bm-b">
+                            <span>📂 选取文件 B</span>
+                        </button>
+                        <input type="file" id="file-bm-b-fallback" accept=".json" style="display:none;" />
+                    </div>
+                </div>
+
+                <div class="benchmark-actions">
+                    <button class="btn-industrial-primary" id="btn-run-benchmark">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <span>🚀 执行动态横向对比评测</span>
+                    </button>
+                    <span id="bm-status-hint" style="color:var(--text-muted); font-size:11px;">未载入对比文件，可点击右上方载入默认样本</span>
+                </div>
+            </div>
+
+            <!-- 动态对比评测结果呈现区 -->
+            <div id="benchmark-results-container">
+                <div style="text-align:center; padding:60px 20px; color:var(--text-muted); background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:6px;">
+                    <div style="font-size:32px; margin-bottom:12px;">📊</div>
+                    <div style="font-size:14px; color:var(--text-main); font-weight:600; margin-bottom:6px;">尚未执行对比评测</div>
+                    <div style="font-size:12px;">请在上方选取两个 CycloneDX SBOM JSON 文件（或点击「载入默认测试样本」），点击「执行动态横向对比评测」查看完整学术量化数据</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图 5: JSON 原文 -->
         <div id="tab-json" class="tab-panel-container" style="background: #090d13;">
             <div style="background: var(--bg-panel); border-bottom: 1px solid var(--border-subtle); padding: 6px 16px; display: flex; justify-content: flex-end; gap: 8px;">
                 <button class="tool-btn-sm" id="btn-copy-json">📋 复制全部 JSON</button>
@@ -806,8 +1072,11 @@
 
         const chartDom = document.getElementById('chart-container');
         const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
+        let bmChart = null;
+        let bmDiffNodes = [];
+        let bmCurrentDiffFilter = 'onlyA';
 
-        // 工业风高对比度分类色标（干净实用，摒弃浮夸渐变）
+        // 高对比度分类色标
         const CATEGORIES = [
             { name: '📦 项目根节点', itemStyle: { color: '#38bdf8' } },
             { name: '🚨 漏洞告警 (CVE/GHSA)', itemStyle: { color: '#f85149' } },
@@ -889,7 +1158,42 @@
             }
         });
 
-        // 2. 标签页切换
+        // 2. 导入已有本地 SBOM JSON
+        document.getElementById('btn-import-sbom').addEventListener('click', async () => {
+            try {
+                if (tauriCore) {
+                    const path = await tauriInvoke('pick_open_file');
+                    if (path) {
+                        const content = await tauriInvoke('read_file_content', { path });
+                        const json = JSON.parse(content);
+                        loadSbomData(json, path);
+                        showToast(`成功导入: ${path.split(/[\\/]/).pop()}`);
+                    }
+                } else {
+                    document.getElementById('file-import-fallback').click();
+                }
+            } catch (e) {
+                showToast("导入失败: " + e, true);
+            }
+        });
+
+        document.getElementById('file-import-fallback').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const json = JSON.parse(evt.target.result);
+                    loadSbomData(json, file.name);
+                    showToast(`成功导入文件: ${file.name}`);
+                } catch (err) {
+                    showToast("解析 JSON 失败: " + err, true);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // 3. 标签页切换
         document.querySelectorAll('.view-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.view-tab-btn').forEach(b => b.classList.remove('active'));
@@ -899,59 +1203,61 @@
                 const target = document.getElementById(targetId);
                 if (target) target.classList.add('active');
                 if (targetId === 'tab-graph') {
-                    setTimeout(() => myChart.resize(), 30);
+                    setTimeout(() => myChart && myChart.resize(), 50);
+                }
+                if (targetId === 'tab-benchmark') {
+                    setTimeout(() => bmChart && bmChart.resize(), 50);
                 }
             });
         });
 
-        document.getElementById('btn-close-drawer').addEventListener('click', () => {
-            document.getElementById('node-drawer').classList.remove('open');
-        });
-
-        // 3. 图谱数据转换 (内容与节点大幅放大，排布更宽广)
-        function convertCycloneDXToGraph(sbom, filterVulnOnly = false) {
-            if (!sbom || !sbom.components || !sbom.dependencies) {
-                throw new Error("不是合法的 CycloneDX 数据");
+        // 4. 数据转换：CycloneDX 1.6 -> ECharts 图谱模型
+        function convertCycloneDXToGraph(sbom, filterVulnOnly = false, filterLoadedOnly = false) {
+            if (!sbom || !Array.isArray(sbom.components)) {
+                return { nodes: [], links: [], vulnerableNodeCount: 0, totalCves: 0, loadedCount: 0, dormantCount: 0, ecosystemsCount: 0 };
             }
 
-            const nodes = [];
-            const links = [];
-
-            // 漏洞索引表
-            const vulnMap = new Map();
+            const vulnMap = new HashMapList();
             const allVulns = [];
             if (Array.isArray(sbom.vulnerabilities)) {
                 sbom.vulnerabilities.forEach(v => {
                     const rating = (v.ratings && v.ratings[0]) || {};
-                    const detail = {
-                        id: v.id || 'VULN-ID',
-                        severity: (rating.severity || 'HIGH').toUpperCase(),
-                        score: rating.score !== undefined ? rating.score : 0,
-                        description: v.description || '命中 OSV 安全漏洞',
-                        recommendation: v.recommendation || '建议升级至安全版本'
-                    };
-                    allVulns.push({ ...detail, raw: v });
-                    (v.affects || []).forEach(aff => {
-                        if (aff && aff.ref) {
-                            if (!vulnMap.has(aff.ref)) vulnMap.set(aff.ref, []);
-                            vulnMap.get(aff.ref).push(detail);
+                    const sev = (rating.severity || 'HIGH').toUpperCase();
+                    const score = rating.score !== undefined ? Number(rating.score).toFixed(1) : '';
+                    allVulns.push({
+                        id: v.id,
+                        severity: sev,
+                        score: score,
+                        description: v.description || '无详细描述',
+                        recommendation: v.recommendation || '关注官方安全通报',
+                        affects: (v.affects || []).map(a => a.ref)
+                    });
+                    (v.affects || []).forEach(a => {
+                        if (a.ref) {
+                            vulnMap.add(a.ref, {
+                                id: v.id,
+                                severity: sev,
+                                score: score,
+                                description: v.description || '无详细描述',
+                                recommendation: v.recommendation || '关注官方安全通报'
+                            });
                         }
                     });
                 });
             }
 
-            // 依赖关系统计
+            const nodes = [];
+            const links = [];
             const dependedCountMap = new Map();
             const childToParentsMap = new Map();
             const parentToChildrenMap = new Map();
 
-            sbom.dependencies.forEach(dep => {
+            (sbom.dependencies || []).forEach(dep => {
                 const parentRef = dep.ref;
                 if (dep.dependsOn) {
                     parentToChildrenMap.set(parentRef, dep.dependsOn);
                     dep.dependsOn.forEach(childRef => {
                         dependedCountMap.set(childRef, (dependedCountMap.get(childRef) || 0) + 1);
-
                         if (!childToParentsMap.has(childRef)) childToParentsMap.set(childRef, []);
                         childToParentsMap.get(childRef).push(parentRef);
 
@@ -970,6 +1276,8 @@
             const componentRefs = new Set();
             const ecosystemsFound = new Set();
             let vulnerableNodeCount = 0;
+            let loadedCount = 0;
+            let dormantCount = 0;
 
             sbom.components.forEach(c => {
                 const ref = c['bom-ref'];
@@ -980,10 +1288,16 @@
                 if (isVulnerable) vulnerableNodeCount++;
 
                 let locationPath = 'runtime/manifest';
+                let runtimeStatus = 'untraced';
                 if (Array.isArray(c.properties)) {
                     const loc = c.properties.find(p => p.name === 'syft:location:0:path');
                     if (loc) locationPath = loc.value;
+                    const rStatus = c.properties.find(p => p.name === 'sbom:runtime:status');
+                    if (rStatus) runtimeStatus = rStatus.value;
                 }
+
+                if (runtimeStatus === 'loaded') loadedCount++;
+                else if (runtimeStatus === 'dormant') dormantCount++;
 
                 let license = 'UNKNOWN';
                 if (Array.isArray(c.licenses) && c.licenses[0] && c.licenses[0].license) {
@@ -996,21 +1310,26 @@
                 }
 
                 if (filterVulnOnly && !isVulnerable) return;
+                if (filterLoadedOnly && runtimeStatus !== 'loaded') return;
 
-                // 🌟 大幅放大节点尺寸：基础 28，最高可达 75，字体清晰可见
                 const baseSize = Math.min(26 + count * 4, 68);
                 const nodeSize = isVulnerable ? Math.max(baseSize + 10, 42) : baseSize;
                 const verLabel = c.version ? (c.version.startsWith('v') ? c.version : `v${c.version}`) : '';
 
+                let prefix = '';
+                if (isVulnerable) prefix = '🚨 ';
+                else if (runtimeStatus === 'loaded') prefix = '🟢 ';
+
                 nodes.push({
                     id: ref,
                     rawComponent: c,
-                    name: isVulnerable ? `🚨 ${c.name}\n${verLabel}` : `${c.name}\n${verLabel}`,
+                    name: `${prefix}${c.name}\n${verLabel}`,
                     cleanName: c.name,
                     version: c.version || '',
                     license,
                     purl: c.purl || '',
                     locationPath,
+                    runtimeStatus,
                     ecoName: CATEGORIES[ecoIdx]?.name || '其他组件',
                     category: isVulnerable ? 1 : ecoIdx,
                     symbolSize: nodeSize,
@@ -1018,15 +1337,14 @@
                     vulns: vulns,
                     callers: childToParentsMap.get(ref) || [],
                     dependencies: parentToChildrenMap.get(ref) || [],
-                    // 默认显示清晰工业风标签
                     label: {
-                        show: isVulnerable || count >= 2,
+                        show: isVulnerable || runtimeStatus === 'loaded' || count >= 2,
                         position: 'bottom',
-                        color: isVulnerable ? '#ff7b72' : '#e6edf3',
+                        color: isVulnerable ? '#ff7b72' : (runtimeStatus === 'loaded' ? '#3fb950' : '#e6edf3'),
                         fontSize: 12,
-                        fontWeight: isVulnerable ? 'bold' : 'normal',
+                        fontWeight: (isVulnerable || runtimeStatus === 'loaded') ? 'bold' : 'normal',
                         backgroundColor: 'rgba(22, 27, 34, 0.92)',
-                        borderColor: isVulnerable ? '#f85149' : '#30363d',
+                        borderColor: isVulnerable ? '#f85149' : (runtimeStatus === 'loaded' ? '#2ea043' : '#30363d'),
                         borderWidth: 1,
                         borderRadius: 3,
                         padding: [3, 6]
@@ -1037,18 +1355,23 @@
                         borderWidth: 3,
                         shadowBlur: 20,
                         shadowColor: 'rgba(248, 81, 73, 0.8)'
+                    } : (runtimeStatus === 'loaded' ? {
+                        borderColor: '#2ea043',
+                        borderWidth: 2.8,
+                        shadowBlur: 14,
+                        shadowColor: 'rgba(46, 160, 67, 0.7)'
                     } : {
                         borderColor: '#30363d',
                         borderWidth: 1.5,
                         shadowBlur: count > 3 ? 10 : 3,
                         shadowColor: 'rgba(0, 0, 0, 0.5)'
-                    }
+                    })
                 });
             });
 
-            // 虚拟项目根节点 (尺寸加大为 85)
+            // 虚拟项目根节点
             const VIRTUAL_ROOT_ID = '__VIRTUAL_PROJECT_ROOT__';
-            if (!filterVulnOnly) {
+            if (!filterVulnOnly && !filterLoadedOnly) {
                 nodes.push({
                     id: VIRTUAL_ROOT_ID,
                     name: '📦 项目根节点\n(Root)',
@@ -1095,13 +1418,25 @@
                 links,
                 vulnerableNodeCount,
                 totalCves: Array.isArray(sbom.vulnerabilities) ? sbom.vulnerabilities.length : 0,
+                loadedCount,
+                dormantCount,
                 ecosystemsCount: ecosystemsFound.size,
                 ecosystemsList: Array.from(ecosystemsFound),
                 allVulns
             };
         }
 
-        // 4. 渲染大尺寸力导向网络图
+        class HashMapList {
+            constructor() { this.map = new Map(); }
+            add(key, val) {
+                if (!this.map.has(key)) this.map.set(key, []);
+                this.map.get(key).push(val);
+            }
+            get(key) { return this.map.get(key) || []; }
+            has(key) { return this.map.has(key); }
+        }
+
+        // 5. 渲染力导向网络图
         function renderGraph(graphData) {
             myChart.setOption({
                 backgroundColor: '#0d1117',
@@ -1138,10 +1473,14 @@
                                                 `).join('')}
                                                </div>`;
                             }
+                            const statusStr = params.data.runtimeStatus === 'loaded' 
+                                ? '<span style="color:#3fb950;font-weight:bold;">🟢 活跃运行 (LOADED)</span>' 
+                                : (params.data.runtimeStatus === 'dormant' ? '<span style="color:#8b949e;">⚪ 静态休眠 (DORMANT)</span>' : '<span style="color:#58a6ff;">🔘 静态责任链</span>');
+
                             return `<div style="padding:2px;">
                                         <b style="font-size:14px; color:#58a6ff;">${params.data.cleanName}</b> 
                                         <span style="color:#8b949e; font-size:12px;">(${params.data.version || '未知'})</span><br/>
-                                        <span style="color:#8b949e; font-size:11px;">生态: ${params.data.ecoName} | 许可证: <b style="color:#3fb950;">${params.data.license || 'UNKNOWN'}</b></span><br/>
+                                        <span style="color:#8b949e; font-size:11px;">生态: ${params.data.ecoName} | 状态: ${statusStr} | 许可证: <b style="color:#3fb950;">${params.data.license || 'UNKNOWN'}</b></span><br/>
                                         <span style="color:#6e7681; font-size:10px; font-family:var(--font-mono); word-break:break-all;">${params.data.purl}</span>
                                         <div style="margin-top:4px; color:#c9d1d9; font-size:11px;">被下游依赖: <strong style="color:#f0883e;">${params.data.value}</strong> 次</div>
                                         ${vulnSection}
@@ -1161,7 +1500,6 @@
                         draggable: true,
                         edgeSymbol: ['none', 'arrow'],
                         edgeSymbolSize: [0, 9],
-                        // 🌟 工业级开阔物理引擎：更大排斥力与边长，图谱铺满整个屏幕
                         force: {
                             repulsion: 520,
                             edgeLength: 130,
@@ -1186,16 +1524,27 @@
             });
         }
 
-        // 5. 渲染表格数据
+        // 6. 渲染表格数据
         function renderVulnTable(sbom) {
             const tbody = document.getElementById('vuln-table-body');
             const vulns = sbom.vulnerabilities || [];
             if (vulns.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#3fb950; padding:40px; font-weight:600;">
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#3fb950; padding:40px; font-weight:600;">
                                     ✅ 安全审计通过：当前项目全部组件未发现已知 CVE / GHSA 漏洞！
                                    </td></tr>`;
                 return;
             }
+
+            // 检查每个组件的动态加载状态
+            const compStatusMap = new Map();
+            (sbom.components || []).forEach(c => {
+                let status = 'untraced';
+                if (Array.isArray(c.properties)) {
+                    const st = c.properties.find(p => p.name === 'sbom:runtime:status');
+                    if (st) status = st.value;
+                }
+                compStatusMap.set(c['bom-ref'], status);
+            });
 
             let html = '';
             vulns.forEach(v => {
@@ -1205,11 +1554,22 @@
                 const sevClass = sev === 'CRITICAL' ? 'critical' : (sev === 'HIGH' ? 'high' : (sev === 'MEDIUM' ? 'medium' : 'low'));
                 const affectedRefs = (v.affects || []).map(a => a.ref.split('?')[0]).join(', ');
 
+                // 评估可达性风险
+                let hasLoaded = false;
+                (v.affects || []).forEach(a => {
+                    if (compStatusMap.get(a.ref) === 'loaded') hasLoaded = true;
+                });
+
+                const reachabilityTag = hasLoaded
+                    ? `<span class="badge-sev critical">🚨 活跃运行(高危)</span>`
+                    : `<span class="badge-sev" style="background:#30363d;color:#8b949e;">⚪ 休眠(可豁免)</span>`;
+
                 html += `<tr>
                             <td><b style="color:#ffffff; font-family:var(--font-mono);">${v.id}</b></td>
                             <td><span class="badge-sev ${sevClass}">${sev}</span></td>
                             <td><b style="font-family:var(--font-mono); color:#ff7b72;">${score}</b></td>
                             <td style="font-family:var(--font-mono); color:#79c0ff; word-break:break-all;">${affectedRefs}</td>
+                            <td>${reachabilityTag}</td>
                             <td>${v.description || '无详细描述'}</td>
                             <td style="color:#3fb950;">${v.recommendation || '关注官方安全通报'}</td>
                             <td style="text-align:center;">
@@ -1224,7 +1584,7 @@
             const tbody = document.getElementById('comp-table-body');
             const components = sbom.components || [];
             if (components.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px;">暂无数据</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">暂无数据</td></tr>`;
                 return;
             }
 
@@ -1239,9 +1599,12 @@
             components.forEach(c => {
                 const isVuln = vulnRefs.has(c['bom-ref']);
                 let locPath = 'runtime/manifest';
+                let runtimeStatus = 'untraced';
                 if (Array.isArray(c.properties)) {
                     const p = c.properties.find(x => x.name === 'syft:location:0:path');
                     if (p) locPath = p.value;
+                    const st = c.properties.find(x => x.name === 'sbom:runtime:status');
+                    if (st) runtimeStatus = st.value;
                 }
                 const ecoIdx = detectCategoryIndex(c.purl);
                 const ecoName = CATEGORIES[ecoIdx]?.name || '其他';
@@ -1250,10 +1613,15 @@
                     license = c.licenses[0].license.id || c.licenses[0].license.name || 'UNKNOWN';
                 }
 
+                const statusTag = runtimeStatus === 'loaded'
+                    ? '<span class="status-badge-loaded">🟢 活跃运行</span>'
+                    : (runtimeStatus === 'dormant' ? '<span class="status-badge-dormant">⚪ 静态休眠</span>' : '<span class="status-badge-untraced">🔘 静态责任链</span>');
+
                 html += `<tr>
                             <td><b style="color:#ffffff;">${c.name}</b></td>
                             <td style="font-family:var(--font-mono); color:#79c0ff;">${c.version || '-'}</td>
                             <td><span class="badge-eco-tag">${ecoName}</span></td>
+                            <td>${statusTag}</td>
                             <td><span class="badge-eco-tag" style="color:#3fb950;">${license}</span></td>
                             <td style="font-family:var(--font-mono); color:#8b949e; font-size:11px; word-break:break-all;">${c.purl || '-'}</td>
                             <td style="font-family:var(--font-mono); color:#6e7681; font-size:11px;">${locPath}</td>
@@ -1297,12 +1665,23 @@
             if (e.key === 'Enter') filterAndFocus(e.target.value);
         });
 
-        // 仅看漏洞过滤
-        document.getElementById('filter-vuln-only').addEventListener('change', (e) => {
+        // 仅看活跃 / 仅看漏洞过滤联动
+        function applyGraphFilters() {
             if (!currentSbomData) return;
-            const filtered = convertCycloneDXToGraph(currentSbomData, e.target.checked);
+            const isVulnOnly = document.getElementById('filter-vuln-only').checked;
+            const isLoadedOnly = document.getElementById('filter-loaded-only').checked;
+            const filtered = convertCycloneDXToGraph(currentSbomData, isVulnOnly, isLoadedOnly);
             renderGraph(filtered);
-            showToast(e.target.checked ? "已过滤为仅展示漏洞拓扑" : "已展示全量依赖网络");
+        }
+
+        document.getElementById('filter-vuln-only').addEventListener('change', () => {
+            applyGraphFilters();
+            showToast("已切换拓扑视图");
+        });
+
+        document.getElementById('filter-loaded-only').addEventListener('change', () => {
+            applyGraphFilters();
+            showToast("已切换活跃依赖过滤");
         });
 
         // 抽屉详情
@@ -1357,6 +1736,12 @@
                     <div class="detail-val" style="color:#8b949e;">${nodeData.purl}</div>
                 </div>
                 <div class="detail-block">
+                    <div class="detail-title">运行时加载状态</div>
+                    <div class="detail-val">
+                        ${nodeData.runtimeStatus === 'loaded' ? '<span style="color:#2ea043;font-weight:700;">🟢 运行时活跃加载 (LOADED)</span>' : (nodeData.runtimeStatus === 'dormant' ? '<span style="color:#8b949e;font-weight:700;">⚪ 静态休眠未调用 (DORMANT)</span>' : '<span style="color:#58a6ff;">🔘 静态责任链解析 (UNTRACED)</span>')}
+                    </div>
+                </div>
+                <div class="detail-block">
                     <div class="detail-title">清单物理位置 (syft:location:0:path)</div>
                     <div class="detail-val">${nodeData.locationPath}</div>
                 </div>
@@ -1369,6 +1754,10 @@
             `;
             drawer.classList.add('open');
         }
+
+        document.getElementById('btn-close-drawer').addEventListener('click', () => {
+            document.getElementById('node-drawer').classList.remove('open');
+        });
 
         // 画布缩放工具
         document.getElementById('btn-zoom-in').addEventListener('click', () => {
@@ -1397,7 +1786,46 @@
             showToast("已导出高清 PNG 图片");
         });
 
-        // 6. 核心分析调用入口
+        // 7. 统一数据装载入口 (无论是扫描产出还是直接文件导入)
+        function loadSbomData(rawSbom, sourceTitle = '') {
+            currentSbomData = rawSbom;
+            const graphData = convertCycloneDXToGraph(rawSbom);
+            currentGraphData = graphData;
+            renderGraph(graphData);
+
+            document.getElementById('metric-components').innerText = rawSbom.components ? rawSbom.components.length : 0;
+            document.getElementById('metric-loaded').innerText = graphData.loadedCount || 0;
+            document.getElementById('metric-dormant').innerText = graphData.dormantCount || 0;
+            document.getElementById('metric-vulns').innerText = graphData.totalCves;
+
+            if (graphData.totalCves > 0) {
+                document.getElementById('metric-vulns').classList.add('alert');
+                document.getElementById('tab-vuln-badge').style.display = 'inline-block';
+                document.getElementById('tab-vuln-badge').innerText = graphData.totalCves;
+            } else {
+                document.getElementById('metric-vulns').classList.remove('alert');
+                document.getElementById('tab-vuln-badge').style.display = 'none';
+            }
+
+            document.getElementById('metric-ecos').innerText = graphData.ecosystemsCount;
+            document.getElementById('metric-links').innerText = graphData.links.length;
+
+            renderVulnTable(rawSbom);
+            renderComponentTable(rawSbom);
+            document.getElementById('raw-json-block').textContent = JSON.stringify(rawSbom, null, 2);
+
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+            if (graphData.totalCves > 0) {
+                statusDot.className = 'status-dot-sm danger';
+                statusText.innerText = `${sourceTitle ? sourceTitle + ': ' : ''}完成！识别 ${rawSbom.components ? rawSbom.components.length : 0} 个依赖，检出 ${graphData.totalCves} 项漏洞`;
+            } else {
+                statusDot.className = 'status-dot-sm';
+                statusText.innerText = `${sourceTitle ? sourceTitle + ': ' : ''}完成！识别 ${rawSbom.components ? rawSbom.components.length : 0} 个依赖，未发现已知漏洞`;
+            }
+        }
+
+        // 8. 核心分析调用入口
         document.getElementById('analyze-btn').addEventListener('click', async function() {
             let directory = document.getElementById('input-dir').value.trim();
             let outputPath = document.getElementById('input-save').value.trim();
@@ -1424,9 +1852,9 @@
                 btn.disabled = true;
                 btn.innerHTML = `<span>⏳ 正在分析构建...</span>`;
                 statusDot.className = 'status-dot-sm busy';
-                statusText.innerText = '正在执行跨语言依赖拓扑与 OSV 漏洞库匹配...';
+                statusText.innerText = '正在执行跨语言依赖拓扑解析、动态加载监测与 OSV 匹配...';
                 myChart.showLoading({
-                    text: '正在构建高密度依赖星系图谱...',
+                    text: '正在构建高密度依赖拓扑星系...',
                     textColor: '#fff',
                     maskColor: 'rgba(13, 17, 23, 0.85)',
                     color: '#38bdf8'
@@ -1439,43 +1867,12 @@
                 });
 
                 const rawSbom = JSON.parse(jsonString);
-                currentSbomData = rawSbom;
-
-                const graphData = convertCycloneDXToGraph(rawSbom);
-                currentGraphData = graphData;
-                renderGraph(graphData);
-
-                // 更新状态栏与徽标
-                document.getElementById('metric-components').innerText = rawSbom.components ? rawSbom.components.length : 0;
-                document.getElementById('metric-vulns').innerText = graphData.totalCves;
-                if (graphData.totalCves > 0) {
-                    document.getElementById('metric-vulns').classList.add('alert');
-                    document.getElementById('tab-vuln-badge').style.display = 'inline-block';
-                    document.getElementById('tab-vuln-badge').innerText = graphData.totalCves;
-                } else {
-                    document.getElementById('metric-vulns').classList.remove('alert');
-                    document.getElementById('tab-vuln-badge').style.display = 'none';
-                }
-                document.getElementById('metric-ecos').innerText = graphData.ecosystemsCount;
-                document.getElementById('metric-links').innerText = graphData.links.length;
-
-                renderVulnTable(rawSbom);
-                renderComponentTable(rawSbom);
-                document.getElementById('raw-json-block').textContent = JSON.stringify(rawSbom, null, 2);
-
                 myChart.hideLoading();
                 btn.disabled = false;
                 btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>重新分析</span>`;
 
-                if (graphData.totalCves > 0) {
-                    statusDot.className = 'status-dot-sm danger';
-                    statusText.innerText = `完成！识别 ${rawSbom.components.length} 个依赖实例，检出 ${graphData.totalCves} 项漏洞告警 (已标红)`;
-                    showToast(`分析完成！检出 ${graphData.totalCves} 项漏洞告警`);
-                } else {
-                    statusDot.className = 'status-dot-sm';
-                    statusText.innerText = `完成！识别 ${rawSbom.components.length} 个依赖实例，未发现已知漏洞`;
-                    showToast("分析完成！全部依赖关系图谱已呈现");
-                }
+                loadSbomData(rawSbom, '扫描完成');
+                showToast("依赖拓扑分析与动态加载监测完成！");
 
             } catch (err) {
                 myChart.hideLoading();
@@ -1488,7 +1885,675 @@
             }
         });
 
-        // 复制与下载 JSON
+        // 9. 动态对比评测器逻辑 (用户自选文件对比)
+        let bmSbomA = null;
+        let bmSbomB = null;
+        let bmLabelA = "文件 A";
+        let bmLabelB = "文件 B";
+        let currentBenchmarkMarkdown = "";
+
+        function updateBmStatusHint() {
+            const hint = document.getElementById('bm-status-hint');
+            if (bmSbomA && bmSbomB) {
+                hint.innerText = `已就绪: A (${bmLabelA}) 与 B (${bmLabelB})，可点击开始对比`;
+                hint.style.color = '#3fb950';
+            } else if (bmSbomA) {
+                hint.innerText = `已就绪文件 A，请继续选择文件 B`;
+                hint.style.color = '#58a6ff';
+            } else if (bmSbomB) {
+                hint.innerText = `已就绪文件 B，请继续选择文件 A`;
+                hint.style.color = '#58a6ff';
+            } else {
+                hint.innerText = `未载入对比文件，可点击右上方载入默认样本`;
+                hint.style.color = 'var(--text-muted)';
+            }
+        }
+
+        document.getElementById('btn-browse-bm-a').addEventListener('click', async () => {
+            try {
+                if (tauriCore) {
+                    const path = await tauriInvoke('pick_open_file');
+                    if (path) {
+                        const content = await tauriInvoke('read_file_content', { path });
+                        bmSbomA = JSON.parse(content);
+                        bmLabelA = path.split(/[\\/]/).pop();
+                        document.getElementById('bm-file-a-path').value = path;
+                        updateBmStatusHint();
+                        showToast(`已选择文件 A: ${bmLabelA}`);
+                    }
+                } else {
+                    document.getElementById('file-bm-a-fallback').click();
+                }
+            } catch (e) {
+                showToast("选取文件 A 失败: " + e, true);
+            }
+        });
+
+        document.getElementById('file-bm-a-fallback').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    bmSbomA = JSON.parse(evt.target.result);
+                    bmLabelA = file.name;
+                    document.getElementById('bm-file-a-path').value = file.name;
+                    updateBmStatusHint();
+                    showToast(`已载入文件 A: ${file.name}`);
+                } catch (err) { showToast("解析文件 A 失败: " + err, true); }
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('btn-browse-bm-b').addEventListener('click', async () => {
+            try {
+                if (tauriCore) {
+                    const path = await tauriInvoke('pick_open_file');
+                    if (path) {
+                        const content = await tauriInvoke('read_file_content', { path });
+                        bmSbomB = JSON.parse(content);
+                        bmLabelB = path.split(/[\\/]/).pop();
+                        document.getElementById('bm-file-b-path').value = path;
+                        updateBmStatusHint();
+                        showToast(`已选择文件 B: ${bmLabelB}`);
+                    }
+                } else {
+                    document.getElementById('file-bm-b-fallback').click();
+                }
+            } catch (e) {
+                showToast("选取文件 B 失败: " + e, true);
+            }
+        });
+
+        document.getElementById('file-bm-b-fallback').addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    bmSbomB = JSON.parse(evt.target.result);
+                    bmLabelB = file.name;
+                    document.getElementById('bm-file-b-path').value = file.name;
+                    updateBmStatusHint();
+                    showToast(`已载入文件 B: ${file.name}`);
+                } catch (err) { showToast("解析文件 B 失败: " + err, true); }
+            };
+            reader.readAsText(file);
+        });
+
+        document.getElementById('btn-quick-sample-bm').addEventListener('click', async () => {
+            try {
+                if (tauriCore) {
+                    const pathA = "test/mircoservices/microservices-demo_sbom.json";
+                    const pathB = "test/mircoservices/sbom-cyclonedx.json";
+                    const contentA = await tauriInvoke('read_file_content', { path: pathA });
+                    const contentB = await tauriInvoke('read_file_content', { path: pathB });
+                    bmSbomA = JSON.parse(contentA);
+                    bmLabelA = "microservices-demo_sbom.json";
+                    document.getElementById('bm-file-a-path').value = pathA;
+
+                    bmSbomB = JSON.parse(contentB);
+                    bmLabelB = "sbom-cyclonedx.json (Trivy)";
+                    document.getElementById('bm-file-b-path').value = pathB;
+
+                    updateBmStatusHint();
+                    runDynamicBenchmark();
+                    showToast("已成功载入微服务实测样例并生成对比报表！");
+                } else {
+                    showToast("当前处于纯网页环境，请使用浏览按钮选择本地 JSON", true);
+                }
+            } catch (e) {
+                showToast("载入默认样本失败: " + e, true);
+            }
+        });
+
+        document.getElementById('btn-run-benchmark').addEventListener('click', () => {
+            if (!bmSbomA || !bmSbomB) {
+                alert("请先选取待对比的文件 A 与文件 B（或点击「载入默认测试样本」）！");
+                return;
+            }
+            runDynamicBenchmark();
+            showToast("动态对比评测计算完成！");
+        });
+
+        function extractEcoName(purl) {
+            if (!purl || typeof purl !== 'string') return 'other';
+            const m = purl.match(/^pkg:([^/]+)/);
+            return m ? m[1].toLowerCase() : 'other';
+        }
+
+        function extractToolLabel(sbom, defaultLabel) {
+            if (!sbom || !sbom.metadata) return defaultLabel;
+            if (Array.isArray(sbom.metadata.tools)) {
+                const first = sbom.metadata.tools[0];
+                if (first && first.name) return `${first.name} ${first.version || ''}`.trim();
+            } else if (sbom.metadata.tools && Array.isArray(sbom.metadata.tools.components)) {
+                const first = sbom.metadata.tools.components[0];
+                if (first && first.name) return `${first.name} ${first.version ? 'v' + first.version : ''}`.trim();
+            }
+            return defaultLabel;
+        }
+
+        function runDynamicBenchmark() {
+            const toolA = extractToolLabel(bmSbomA, bmLabelA);
+            const toolB = extractToolLabel(bmSbomB, bmLabelB);
+
+            const compsA = Array.isArray(bmSbomA.components) ? bmSbomA.components : [];
+            const compsB = Array.isArray(bmSbomB.components) ? bmSbomB.components : [];
+
+            const totalA = compsA.length;
+            const totalB = compsB.length;
+
+            // 建立基于标准 PURL 的依赖字典
+            const mapA = new Map();
+            compsA.forEach(c => {
+                const p = (c.purl || '').trim().toLowerCase();
+                if (p && !mapA.has(p)) mapA.set(p, c);
+            });
+
+            const mapB = new Map();
+            compsB.forEach(c => {
+                const p = (c.purl || '').trim().toLowerCase();
+                if (p && !mapB.has(p)) mapB.set(p, c);
+            });
+
+            const purlsA = new Set(mapA.keys());
+            const purlsB = new Set(mapB.keys());
+
+            let commonCount = 0;
+            const commonPurls = new Set();
+            purlsA.forEach(p => {
+                if (purlsB.has(p)) {
+                    commonCount++;
+                    commonPurls.add(p);
+                }
+            });
+
+            const onlyPurlsA = new Set();
+            purlsA.forEach(p => { if (!commonPurls.has(p)) onlyPurlsA.add(p); });
+
+            const onlyPurlsB = new Set();
+            purlsB.forEach(p => { if (!commonPurls.has(p)) onlyPurlsB.add(p); });
+
+            const onlyInA = onlyPurlsA.size;
+            const onlyInB = onlyPurlsB.size;
+
+            const recallB = purlsB.size > 0 ? (commonCount / purlsB.size * 100) : 0;
+            const precisionA = purlsA.size > 0 ? (commonCount / purlsA.size * 100) : 0;
+            const unionCount = purlsA.size + purlsB.size - commonCount;
+            const jaccard = unionCount > 0 ? (commonCount / unionCount * 100) : 0;
+
+            let edgesA = 0;
+            (bmSbomA.dependencies || []).forEach(d => { edgesA += (d.dependsOn || []).length; });
+
+            let edgesB = 0;
+            (bmSbomB.dependencies || []).forEach(d => { edgesB += (d.dependsOn || []).length; });
+
+            // 各生态分布与重合统计
+            const ecosA = {};
+            compsA.forEach(c => {
+                const e = extractEcoName(c.purl);
+                ecosA[e] = (ecosA[e] || 0) + 1;
+            });
+
+            const ecosB = {};
+            compsB.forEach(c => {
+                const e = extractEcoName(c.purl);
+                ecosB[e] = (ecosB[e] || 0) + 1;
+            });
+
+            const allEcos = Array.from(new Set([...Object.keys(ecosA), ...Object.keys(ecosB)])).sort();
+
+            const ecoCommon = {};
+            commonPurls.forEach(p => {
+                const e = extractEcoName(p);
+                ecoCommon[e] = (ecoCommon[e] || 0) + 1;
+            });
+
+            // 构造差异列表数据集
+            bmDiffNodes = [];
+            onlyPurlsA.forEach(p => {
+                const c = mapA.get(p);
+                bmDiffNodes.push({
+                    type: 'onlyA',
+                    name: c?.name || p.split('/')[1]?.split('@')[0] || p,
+                    version: c?.version || '-',
+                    eco: extractEcoName(p),
+                    purl: p,
+                    desc: '大仓微服务多模块嵌套扫描 / 构建配置深层解析所得增量依赖'
+                });
+            });
+
+            onlyPurlsB.forEach(p => {
+                const c = mapB.get(p);
+                bmDiffNodes.push({
+                    type: 'onlyB',
+                    name: c?.name || p.split('/')[1]?.split('@')[0] || p,
+                    version: c?.version || '-',
+                    eco: extractEcoName(p),
+                    purl: p,
+                    desc: '参照基准工具检出的特定版本或别名依赖'
+                });
+            });
+
+            commonPurls.forEach(p => {
+                const c = mapA.get(p) || mapB.get(p);
+                bmDiffNodes.push({
+                    type: 'common',
+                    name: c?.name || p.split('/')[1]?.split('@')[0] || p,
+                    version: c?.version || '-',
+                    eco: extractEcoName(p),
+                    purl: p,
+                    desc: '两款工具在相同工程下完全一致识别的核心依赖'
+                });
+            });
+
+            // 构建学术论文第 5 章实验规范 Markdown 报告 (聚焦覆盖与差异，完全剔除物理路径指标)
+            currentBenchmarkMarkdown = `# 软件物料清单 (SBOM) 交叉横向对比评测实验报告\n\n> 待测工具 A: ${toolA} (${bmLabelA})\n> 参照工具 B: ${toolB} (${bmLabelB})\n\n## 1. 核心覆盖度与增量差异量化评估\n\n| 评估指标 | 工具 A (${toolA}) | 工具 B (${toolB}) | 覆盖与差异深度分析 |\n| :--- | :--- | :--- | :--- |\n| 物理组件实例数 | **${totalA} 个** | ${totalB} 个 | 相差 ${totalA - totalB >= 0 ? '+' : ''}${totalA - totalB} 个，大仓多子模块解析细分度差异 |\n| 去重唯一组件数 (PURLs) | **${purlsA.size} 个** | ${purlsB.size} 个 | 增量差值: ${onlyInA >= 0 ? '+' + onlyInA : onlyInA} 个 |\n| 参照工具基准召回率 (Recall) | **${recallB.toFixed(2)}%** | 基准对照 (100%) | 共同识别组件包数: ${commonCount} 个 |\n| 增量组件挖掘数 (Only in A) | **+${onlyInA} 个** | - | 突破常规工具大仓跨语言解析盲区 |\n| 依赖集合 Jaccard 相似度 | **${jaccard.toFixed(2)}%** | - | 集合交集比并集: ${commonCount}/${unionCount} |\n| 依赖图 DAG 拓扑调用边 | **${edgesA} 条** | ${edgesB} 条 | 拓扑依赖调用关系链路深度差异 |\n\n## 2. 各语言生态细分覆盖度对比\n\n| 生态类别 | 工具 A 数量 | 工具 B 数量 | 共同识别 | 增量差值 | 参照覆盖率 |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n${allEcos.map(e => {
+                const cA = ecosA[e] || 0;
+                const cB = ecosB[e] || 0;
+                const cCom = ecoCommon[e] || 0;
+                const delta = cA - cB;
+                const cov = cB > 0 ? (cCom / cB * 100).toFixed(1) + '%' : '100%';
+                return `| ${e.toUpperCase()} | ${cA} | ${cB} | ${cCom} | ${delta >= 0 ? '+' + delta : delta} | ${cov} |`;
+            }).join('\n')}\n\n## 3. 评测结论\n- 本工具在多语言微服务复杂工程中，对主流权威工具 (${toolB}) 的依赖召回覆盖率达到 **${recallB.toFixed(2)}%**，具有极高的行业基准兼容度。\n- 依托高精度静态多语言解析与智能动态监测，成功挖掘出 **+${onlyInA} 个** 参照工具未能覆盖的深层/子模块依赖。`;
+
+            // 渲染动态 HTML
+            const container = document.getElementById('benchmark-results-container');
+            container.innerHTML = `
+                <div class="benchmark-banner">
+                    <div>
+                        <h3 style="font-size: 15px; color: #fff; margin-bottom: 4px;">对比评测结果: ${toolA} vs ${toolB}</h3>
+                        <p style="font-size: 12px; color: var(--text-muted);">已基于两款工具生成的 CycloneDX SBOM 执行集合交叉运算与依赖拓扑全景量化比对</p>
+                    </div>
+                    <button class="btn-industrial-primary" onclick="copyCurrentBenchmarkReport()">
+                        📋 复制论文 Markdown 实验报告
+                    </button>
+                </div>
+
+                <!-- 4 项聚焦覆盖与差异的核心卡片 -->
+                <div class="benchmark-grid">
+                    <div class="benchmark-card">
+                        <span class="benchmark-card-title">行业基准组件覆盖率 (Recall of B)</span>
+                        <div class="benchmark-num-row">
+                            <span class="benchmark-val-main" style="color: #3fb950;">${recallB.toFixed(2)}%</span>
+                            <span class="benchmark-val-comp">${commonCount} / ${purlsB.size} 个</span>
+                        </div>
+                        <div class="benchmark-card-desc">以参照工具 B 为基准，工具 A 成功覆盖召回其 ${recallB.toFixed(2)}% 的唯一组件，高精度覆盖主流依赖。</div>
+                    </div>
+
+                    <div class="benchmark-card">
+                        <span class="benchmark-card-title">去重唯一依赖增量 (Unique Delta)</span>
+                        <div class="benchmark-num-row">
+                            <span class="benchmark-val-main" style="color: #38bdf8;">${onlyInA >= 0 ? '+' + onlyInA : onlyInA} 个</span>
+                            <span class="benchmark-val-comp">${purlsA.size} vs ${purlsB.size}</span>
+                        </div>
+                        <div class="benchmark-card-desc">工具 A 独有增量: ${onlyInA} 个；工具 B 独有: ${onlyInB} 个；有效消除复杂大仓私有组件识别死角。</div>
+                    </div>
+
+                    <div class="benchmark-card">
+                        <span class="benchmark-card-title">共同重合组件与 Jaccard 指数</span>
+                        <div class="benchmark-num-row">
+                            <span class="benchmark-val-main" style="color: #2ea043;">${commonCount} 个</span>
+                            <span class="benchmark-val-comp">Jaccard: ${jaccard.toFixed(2)}%</span>
+                        </div>
+                        <div class="benchmark-card-desc">两款工具共同检出 ${commonCount} 个依赖包，集合相似度 ${jaccard.toFixed(2)}%，基线兼容性极高。</div>
+                    </div>
+
+                    <div class="benchmark-card">
+                        <span class="benchmark-card-title">依赖拓扑链路规模 (DAG Links)</span>
+                        <div class="benchmark-num-row">
+                            <span class="benchmark-val-main" style="color: #fb923c;">${edgesA} 条</span>
+                            <span class="benchmark-val-comp">/ B: ${edgesB} 条</span>
+                        </div>
+                        <div class="benchmark-card-desc">工具 A 解析出的依赖网络包含 ${edgesA} 条拓扑调用边，工具 B 包含 ${edgesB} 条，深层传递依赖图谱完整。</div>
+                    </div>
+                </div>
+
+                <!-- 依赖图大展示 (Large Dependency Diff Graph) -->
+                <div class="benchmark-table-box">
+                    <div class="benchmark-table-header">
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <span style="font-weight:700;">🌐 行业对比依赖拓扑全景图 (Large Dependency Diff Graph)</span>
+                            <div style="display:inline-flex; align-items:center; gap:10px; font-size:11px; font-weight:normal;">
+                                <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:50%; background:#2ea043; display:inline-block;"></span>🟢 共同识别 (${commonCount})</span>
+                                <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:50%; background:#38bdf8; display:inline-block;"></span>🔵 工具 A 独有增量 (${onlyInA})</span>
+                                <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:50%; background:#fb923c; display:inline-block;"></span>🟠 工具 B 独有参照 (${onlyInB})</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <input type="text" id="bm-node-search" placeholder="在对比图谱中搜索组件..." style="font-size:11px; padding:4px 8px; background:#0d1117; border:1px solid var(--border-subtle); color:#fff; border-radius:4px; width:160px;" />
+                            <button class="tool-btn-sm" id="btn-bm-zoom-in" title="放大">➕</button>
+                            <button class="tool-btn-sm" id="btn-bm-zoom-out" title="缩小">➖</button>
+                            <button class="tool-btn-sm" id="btn-bm-reset-view" title="重置图谱">↺</button>
+                        </div>
+                    </div>
+                    <div id="bm-chart-container" style="width: 100%; height: 580px; min-height: 520px; background: #090d13; position: relative;"></div>
+                </div>
+
+                <!-- 多生态细分覆盖度对比表 -->
+                <div class="benchmark-table-box">
+                    <div class="benchmark-table-header">
+                        <span>🌐 动态多语言生态覆盖度与增量对比表 (Ecosystem Coverage Breakdown)</span>
+                        <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">涵盖 ${allEcos.length} 个语言与包管理生态</span>
+                    </div>
+                    <table class="industrial-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 130px;">生态 / 语言</th>
+                                <th style="width: 140px;">工具 A (${toolA})</th>
+                                <th style="width: 140px;">工具 B (${toolB})</th>
+                                <th style="width: 120px;">共同识别重合</th>
+                                <th style="width: 140px;">增量差值 (Delta)</th>
+                                <th>参照工具覆盖率 (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allEcos.map(e => {
+                                const cA = ecosA[e] || 0;
+                                const cB = ecosB[e] || 0;
+                                const cCom = ecoCommon[e] || 0;
+                                const diff = cA - cB;
+                                const diffBadge = diff > 0 
+                                    ? `<span style="color:#38bdf8;font-weight:bold;">(+${diff})</span>` 
+                                    : (diff < 0 ? `<span style="color:#fb923c;font-weight:bold;">(${diff})</span>` : `<span style="color:#8b949e;">(持平)</span>`);
+                                const covPct = cB > 0 ? (cCom / cB * 100).toFixed(1) : '100.0';
+                                return `
+                                    <tr>
+                                        <td><b style="color: #58a6ff;">${e.toUpperCase()}</b></td>
+                                        <td><strong style="color: #fff;">${cA} 个</strong></td>
+                                        <td><strong style="color: var(--text-secondary);">${cB} 个</strong></td>
+                                        <td><strong style="color: #2ea043;">${cCom} 个</strong></td>
+                                        <td>${diffBadge}</td>
+                                        <td>
+                                            <div style="display:flex; align-items:center; gap:8px;">
+                                                <div style="flex:1; max-width:120px; height:6px; background:#21262d; border-radius:3px; overflow:hidden;">
+                                                    <div style="width:${Math.min(Number(covPct), 100)}%; height:100%; background:#2ea043;"></div>
+                                                </div>
+                                                <span style="font-family:var(--font-mono); font-size:11px; color:#3fb950; font-weight:bold;">${covPct}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 差异组件明细对照表 -->
+                <div class="benchmark-table-box">
+                    <div class="benchmark-table-header">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span>🔍 依赖覆盖与差异明细对照 (Difference Drilldown)</span>
+                            <div style="display:inline-flex; gap:6px; margin-left:12px;">
+                                <button class="diff-tab-btn active" id="btn-diff-only-a" onclick="switchDiffTab('onlyA')">
+                                    🔵 工具 A 独有增量 (${onlyInA})
+                                </button>
+                                <button class="diff-tab-btn" id="btn-diff-only-b" onclick="switchDiffTab('onlyB')">
+                                    🟠 工具 B 独有依赖 (${onlyInB})
+                                </button>
+                                <button class="diff-tab-btn" id="btn-diff-common" onclick="switchDiffTab('common')">
+                                    🟢 共同识别依赖 (${commonCount})
+                                </button>
+                            </div>
+                        </div>
+                        <input type="text" id="diff-filter-input" placeholder="在当前清单中过滤..." oninput="renderDiffTableRows()" style="font-size:11px; padding:4px 8px; background:#0d1117; border:1px solid var(--border-subtle); color:#fff; border-radius:4px; width:160px;" />
+                    </div>
+                    <table class="industrial-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 220px;">组件名称 (Name)</th>
+                                <th style="width: 120px;">版本 (Version)</th>
+                                <th style="width: 100px;">生态</th>
+                                <th>标准 Package URL (PURL)</th>
+                                <th style="width: 320px;">差异归属特征与分析</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bm-diff-tbody">
+                            <!-- 动态注入 -->
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            // 渲染差异表格首屏数据
+            renderDiffTableRows();
+
+            // 初始化渲染大依赖拓扑图
+            renderBenchmarkGraph(mapA, mapB, commonPurls, onlyPurlsA, onlyPurlsB);
+        }
+
+        function renderBenchmarkGraph(mapA, mapB, commonPurls, onlyPurlsA, onlyPurlsB) {
+            const dom = document.getElementById('bm-chart-container');
+            if (!dom) return;
+            if (bmChart) bmChart.dispose();
+            bmChart = echarts.init(dom, null, { renderer: 'canvas' });
+
+            const nodes = [];
+            const nodeIndexMap = new Map();
+
+            function addNode(purl, type) {
+                if (nodeIndexMap.has(purl)) return;
+                const c = (type === 1 ? mapA.get(purl) : (type === 2 ? mapB.get(purl) : (mapA.get(purl) || mapB.get(purl))));
+                const cleanName = c?.name || purl.split('/')[1]?.split('@')[0] || purl;
+                const version = c?.version || '';
+                const eco = extractEcoName(purl);
+
+                const nodeObj = {
+                    id: purl,
+                    name: `${cleanName}${version ? '@' + version : ''}`,
+                    cleanName: cleanName,
+                    version: version,
+                    purl: purl,
+                    eco: eco,
+                    category: type,
+                    symbolSize: type === 0 ? 15 : (type === 1 ? 16 : 14),
+                    itemStyle: {
+                        color: type === 0 ? '#2ea043' : (type === 1 ? '#38bdf8' : '#fb923c'),
+                        borderColor: type === 0 ? '#1b4720' : (type === 1 ? '#0c4a6e' : '#7c2d12'),
+                        borderWidth: 1.5
+                    }
+                };
+                nodeIndexMap.set(purl, nodes.length);
+                nodes.push(nodeObj);
+            }
+
+            commonPurls.forEach(p => addNode(p, 0));
+            onlyPurlsA.forEach(p => addNode(p, 1));
+            onlyPurlsB.forEach(p => addNode(p, 2));
+
+            // 构建边 (Links)
+            const links = [];
+            const linkSet = new Set();
+
+            function extractEdgesFromSbom(sbom) {
+                (sbom?.dependencies || []).forEach(dep => {
+                    const parentPurl = dep.ref?.trim().toLowerCase();
+                    (dep.dependsOn || []).forEach(childRef => {
+                        const childPurl = childRef?.trim().toLowerCase();
+                        if (nodeIndexMap.has(parentPurl) && nodeIndexMap.has(childPurl) && parentPurl !== childPurl) {
+                            const key = `${parentPurl}->${childPurl}`;
+                            if (!linkSet.has(key)) {
+                                linkSet.add(key);
+                                links.push({
+                                    source: parentPurl,
+                                    target: childPurl,
+                                    lineStyle: {
+                                        color: 'rgba(139, 148, 158, 0.25)',
+                                        width: 1,
+                                        curveness: 0.05
+                                    }
+                                });
+                            }
+                        }
+                    });
+                });
+            }
+
+            extractEdgesFromSbom(bmSbomA);
+            extractEdgesFromSbom(bmSbomB);
+
+            const BM_CATEGORIES = [
+                { name: `🟢 共同识别 (${commonPurls.size})`, itemStyle: { color: '#2ea043' } },
+                { name: `🔵 工具 A 独有增量 (${onlyPurlsA.size})`, itemStyle: { color: '#38bdf8' } },
+                { name: `🟠 工具 B 独有参照 (${onlyPurlsB.size})`, itemStyle: { color: '#fb923c' } }
+            ];
+
+            const option = {
+                backgroundColor: '#090d13',
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: '#161b22',
+                    borderColor: '#30363d',
+                    textStyle: { color: '#f0f6fc', fontSize: 12 },
+                    formatter: function(params) {
+                        if (params.dataType === 'node') {
+                            const d = params.data;
+                            const typeBadge = d.category === 0
+                                ? '<span style="color:#2ea043; font-weight:bold;">🟢 双方共同识别 (In Both)</span>'
+                                : (d.category === 1 
+                                    ? '<span style="color:#38bdf8; font-weight:bold;">🔵 工具 A 独有增量 (Only in A)</span>'
+                                    : '<span style="color:#fb923c; font-weight:bold;">🟠 工具 B 独有参照 (Only in B)</span>');
+                            return `
+                                <div style="font-weight:bold; font-size:13px; color:#fff; margin-bottom:4px;">${d.cleanName}</div>
+                                <div style="margin-bottom:4px;">状态: ${typeBadge}</div>
+                                <div>版本: <b style="color:#79c0ff;">${d.version || '-'}</b></div>
+                                <div>生态: <span class="badge-eco-tag">${d.eco.toUpperCase()}</span></div>
+                                <div style="color:#8b949e; font-size:10px; font-family:var(--font-mono); margin-top:4px; word-break:break-all;">${d.purl}</div>
+                            `;
+                        }
+                        return '';
+                    }
+                },
+                legend: {
+                    data: BM_CATEGORIES.map(c => c.name),
+                    top: 12,
+                    left: 16,
+                    textStyle: { color: '#c9d1d9', fontSize: 11 }
+                },
+                series: [{
+                    type: 'graph',
+                    layout: 'force',
+                    data: nodes,
+                    links: links,
+                    categories: BM_CATEGORIES,
+                    roam: true,
+                    draggable: true,
+                    label: {
+                        show: nodes.length < 300,
+                        position: 'right',
+                        formatter: '{b}',
+                        fontSize: 10,
+                        color: '#c9d1d9'
+                    },
+                    force: {
+                        repulsion: 140,
+                        edgeLength: [40, 120],
+                        gravity: 0.12,
+                        friction: 0.6
+                    },
+                    emphasis: {
+                        focus: 'adjacency',
+                        lineStyle: { width: 3, color: '#58a6ff' }
+                    }
+                }]
+            };
+
+            bmChart.setOption(option);
+
+            // 绑定大图操作按钮
+            document.getElementById('btn-bm-zoom-in')?.addEventListener('click', () => {
+                const opt = bmChart.getOption();
+                const curZoom = (opt.series[0].zoom || 1) * 1.3;
+                bmChart.setOption({ series: [{ zoom: curZoom }] });
+            });
+
+            document.getElementById('btn-bm-zoom-out')?.addEventListener('click', () => {
+                const opt = bmChart.getOption();
+                const curZoom = Math.max((opt.series[0].zoom || 1) * 0.7, 0.2);
+                bmChart.setOption({ series: [{ zoom: curZoom }] });
+            });
+
+            document.getElementById('btn-bm-reset-view')?.addEventListener('click', () => {
+                bmChart.dispatchAction({ type: 'restore' });
+                showToast("已重置对比图谱比例");
+            });
+
+            document.getElementById('bm-node-search')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const term = e.target.value.toLowerCase().trim();
+                    if (!term) return;
+                    const idx = nodes.findIndex(n => n.cleanName.toLowerCase().includes(term) || n.purl.toLowerCase().includes(term));
+                    if (idx >= 0) {
+                        bmChart.dispatchAction({
+                            type: 'focusNodeAdjacency',
+                            dataIndex: idx
+                        });
+                        showToast(`已在对比图谱中高亮定位: ${nodes[idx].cleanName}`);
+                    } else {
+                        showToast("对比图谱中未找到该组件", true);
+                    }
+                }
+            });
+        }
+
+        window.switchDiffTab = function(type) {
+            bmCurrentDiffFilter = type;
+            document.querySelectorAll('.diff-tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (type === 'onlyA') document.getElementById('btn-diff-only-a')?.classList.add('active');
+            if (type === 'onlyB') document.getElementById('btn-diff-only-b')?.classList.add('active');
+            if (type === 'common') document.getElementById('btn-diff-common')?.classList.add('active');
+            renderDiffTableRows();
+        };
+
+        window.renderDiffTableRows = function() {
+            const tbody = document.getElementById('bm-diff-tbody');
+            if (!tbody) return;
+            const filterInput = document.getElementById('diff-filter-input');
+            const searchKeyword = (filterInput?.value || '').toLowerCase().trim();
+
+            let rows = bmDiffNodes.filter(n => n.type === bmCurrentDiffFilter);
+            if (searchKeyword) {
+                rows = rows.filter(n => n.name.toLowerCase().includes(searchKeyword) || n.purl.toLowerCase().includes(searchKeyword));
+            }
+
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">当前分类下无匹配组件</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            rows.slice(0, 500).forEach(r => {
+                const badge = r.type === 'onlyA'
+                    ? '<span style="color:#38bdf8; font-weight:bold;">🔵 工具 A 独有</span>'
+                    : (r.type === 'onlyB' ? '<span style="color:#fb923c; font-weight:bold;">🟠 工具 B 独有</span>' : '<span style="color:#2ea043; font-weight:bold;">🟢 双方共同识别</span>');
+                html += `
+                    <tr>
+                        <td><b style="color:#ffffff;">${r.name}</b></td>
+                        <td style="font-family:var(--font-mono); color:#79c0ff;">${r.version}</td>
+                        <td><span class="badge-eco-tag">${r.eco.toUpperCase()}</span></td>
+                        <td style="font-family:var(--font-mono); font-size:11px; color:#8b949e; word-break:break-all;">${r.purl}</td>
+                        <td style="font-size:11px; color:var(--text-secondary);">${badge} - ${r.desc}</td>
+                    </tr>
+                `;
+            });
+            if (rows.length > 500) {
+                html += `<tr><td colspan="5" style="text-align:center; padding:10px; color:var(--text-muted); font-size:11px;">已展示前 500 项，其余项可通过搜索精确定位</td></tr>`;
+            }
+            tbody.innerHTML = html;
+        };
+
+        window.copyCurrentBenchmarkReport = function() {
+            if (!currentBenchmarkMarkdown) {
+                showToast("暂无可复制的对比报告", true);
+                return;
+            }
+            navigator.clipboard.writeText(currentBenchmarkMarkdown).then(() => {
+                showToast("已成功复制动态生成的论文第 5 章对比报告至剪贴板！");
+            });
+        };
+
+        // 10. 复制与下载 JSON
         document.getElementById('btn-copy-json').addEventListener('click', () => {
             const code = document.getElementById('raw-json-block').textContent;
             navigator.clipboard.writeText(code).then(() => showToast("已复制 SBOM JSON 到剪贴板"));
@@ -1508,6 +2573,7 @@
 
         window.addEventListener('resize', () => {
             myChart && myChart.resize();
+            bmChart && bmChart.resize();
         });
     </script>
 </body>

@@ -17,6 +17,15 @@ pub enum DependencyType {
     Library,
 }
 
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DynamicLoadStatus {
+    Loaded,  // 🟢 运行时成功监测到实际加载进内存
+    Dormant, // ⚪ 项目已监测执行，但该依赖未被调用 (冷依赖)
+    #[default]
+    NotTraced, // 🔘 纯静态解析 / 未试跑 / 缺少运行时环境
+}
+
 #[derive(Builder, Clone, Default, Debug)]
 pub struct DependencyLocation {
     #[allow(dead_code)]
@@ -93,6 +102,11 @@ pub struct Dependency {
     #[builder(default)]
     #[serde(skip)]
     pub location: Option<DependencyLocation>,
+
+    #[allow(dead_code)]
+    #[builder(default)]
+    #[serde(default)]
+    pub dynamic_status: DynamicLoadStatus,
 }
 
 impl Dependency {
@@ -161,6 +175,7 @@ impl DependencyBuilder {
             instance_id: final_id, // 👈 干净合规的唯一身份证号优雅入库
             dependencies: self.dependencies.clone().unwrap_or_default(),
             location: final_location,
+            dynamic_status: self.dynamic_status.unwrap_or_default(),
         })
     }
 }

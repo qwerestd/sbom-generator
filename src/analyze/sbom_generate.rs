@@ -232,6 +232,17 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
         }
     }
 
+    // =====================================================================
+    // 动态依赖加载监测引擎 (4 层工业级防御：环境预检、沙箱执行、超时熔断、平滑降级)
+    // =====================================================================
+    if dynamic {
+        crate::analyze::dynamic_monitor::monitor_dependency_loading(
+            &configuration.directory,
+            &mut final_dependencies,
+            configuration.use_debug,
+        );
+    }
+
     // 先落盘生成最新 SBOM JSON，再基于新生成的 SBOM 汇总打印逻辑聚合报表与依赖树摘要
     generate_sbom(final_dependencies, configuration)?;
     if let Ok(report) = generate_report(configuration.output.as_str()) {

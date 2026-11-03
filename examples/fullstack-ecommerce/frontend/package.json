@@ -1,0 +1,16 @@
+{
+  "name": "fullstack-storefront",
+  "version": "2.1.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "axios": "^1.6.0",
+    "lodash": "^4.17.21",
+    "zustand": "^4.4.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "typescript": "^5.2.0"
+  }
+}

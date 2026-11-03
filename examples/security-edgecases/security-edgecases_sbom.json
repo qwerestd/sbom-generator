@@ -1,0 +1,634 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-01T05:36:03Z",
+    "tools": [
+      {
+        "name": "sbom-generator",
+        "vendor": "BNBU_DS",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:maven/com.alibaba/fastjson@1.2.68?package-id=2ffde7cecc0a9385",
+      "group": "com.alibaba",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "fastjson",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\java-legacy\\pom.xml"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2022-25845 (GHSA-pv7h-9867-5q6r)"
+        }
+      ],
+      "purl": "pkg:maven/com.alibaba/fastjson@1.2.68",
+      "type": "library",
+      "version": "1.2.68"
+    },
+    {
+      "bom-ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=7d75a36f27c881c9",
+      "group": "org.apache.logging.log4j",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "log4j-core",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\java-legacy\\pom.xml"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2021-44228 (GHSA-jfh8-c2jp-5v3q)"
+        }
+      ],
+      "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "type": "library",
+      "version": "2.14.1"
+    },
+    {
+      "bom-ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3?package-id=15cafda693919dcd",
+      "group": "org.springframework.boot",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "spring-boot-starter-web",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\java-legacy\\pom.xml"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2022-22965 (GHSA-36p3-wjmg-h94x)"
+        }
+      ],
+      "purl": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3",
+      "type": "library",
+      "version": "2.6.3"
+    },
+    {
+      "bom-ref": "pkg:npm/axios@0.21.1?package-id=bd7b9d1ee4feb7d8",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "axios",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\web\\package.json"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-45857 (GHSA-wf5p-g6vw-rhxx)"
+        }
+      ],
+      "purl": "pkg:npm/axios@0.21.1",
+      "type": "library",
+      "version": "0.21.1"
+    },
+    {
+      "bom-ref": "pkg:npm/express@4.17.1?package-id=315aa754a45ec73a",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "express",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\web\\package.json"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2024-29041 (GHSA-rv95-896h-c2vc)"
+        }
+      ],
+      "purl": "pkg:npm/express@4.17.1",
+      "type": "library",
+      "version": "4.17.1"
+    },
+    {
+      "bom-ref": "pkg:npm/legacy-vulnerable-portal@1.0.0-rc.1?package-id=e45e50e213bc7d58",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "legacy-vulnerable-portal",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\web\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/legacy-vulnerable-portal@1.0.0-rc.1",
+      "type": "application",
+      "version": "1.0.0-rc.1"
+    },
+    {
+      "bom-ref": "pkg:npm/lodash@4.17.19?package-id=e3946076c24ee525",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "lodash",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\web\\package.json"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2021-23337 (GHSA-35jh-r3h4-6jhm)"
+        }
+      ],
+      "purl": "pkg:npm/lodash@4.17.19",
+      "type": "library",
+      "version": "4.17.19"
+    },
+    {
+      "bom-ref": "pkg:npm/minimist@1.2.5?package-id=d62dcfd60ca0ec8d",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "minimist",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\web\\package.json"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2021-44906 (GHSA-xvch-5gv4-984h)"
+        }
+      ],
+      "purl": "pkg:npm/minimist@1.2.5",
+      "type": "library",
+      "version": "1.2.5"
+    },
+    {
+      "bom-ref": "pkg:pypi/aiohttp@3.9.1?package-id=b0bf2335e58dbb5c",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "aiohttp",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\python-service\\requirements.txt"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2024-23334 (GHSA-jwhx-xcg6-8xhj)"
+        }
+      ],
+      "purl": "pkg:pypi/aiohttp@3.9.1",
+      "type": "library",
+      "version": "3.9.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/flask@2.2.0?package-id=721193e8ae830059",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "flask",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\python-service\\requirements.txt"
+        }
+      ],
+      "purl": "pkg:pypi/flask@2.2.0",
+      "type": "library",
+      "version": "2.2.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/python-service@0.0.0?package-id=d69d865e2e19c30f",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "python-service",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\python-service\\requirements.txt"
+        }
+      ],
+      "purl": "pkg:pypi/python-service@0.0.0",
+      "type": "application",
+      "version": "0.0.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pyyaml@5.3.1?package-id=76484b7764337f3c",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pyyaml",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\python-service\\requirements.txt"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2020-14343 (GHSA-8q59-q68h-6hv4)"
+        }
+      ],
+      "purl": "pkg:pypi/pyyaml@5.3.1",
+      "type": "library",
+      "version": "5.3.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/requests@2.28.1?package-id=b6908c73a5b25c43",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "requests",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\python-service\\requirements.txt"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-32681 (GHSA-j8r2-6x86-q33q)"
+        }
+      ],
+      "purl": "pkg:pypi/requests@2.28.1",
+      "type": "library",
+      "version": "2.28.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/urllib3@1.26.18?package-id=acdd1d2b81d3ec9e",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "urllib3",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/security-edgecases\\python-service\\requirements.txt"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-45803 (GHSA-g4mx-q9vg-27p4)"
+        }
+      ],
+      "purl": "pkg:pypi/urllib3@1.26.18",
+      "type": "library",
+      "version": "1.26.18"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:maven/com.alibaba/fastjson@1.2.68?package-id=2ffde7cecc0a9385"
+    },
+    {
+      "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=7d75a36f27c881c9"
+    },
+    {
+      "ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3?package-id=15cafda693919dcd"
+    },
+    {
+      "ref": "pkg:npm/axios@0.21.1?package-id=bd7b9d1ee4feb7d8"
+    },
+    {
+      "ref": "pkg:npm/express@4.17.1?package-id=315aa754a45ec73a"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/axios@0.21.1?package-id=bd7b9d1ee4feb7d8",
+        "pkg:npm/express@4.17.1?package-id=315aa754a45ec73a",
+        "pkg:npm/lodash@4.17.19?package-id=e3946076c24ee525",
+        "pkg:npm/minimist@1.2.5?package-id=d62dcfd60ca0ec8d"
+      ],
+      "ref": "pkg:npm/legacy-vulnerable-portal@1.0.0-rc.1?package-id=e45e50e213bc7d58"
+    },
+    {
+      "ref": "pkg:npm/lodash@4.17.19?package-id=e3946076c24ee525"
+    },
+    {
+      "ref": "pkg:npm/minimist@1.2.5?package-id=d62dcfd60ca0ec8d"
+    },
+    {
+      "ref": "pkg:pypi/aiohttp@3.9.1?package-id=b0bf2335e58dbb5c"
+    },
+    {
+      "ref": "pkg:pypi/flask@2.2.0?package-id=721193e8ae830059"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/pyyaml@5.3.1?package-id=76484b7764337f3c",
+        "pkg:pypi/requests@2.28.1?package-id=b6908c73a5b25c43",
+        "pkg:pypi/aiohttp@3.9.1?package-id=b0bf2335e58dbb5c",
+        "pkg:pypi/urllib3@1.26.18?package-id=acdd1d2b81d3ec9e",
+        "pkg:pypi/flask@2.2.0?package-id=721193e8ae830059"
+      ],
+      "ref": "pkg:pypi/python-service@0.0.0?package-id=d69d865e2e19c30f"
+    },
+    {
+      "ref": "pkg:pypi/pyyaml@5.3.1?package-id=76484b7764337f3c"
+    },
+    {
+      "ref": "pkg:pypi/requests@2.28.1?package-id=b6908c73a5b25c43"
+    },
+    {
+      "ref": "pkg:pypi/urllib3@1.26.18?package-id=acdd1d2b81d3ec9e"
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/pyyaml@5.3.1?package-id=76484b7764337f3c"
+        }
+      ],
+      "description": "PyYAML full_load 任意 Python 对象反序列化远程代码执行漏洞",
+      "id": "CVE-2020-14343 (GHSA-8q59-q68h-6hv4)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 9.8,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 5.4.0",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.19?package-id=e3946076c24ee525"
+        }
+      ],
+      "description": "Lodash template 命令注入与原型链污染漏洞 (Command Injection)",
+      "id": "CVE-2021-23337 (GHSA-35jh-r3h4-6jhm)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.2,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 4.17.21",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=7d75a36f27c881c9"
+        }
+      ],
+      "description": "Apache Log4j2 JNDI 远程代码执行漏洞 (Log4Shell)",
+      "id": "CVE-2021-44228 (GHSA-jfh8-c2jp-5v3q)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 10.0,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 2.17.1",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/minimist@1.2.5?package-id=d62dcfd60ca0ec8d"
+        }
+      ],
+      "description": "Minimist 命令行参数解析器原型链污染漏洞",
+      "id": "CVE-2021-44906 (GHSA-xvch-5gv4-984h)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 9.8,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 1.2.6",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3?package-id=15cafda693919dcd"
+        }
+      ],
+      "description": "Spring Framework DataBinder 远程代码执行漏洞 (Spring4Shell)",
+      "id": "CVE-2022-22965 (GHSA-36p3-wjmg-h94x)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 9.8,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 2.6.6",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/com.alibaba/fastjson@1.2.68?package-id=2ffde7cecc0a9385"
+        }
+      ],
+      "description": "Fastjson AutoType 反序列化远程代码执行漏洞 (RCE)",
+      "id": "CVE-2022-25845 (GHSA-pv7h-9867-5q6r)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 9.8,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 1.2.83",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/requests@2.28.1?package-id=b6908c73a5b25c43"
+        }
+      ],
+      "description": "Requests 跨源重定向时 Proxy-Authorization 凭据泄露漏洞",
+      "id": "CVE-2023-32681 (GHSA-j8r2-6x86-q33q)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.1,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 2.31.0",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/urllib3@1.26.18?package-id=acdd1d2b81d3ec9e"
+        }
+      ],
+      "description": "urllib3 HTTP 重定向未剥离请求体导致敏感数据泄露",
+      "id": "CVE-2023-45803 (GHSA-g4mx-q9vg-27p4)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.5,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 2.0.7",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/axios@0.21.1?package-id=bd7b9d1ee4feb7d8"
+        }
+      ],
+      "description": "Axios 跨域请求 XSRF-TOKEN 凭据泄露漏洞",
+      "id": "CVE-2023-45857 (GHSA-wf5p-g6vw-rhxx)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.5,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 1.6.0",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/aiohttp@3.9.1?package-id=b0bf2335e58dbb5c"
+        }
+      ],
+      "description": "aiohttp 静态资源路由符号链接目录穿越任意文件读取漏洞",
+      "id": "CVE-2024-23334 (GHSA-jwhx-xcg6-8xhj)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 3.9.2",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/express@4.17.1?package-id=315aa754a45ec73a"
+        }
+      ],
+      "description": "Express.js URL 重定向校验绕过漏洞 (Open Redirect)",
+      "id": "CVE-2024-29041 (GHSA-rv95-896h-c2vc)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.1,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 4.19.2",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    }
+  ]
+}

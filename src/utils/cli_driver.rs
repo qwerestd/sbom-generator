@@ -310,3 +310,75 @@ impl CliLocator {
         None
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_resolve_tool_cargo_and_memory_cache() {
+        let path = CliLocator::resolve_global_tool(
+            "cargo",
+            &["cargo.exe", "cargo"],
+            &["--version"],
+            &["CARGO_HOME"],
+            &[],
+        );
+        assert!(
+            path.is_some(),
+            "cargo should be discoverable in test environment"
+        );
+
+        // 再次获取，触发内存缓存分支
+        let cached = CliLocator::resolve_global_tool(
+            "cargo",
+            &["cargo.exe", "cargo"],
+            &["--version"],
+            &["CARGO_HOME"],
+            &[],
+        );
+        assert_eq!(path, cached);
+    }
+
+    #[test]
+    fn test_resolve_wrapper_in_dir() {
+        let temp_dir = env::temp_dir().join("sbom_test_wrapper");
+        let _ = fs::create_dir_all(&temp_dir);
+
+        let wrapper_name = if cfg!(target_os = "windows") {
+            "mvnw.cmd"
+        } else {
+            "mvnw"
+        };
+        let wrapper_file = temp_dir.join(wrapper_name);
+        let _ = fs::write(&wrapper_file, "echo mvn");
+
+        let resolved = CliLocator::resolve_maven_for_dir(&temp_dir);
+        assert!(resolved.is_some());
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_resolve_python_for_dir_and_disk_cache() {
+        let temp_dir = env::temp_dir().join("sbom_test_py_venv");
+        let venv_dir = temp_dir.join(".venv").join(if cfg!(target_os = "windows") {
+            "Scripts"
+        } else {
+            "bin"
+        });
+        let _ = fs::create_dir_all(&venv_dir);
+
+        let py_name = if cfg!(target_os = "windows") {
+            "python.exe"
+        } else {
+            "python"
+        };
+        let py_file = venv_dir.join(py_name);
+        let _ = fs::write(&py_file, "echo python");
+
+        let resolved = CliLocator::resolve_python_for_dir(&temp_dir);
+        assert!(resolved.is_some());
+        assert!(resolved.unwrap().contains(".venv"));
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
+}

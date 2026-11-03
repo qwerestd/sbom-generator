@@ -34,6 +34,12 @@ impl DynamicProducer for NpmDynamicProducer {
         let stdout_str = String::from_utf8_lossy(&output.stdout);
         let json: serde_json::Value = serde_json::from_str(&stdout_str)?;
 
+        Ok(Self::parse_npm_ls_json(&json))
+    }
+}
+
+impl NpmDynamicProducer {
+    pub fn parse_npm_ls_json(json: &serde_json::Value) -> Vec<Dependency> {
         let root_name = json
             .get("name")
             .and_then(|n| n.as_str())
@@ -52,11 +58,9 @@ impl DynamicProducer for NpmDynamicProducer {
             }
         }
 
-        Ok(graph_map.into_values().collect())
+        graph_map.into_values().collect()
     }
-}
 
-impl NpmDynamicProducer {
     fn extract_graph_node(
         name: &str,
         info: &serde_json::Value,
@@ -118,5 +122,46 @@ impl NpmDynamicProducer {
                     .build()
                     .unwrap()
             });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_npm_ls_json() {
+        let ls_json = serde_json::json!({
+            "name": "root-app",
+            "version": "1.0.0",
+            "dependencies": {
+                "axios": {
+                    "version": "1.6.0",
+                    "dependencies": {
+                        "follow-redirects": {
+                            "version": "1.15.4"
+                        }
+                    }
+                },
+                "lodash": {
+                    "version": "4.17.21"
+                }
+            }
+        });
+
+        let deps = NpmDynamicProducer::parse_npm_ls_json(&ls_json);
+        assert_eq!(deps.len(), 3);
+        let axios_dep = deps
+            .iter()
+            .find(|d| d.name == "axios")
+            .expect("must find axios");
+        assert_eq!(axios_dep.version.as_deref(), Some("1.6.0"));
+        assert_eq!(axios_dep.dependencies.len(), 1);
+
+        let redir_dep = deps
+            .iter()
+            .find(|d| d.name == "follow-redirects")
+            .expect("must find follow-redirects");
+        assert_eq!(redir_dep.version.as_deref(), Some("1.15.4"));
     }
 }

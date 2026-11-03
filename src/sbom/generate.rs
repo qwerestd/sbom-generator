@@ -157,6 +157,16 @@ pub fn generate_sbom(
                         "value": ids.join(", ")
                     }));
                 }
+                // 【核心新增：动态依赖加载状态注入】
+                let status_str = match d.dynamic_status {
+                    crate::model::dependency::DynamicLoadStatus::Loaded => "loaded",
+                    crate::model::dependency::DynamicLoadStatus::Dormant => "dormant",
+                    crate::model::dependency::DynamicLoadStatus::NotTraced => "untraced",
+                };
+                props.push(serde_json::json!({
+                    "name": "sbom:runtime:status",
+                    "value": status_str
+                }));
                 if !props.is_empty() {
                     comp_obj.insert("properties".to_string(), serde_json::Value::Array(props));
                 }

@@ -214,6 +214,7 @@ struct TreeNodeMeta {
     eco_badge: &'static str,
     license: String,
     vulns: Vec<String>,
+    runtime_status: String,
 }
 
 /// 在命令行终端输出直观的 ASCII 多语言依赖树层级摘要 (Dependency Tree Summary)
@@ -258,6 +259,17 @@ pub fn print_dependency_tree(sbom_path: &str) -> anyhow::Result<()> {
         let license = extract_component_license(comp).unwrap_or_else(|| "UNKNOWN".to_string());
         let vulns = ref_vulns.remove(&bom_ref).unwrap_or_default();
 
+        let mut runtime_status = String::new();
+        if let Some(props) = comp.get("properties").and_then(|p| p.as_array()) {
+            for p in props {
+                if p["name"] == "sbom:runtime:status" {
+                    if let Some(val) = p["value"].as_str() {
+                        runtime_status = val.to_string();
+                    }
+                }
+            }
+        }
+
         node_map.insert(
             bom_ref.clone(),
             TreeNodeMeta {
@@ -266,6 +278,7 @@ pub fn print_dependency_tree(sbom_path: &str) -> anyhow::Result<()> {
                 eco_badge,
                 license,
                 vulns,
+                runtime_status,
             },
         );
         all_refs.push(bom_ref);
@@ -357,8 +370,14 @@ fn print_tree_recursive(
         format!(" 🚨 [{}]", meta.vulns.join(", "))
     };
 
+    let status_tag = match meta.runtime_status.as_str() {
+        "loaded" => " <🟢 LOADED>",
+        "dormant" => " <⚪ DORMANT>",
+        _ => "",
+    };
+
     println!(
-        "{}{}{}[{}] {}@{} [{}]{}",
+        "{}{}{}[{}] {}@{}{}[{}]{}",
         prefix,
         connector,
         if !meta.vulns.is_empty() {
@@ -369,6 +388,7 @@ fn print_tree_recursive(
         meta.eco_badge,
         meta.name,
         meta.version,
+        status_tag,
         meta.license,
         vuln_tag
     );

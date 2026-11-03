@@ -34,6 +34,12 @@ impl DynamicProducer for CargoDynamicProducer {
         let stdout_str = String::from_utf8_lossy(&output.stdout);
         let json: serde_json::Value = serde_json::from_str(&stdout_str)?;
 
+        Ok(Self::parse_cargo_metadata_json(&json))
+    }
+}
+
+impl CargoDynamicProducer {
+    pub fn parse_cargo_metadata_json(json: &serde_json::Value) -> Vec<Dependency> {
         struct PkgMeta {
             name: String,
             version: String,
@@ -154,6 +160,79 @@ impl DynamicProducer for CargoDynamicProducer {
             }
         }
 
-        Ok(final_deps)
+        final_deps
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_cargo_metadata_json() {
+        let meta_json = serde_json::json!({
+            "packages": [
+                {
+                    "id": "my-crate 0.1.0 (path+file:///my-crate)",
+                    "name": "my-crate",
+                    "version": "0.1.0"
+                },
+                {
+                    "id": "serde 1.0.203 (registry+https://github.com/rust-lang/crates.io-index)",
+                    "name": "serde",
+                    "version": "1.0.203"
+                },
+                {
+                    "id": "serde_derive 1.0.203 (registry+https://github.com/rust-lang/crates.io-index)",
+                    "name": "serde_derive",
+                    "version": "1.0.203"
+                }
+            ],
+            "workspace_members": [
+                "my-crate 0.1.0 (path+file:///my-crate)"
+            ],
+            "resolve": {
+                "nodes": [
+                    {
+                        "id": "my-crate 0.1.0 (path+file:///my-crate)",
+                        "deps": [
+                            {
+                                "name": "serde",
+                                "pkg": "serde 1.0.203 (registry+https://github.com/rust-lang/crates.io-index)"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "serde 1.0.203 (registry+https://github.com/rust-lang/crates.io-index)",
+                        "deps": [
+                            {
+                                "name": "serde_derive",
+                                "pkg": "serde_derive 1.0.203 (registry+https://github.com/rust-lang/crates.io-index)"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "serde_derive 1.0.203 (registry+https://github.com/rust-lang/crates.io-index)",
+                        "deps": []
+                    }
+                ]
+            }
+        });
+
+        let deps = CargoDynamicProducer::parse_cargo_metadata_json(&meta_json);
+        assert_eq!(deps.len(), 3);
+        let root_dep = deps
+            .iter()
+            .find(|d| d.name == "my-crate")
+            .expect("must find root");
+        assert_eq!(root_dep.r#type, DependencyType::Application);
+        assert_eq!(root_dep.dependencies.len(), 1);
+
+        let serde_dep = deps
+            .iter()
+            .find(|d| d.name == "serde")
+            .expect("must find serde");
+        assert_eq!(serde_dep.r#type, DependencyType::Library);
+        assert_eq!(serde_dep.dependencies.len(), 1);
     }
 }

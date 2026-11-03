@@ -1,0 +1,6 @@
+# Edge case: pinned vulnerable versions + version range specs
+pyyaml==5.3.1
+requests==2.28.1
+aiohttp==3.9.1
+urllib3<1.26.18,>=1.26.0
+flask~=2.2.0

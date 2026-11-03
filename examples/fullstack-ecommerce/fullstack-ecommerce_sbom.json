@@ -1,0 +1,429 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-01T05:36:01Z",
+    "tools": [
+      {
+        "name": "sbom-generator",
+        "vendor": "BNBU_DS",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.15.2?package-id=5e3a4fc15b733bbd",
+      "group": "com.fasterxml.jackson.core",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "jackson-databind",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\backend\\pom.xml"
+        }
+      ],
+      "purl": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.15.2",
+      "type": "library",
+      "version": "2.15.2"
+    },
+    {
+      "bom-ref": "pkg:maven/org.postgresql/postgresql@42.6.0?package-id=c22a84260fb09fa9",
+      "group": "org.postgresql",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "postgresql",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\backend\\pom.xml"
+        }
+      ],
+      "purl": "pkg:maven/org.postgresql/postgresql@42.6.0",
+      "type": "library",
+      "version": "42.6.0"
+    },
+    {
+      "bom-ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@3.2.0?package-id=83c36451a14add46",
+      "group": "org.springframework.boot",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "spring-boot-starter-web",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\backend\\pom.xml"
+        }
+      ],
+      "purl": "pkg:maven/org.springframework.boot/spring-boot-starter-web@3.2.0",
+      "type": "library",
+      "version": "3.2.0"
+    },
+    {
+      "bom-ref": "pkg:npm/axios@1.6.0?package-id=f3e50ee55a25a94d",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "axios",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\frontend\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/axios@1.6.0",
+      "type": "library",
+      "version": "1.6.0"
+    },
+    {
+      "bom-ref": "pkg:npm/fullstack-storefront@2.1.0?package-id=40188c9e1a0a0f70",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "fullstack-storefront",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\frontend\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/fullstack-storefront@2.1.0",
+      "type": "application",
+      "version": "2.1.0"
+    },
+    {
+      "bom-ref": "pkg:npm/lodash@4.17.21?package-id=c73587a11f08c671",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "lodash",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\frontend\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/lodash@4.17.21",
+      "type": "library",
+      "version": "4.17.21"
+    },
+    {
+      "bom-ref": "pkg:npm/react-dom@18.2.0?package-id=681d4b7dc7009867",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "react-dom",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\frontend\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/react-dom@18.2.0",
+      "type": "library",
+      "version": "18.2.0"
+    },
+    {
+      "bom-ref": "pkg:npm/react@18.2.0?package-id=f7647b9550a7ab5f",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "react",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\frontend\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/react@18.2.0",
+      "type": "library",
+      "version": "18.2.0"
+    },
+    {
+      "bom-ref": "pkg:npm/typescript@5.2.0?package-id=8e2f1640885a1a32",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "typescript",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\frontend\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/typescript@5.2.0",
+      "type": "library",
+      "version": "5.2.0"
+    },
+    {
+      "bom-ref": "pkg:npm/vite@5.0.0?package-id=e52448946280080d",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "vite",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\frontend\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/vite@5.0.0",
+      "type": "library",
+      "version": "5.0.0"
+    },
+    {
+      "bom-ref": "pkg:npm/zustand@4.4.0?package-id=34cc5b5fed8f4dd9",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "zustand",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\frontend\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/zustand@4.4.0",
+      "type": "library",
+      "version": "4.4.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/analytics@0.0.0?package-id=fc8e16b9123ed03e",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "analytics",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\analytics\\requirements.txt"
+        }
+      ],
+      "purl": "pkg:pypi/analytics@0.0.0",
+      "type": "application",
+      "version": "0.0.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/flask@3.0.0?package-id=790c4cbc504182b7",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "flask",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\analytics\\requirements.txt"
+        }
+      ],
+      "purl": "pkg:pypi/flask@3.0.0",
+      "type": "library",
+      "version": "3.0.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pandas@2.1.3?package-id=bc9957ca137515a1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "pandas",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\analytics\\requirements.txt"
+        }
+      ],
+      "purl": "pkg:pypi/pandas@2.1.3",
+      "type": "library",
+      "version": "2.1.3"
+    },
+    {
+      "bom-ref": "pkg:pypi/requests@2.31.0?package-id=9f8c9899a10fb089",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "requests",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\analytics\\requirements.txt"
+        }
+      ],
+      "purl": "pkg:pypi/requests@2.31.0",
+      "type": "library",
+      "version": "2.31.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/scikit-learn@1.3.2?package-id=c6aeb37cf770048e",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "scikit-learn",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\analytics\\requirements.txt"
+        }
+      ],
+      "purl": "pkg:pypi/scikit-learn@1.3.2",
+      "type": "library",
+      "version": "1.3.2"
+    },
+    {
+      "bom-ref": "pkg:pypi/sqlalchemy@2.0.23?package-id=00a3fec43e00603a",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "sqlalchemy",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/fullstack-ecommerce\\analytics\\requirements.txt"
+        }
+      ],
+      "purl": "pkg:pypi/sqlalchemy@2.0.23",
+      "type": "library",
+      "version": "2.0.23"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:maven/com.fasterxml.jackson.core/jackson-databind@2.15.2?package-id=5e3a4fc15b733bbd"
+    },
+    {
+      "ref": "pkg:maven/org.postgresql/postgresql@42.6.0?package-id=c22a84260fb09fa9"
+    },
+    {
+      "ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@3.2.0?package-id=83c36451a14add46"
+    },
+    {
+      "ref": "pkg:npm/axios@1.6.0?package-id=f3e50ee55a25a94d"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/axios@1.6.0?package-id=f3e50ee55a25a94d",
+        "pkg:npm/lodash@4.17.21?package-id=c73587a11f08c671",
+        "pkg:npm/react@18.2.0?package-id=f7647b9550a7ab5f",
+        "pkg:npm/react-dom@18.2.0?package-id=681d4b7dc7009867",
+        "pkg:npm/zustand@4.4.0?package-id=34cc5b5fed8f4dd9",
+        "pkg:npm/typescript@5.2.0?package-id=8e2f1640885a1a32",
+        "pkg:npm/vite@5.0.0?package-id=e52448946280080d"
+      ],
+      "ref": "pkg:npm/fullstack-storefront@2.1.0?package-id=40188c9e1a0a0f70"
+    },
+    {
+      "ref": "pkg:npm/lodash@4.17.21?package-id=c73587a11f08c671"
+    },
+    {
+      "ref": "pkg:npm/react-dom@18.2.0?package-id=681d4b7dc7009867"
+    },
+    {
+      "ref": "pkg:npm/react@18.2.0?package-id=f7647b9550a7ab5f"
+    },
+    {
+      "ref": "pkg:npm/typescript@5.2.0?package-id=8e2f1640885a1a32"
+    },
+    {
+      "ref": "pkg:npm/vite@5.0.0?package-id=e52448946280080d"
+    },
+    {
+      "ref": "pkg:npm/zustand@4.4.0?package-id=34cc5b5fed8f4dd9"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/flask@3.0.0?package-id=790c4cbc504182b7",
+        "pkg:pypi/pandas@2.1.3?package-id=bc9957ca137515a1",
+        "pkg:pypi/scikit-learn@1.3.2?package-id=c6aeb37cf770048e",
+        "pkg:pypi/sqlalchemy@2.0.23?package-id=00a3fec43e00603a",
+        "pkg:pypi/requests@2.31.0?package-id=9f8c9899a10fb089"
+      ],
+      "ref": "pkg:pypi/analytics@0.0.0?package-id=fc8e16b9123ed03e"
+    },
+    {
+      "ref": "pkg:pypi/flask@3.0.0?package-id=790c4cbc504182b7"
+    },
+    {
+      "ref": "pkg:pypi/pandas@2.1.3?package-id=bc9957ca137515a1"
+    },
+    {
+      "ref": "pkg:pypi/requests@2.31.0?package-id=9f8c9899a10fb089"
+    },
+    {
+      "ref": "pkg:pypi/scikit-learn@1.3.2?package-id=c6aeb37cf770048e"
+    },
+    {
+      "ref": "pkg:pypi/sqlalchemy@2.0.23?package-id=00a3fec43e00603a"
+    }
+  ]
+}

@@ -335,7 +335,7 @@ impl GradleProducer {
                 (call_suffix
                     (value_arguments
                         (value_argument
-                            (line_string_literal) @dep_literal
+                            (_) @dep_literal
                         )
                     )
                 )
@@ -557,5 +557,69 @@ dependencies {
         assert!(deps
             .iter()
             .any(|d| d.name == "ktor-client-core" && d.version == "2.3.7"));
+    }
+
+    #[test]
+    fn test_parse_gradle_lockfile() {
+        let lockfile_content = r#"
+# This is a gradle lockfile
+org.springframework.boot:spring-boot-starter-web:3.2.0=compileClasspath,runtimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.15.2=runtimeClasspath
+empty=testCompileClasspath
+"#;
+        let deps = GradleProducer::parse_gradle_lockfile(lockfile_content).unwrap();
+        assert_eq!(deps.len(), 2);
+        assert_eq!(deps[0].name, "spring-boot-starter-web");
+        assert_eq!(deps[0].version, "3.2.0");
+        assert_eq!(deps[1].name, "jackson-databind");
+        assert_eq!(deps[1].version, "2.15.2");
+    }
+
+    #[test]
+    fn test_parse_kotlin_dependencies_and_dag() {
+        let kts_content = r#"
+dependencies {
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    api("io.ktor:ktor-client-core:2.3.7")
+}
+"#;
+        let ctx = HierarchicalContext::new();
+        let extracted = GradleProducer::parse_kotlin_dependencies(
+            kts_content,
+            Path::new("payment/build.gradle.kts"),
+            &ctx,
+        )
+        .unwrap();
+        assert_eq!(extracted.len(), 2);
+
+        let file_salt = "payment/build.gradle.kts";
+        let graph = GradleProducer::build_dependency_graph(
+            extracted,
+            file_salt,
+            Path::new("payment/build.gradle.kts"),
+        )
+        .unwrap();
+
+        assert_eq!(graph.len(), 3, "1 root + 2 leaf deps");
+        let root = graph
+            .iter()
+            .find(|d| d.r#type == DependencyType::Application)
+            .unwrap();
+        assert_eq!(root.name, "payment");
+        assert_eq!(root.dependencies.len(), 2);
+    }
+
+    #[test]
+    fn test_gradle_producer_use_file() {
+        let producer = GradleProducer::default();
+        let config = SbomProducerConfiguration {
+            base_path: PathBuf::from("."),
+            use_debug: false,
+        };
+        assert!(producer.use_file(Path::new("build.gradle"), &config));
+        assert!(producer.use_file(Path::new("build.gradle.kts"), &config));
+        assert!(producer.use_file(Path::new("libs.versions.toml"), &config));
+        assert!(producer.use_file(Path::new("gradle.lockfile"), &config));
+        assert!(!producer.use_file(Path::new("pom.xml"), &config));
     }
 }

@@ -1,0 +1,1913 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-11-01T05:55:17Z",
+    "tools": [
+      {
+        "name": "sbom-generator",
+        "vendor": "BNBU_DS",
+        "version": "0.1.0"
+      }
+    ]
+  },
+  "components": [
+    {
+      "bom-ref": "pkg:cargo/auth-service-rust@0.1.0?package-id=491491c29bba884f",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "name": "auth-service-rust",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\auth-service-rust\\Cargo.lock"
+        }
+      ],
+      "purl": "pkg:cargo/auth-service-rust@0.1.0",
+      "type": "application",
+      "version": "0.1.0"
+    },
+    {
+      "bom-ref": "pkg:cargo/chrono@0.4.19?package-id=d9a2ec77fcb62c5b",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "name": "chrono",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\auth-service-rust\\Cargo.lock"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2020-26235 (RUSTSEC-2020-0159)"
+        }
+      ],
+      "purl": "pkg:cargo/chrono@0.4.19",
+      "type": "library",
+      "version": "0.4.19"
+    },
+    {
+      "bom-ref": "pkg:cargo/regex@1.5.4?package-id=33c7cf7034315e43",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "name": "regex",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\auth-service-rust\\Cargo.lock"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2022-24713 (RUSTSEC-2022-0013), GHSA-m5pq-gvj9-9vr8"
+        }
+      ],
+      "purl": "pkg:cargo/regex@1.5.4",
+      "type": "library",
+      "version": "1.5.4"
+    },
+    {
+      "bom-ref": "pkg:cargo/serde@1.0.203?package-id=ef38b59ca24266e1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "name": "serde",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\auth-service-rust\\Cargo.lock"
+        }
+      ],
+      "purl": "pkg:cargo/serde@1.0.203",
+      "type": "library",
+      "version": "1.0.203"
+    },
+    {
+      "bom-ref": "pkg:cargo/serde_derive@1.0.203?package-id=8d7ef0f2672e75db",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "name": "serde_derive",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\auth-service-rust\\Cargo.lock"
+        }
+      ],
+      "purl": "pkg:cargo/serde_derive@1.0.203",
+      "type": "library",
+      "version": "1.0.203"
+    },
+    {
+      "bom-ref": "pkg:cargo/tokio@1.38.0?package-id=b48c41d38e2aac29",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "tokio",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\auth-service-rust\\Cargo.lock"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "GHSA-rr8g-9fpq-6wmg, RUSTSEC-2025-0023, RUSTSEC-2026-0386"
+        }
+      ],
+      "purl": "pkg:cargo/tokio@1.38.0",
+      "type": "library",
+      "version": "1.38.0"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/bnbu-ds/polyglot-showcase/gateway-go@1.22?package-id=9284004409455972",
+      "group": "github.com/bnbu-ds/polyglot-showcase",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "github.com/bnbu-ds/polyglot-showcase/gateway-go",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\gateway-go\\go.mod"
+        }
+      ],
+      "purl": "pkg:golang/github.com/bnbu-ds/polyglot-showcase/gateway-go@1.22",
+      "type": "application",
+      "version": "1.22"
+    },
+    {
+      "bom-ref": "pkg:golang/github.com/gin-gonic/gin@v1.9.0?package-id=aaf7ed0e977a9978",
+      "group": "github.com/gin-gonic",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "github.com/gin-gonic/gin",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\gateway-go\\go.mod"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-29401 (GHSA-2c4m-59x9-fr2g), GO-2023-1737"
+        }
+      ],
+      "purl": "pkg:golang/github.com/gin-gonic/gin@v1.9.0",
+      "type": "library",
+      "version": "v1.9.0"
+    },
+    {
+      "bom-ref": "pkg:golang/go.uber.org/zap@v1.27.0?package-id=bc8d112b537feaa1",
+      "group": "go.uber.org",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "go.uber.org/zap",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\gateway-go\\go.mod"
+        }
+      ],
+      "purl": "pkg:golang/go.uber.org/zap@v1.27.0",
+      "type": "library",
+      "version": "v1.27.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/crypto@v0.14.0?package-id=5acabc4b95371653",
+      "group": "golang.org/x",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "golang.org/x/crypto",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\gateway-go\\go.mod"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-48795 (GHSA-45x7-px36-x8w8), GHSA-45gg-vh54-h5m9, GHSA-5cgq-3rg8-m6cv, GHSA-78mq-xcr3-xm33, GHSA-89gr-r52h-f8rx"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/crypto@v0.14.0",
+      "type": "library",
+      "version": "v0.14.0"
+    },
+    {
+      "bom-ref": "pkg:golang/golang.org/x/net@v0.17.0?package-id=d33c5808475660a6",
+      "group": "golang.org/x",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "name": "golang.org/x/net",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\gateway-go\\go.mod"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-45288 (GO-2024-2687), GHSA-4v7x-pqxf-cx7m, GHSA-5cv4-jp36-h3mw, GHSA-qxp5-gwg8-xv66, GHSA-vvgc-356p-c3xw"
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/net@v0.17.0",
+      "type": "library",
+      "version": "v0.17.0"
+    },
+    {
+      "bom-ref": "pkg:maven/com.alibaba/fastjson@1.2.68?package-id=62870d1588767ded",
+      "group": "com.alibaba",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "fastjson",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\order-service-java\\pom.xml"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2022-25845 (GHSA-pv7h-9867-5q6r), GHSA-crf3-v9rr-v7hj, GHSA-pv7h-hx5h-mgfj"
+        }
+      ],
+      "purl": "pkg:maven/com.alibaba/fastjson@1.2.68",
+      "type": "library",
+      "version": "1.2.68"
+    },
+    {
+      "bom-ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=394d75ac1adf6b3a",
+      "group": "org.apache.logging.log4j",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "log4j-core",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\order-service-java\\pom.xml"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2021-44228 (GHSA-jfh8-c2jp-5v3q), GHSA-3pxv-7cmr-fjr4, GHSA-6hg6-v5c8-fphq, GHSA-7rjr-3q55-vv33, GHSA-8489-44mv-ggj8, GHSA-h383-gmxw-35v2"
+        }
+      ],
+      "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1",
+      "type": "library",
+      "version": "2.14.1"
+    },
+    {
+      "bom-ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3?package-id=7e57ce9eb7c67a2a",
+      "group": "org.springframework.boot",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "spring-boot-starter-web",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\order-service-java\\pom.xml"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2022-22965 (GHSA-36p3-wjmg-h94x)"
+        }
+      ],
+      "purl": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3",
+      "type": "library",
+      "version": "2.6.3"
+    },
+    {
+      "bom-ref": "pkg:npm/axios@1.5.0?package-id=40bac0eace070221",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "axios",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\web-dashboard-npm\\package.json"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-45857 (GHSA-wf5p-g6vw-rhxx), GHSA-35jp-ww65-95wh, GHSA-3g43-6gmg-66jw, GHSA-3p68-rc4w-qgx5, GHSA-3w6x-2g7m-8v23, GHSA-42h9-826w-cgv3"
+        }
+      ],
+      "purl": "pkg:npm/axios@1.5.0",
+      "type": "library",
+      "version": "1.5.0"
+    },
+    {
+      "bom-ref": "pkg:npm/express@4.18.2?package-id=8dfd7557127e99d5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "express",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\web-dashboard-npm\\package.json"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2024-29041 (GHSA-rv95-896h-c2vc), GHSA-qw6h-vgh9-j6wx"
+        }
+      ],
+      "purl": "pkg:npm/express@4.18.2",
+      "type": "library",
+      "version": "4.18.2"
+    },
+    {
+      "bom-ref": "pkg:npm/lodash@4.17.19?package-id=7818c1f0764a054d",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "lodash",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\web-dashboard-npm\\package.json"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2021-23337 (GHSA-35jh-r3h4-6jhm), GHSA-29mw-wpgm-hmr9, GHSA-f23m-r3pf-42rh, GHSA-r5fr-rjxr-66jc, GHSA-xxjr-mmjv-4gpg"
+        }
+      ],
+      "purl": "pkg:npm/lodash@4.17.19",
+      "type": "library",
+      "version": "4.17.19"
+    },
+    {
+      "bom-ref": "pkg:npm/react@18.2.0?package-id=4ea7d2bd7e0b4956",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "react",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\web-dashboard-npm\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/react@18.2.0",
+      "type": "library",
+      "version": "18.2.0"
+    },
+    {
+      "bom-ref": "pkg:npm/web-dashboard-npm@1.0.0?package-id=34f296294f366e46",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "web-dashboard-npm",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\web-dashboard-npm\\package.json"
+        }
+      ],
+      "purl": "pkg:npm/web-dashboard-npm@1.0.0",
+      "type": "application",
+      "version": "1.0.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "aiohttp",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\ai-worker-python\\poetry.lock"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2024-23334 (GHSA-jwhx-xcg6-8xhj), GHSA-2fqr-mr3j-6wp8, GHSA-2g87-pp6c-29x5, GHSA-2vrm-gr82-f7m5, GHSA-3wq7-rqq7-wx6j, GHSA-494j-54xm-rwp3"
+        }
+      ],
+      "purl": "pkg:pypi/aiohttp@3.9.1",
+      "type": "library",
+      "version": "3.9.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/fastapi@0.110.0?package-id=c9993ab5e2ec3060",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "fastapi",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\ai-worker-python\\poetry.lock"
+        }
+      ],
+      "purl": "pkg:pypi/fastapi@0.110.0",
+      "type": "application",
+      "version": "0.110.0"
+    },
+    {
+      "bom-ref": "pkg:pypi/pyyaml@5.3.1?package-id=5c384712a39f6c25",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "pyyaml",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\ai-worker-python\\poetry.lock"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2020-14343 (GHSA-8q59-q68h-6hv4), PYSEC-2021-142"
+        }
+      ],
+      "purl": "pkg:pypi/pyyaml@5.3.1",
+      "type": "library",
+      "version": "5.3.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/requests@2.28.1?package-id=cb9c2eb95e0ee330",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "name": "requests",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\ai-worker-python\\poetry.lock"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-32681 (GHSA-j8r2-6x86-q33q), GHSA-9hjg-9r4m-mvj7, GHSA-9wx4-h78v-vm56, GHSA-gc5v-m9x4-r6x2, PYSEC-2023-74"
+        }
+      ],
+      "purl": "pkg:pypi/requests@2.28.1",
+      "type": "library",
+      "version": "2.28.1"
+    },
+    {
+      "bom-ref": "pkg:pypi/urllib3@1.26.15?package-id=952502369ef3b76b",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "name": "urllib3",
+      "properties": [
+        {
+          "name": "syft:location:0:path",
+          "value": "examples/polyglot-showcase\\ai-worker-python\\poetry.lock"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "CVE-2023-45803 (GHSA-g4mx-q9vg-27p4), GHSA-2xpw-w6gg-jr37, GHSA-34jh-p97f-mpxf, GHSA-38jv-5279-wg99, GHSA-8988-9cw3-xx77"
+        }
+      ],
+      "purl": "pkg:pypi/urllib3@1.26.15",
+      "type": "library",
+      "version": "1.26.15"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependsOn": [
+        "pkg:cargo/chrono@0.4.19?package-id=d9a2ec77fcb62c5b",
+        "pkg:cargo/regex@1.5.4?package-id=33c7cf7034315e43",
+        "pkg:cargo/serde@1.0.203?package-id=ef38b59ca24266e1",
+        "pkg:cargo/tokio@1.38.0?package-id=b48c41d38e2aac29"
+      ],
+      "ref": "pkg:cargo/auth-service-rust@0.1.0?package-id=491491c29bba884f"
+    },
+    {
+      "ref": "pkg:cargo/chrono@0.4.19?package-id=d9a2ec77fcb62c5b"
+    },
+    {
+      "ref": "pkg:cargo/regex@1.5.4?package-id=33c7cf7034315e43"
+    },
+    {
+      "dependsOn": [
+        "pkg:cargo/serde_derive@1.0.203?package-id=8d7ef0f2672e75db"
+      ],
+      "ref": "pkg:cargo/serde@1.0.203?package-id=ef38b59ca24266e1"
+    },
+    {
+      "ref": "pkg:cargo/serde_derive@1.0.203?package-id=8d7ef0f2672e75db"
+    },
+    {
+      "ref": "pkg:cargo/tokio@1.38.0?package-id=b48c41d38e2aac29"
+    },
+    {
+      "dependsOn": [
+        "pkg:golang/github.com/gin-gonic/gin@v1.9.0?package-id=aaf7ed0e977a9978",
+        "pkg:golang/go.uber.org/zap@v1.27.0?package-id=bc8d112b537feaa1",
+        "pkg:golang/golang.org/x/crypto@v0.14.0?package-id=5acabc4b95371653",
+        "pkg:golang/golang.org/x/net@v0.17.0?package-id=d33c5808475660a6"
+      ],
+      "ref": "pkg:golang/github.com/bnbu-ds/polyglot-showcase/gateway-go@1.22?package-id=9284004409455972"
+    },
+    {
+      "ref": "pkg:golang/github.com/gin-gonic/gin@v1.9.0?package-id=aaf7ed0e977a9978"
+    },
+    {
+      "ref": "pkg:golang/go.uber.org/zap@v1.27.0?package-id=bc8d112b537feaa1"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/crypto@v0.14.0?package-id=5acabc4b95371653"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/net@v0.17.0?package-id=d33c5808475660a6"
+    },
+    {
+      "ref": "pkg:maven/com.alibaba/fastjson@1.2.68?package-id=62870d1588767ded"
+    },
+    {
+      "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=394d75ac1adf6b3a"
+    },
+    {
+      "ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3?package-id=7e57ce9eb7c67a2a"
+    },
+    {
+      "ref": "pkg:npm/axios@1.5.0?package-id=40bac0eace070221"
+    },
+    {
+      "ref": "pkg:npm/express@4.18.2?package-id=8dfd7557127e99d5"
+    },
+    {
+      "ref": "pkg:npm/lodash@4.17.19?package-id=7818c1f0764a054d"
+    },
+    {
+      "ref": "pkg:npm/react@18.2.0?package-id=4ea7d2bd7e0b4956"
+    },
+    {
+      "dependsOn": [
+        "pkg:npm/axios@1.5.0?package-id=40bac0eace070221",
+        "pkg:npm/express@4.18.2?package-id=8dfd7557127e99d5",
+        "pkg:npm/lodash@4.17.19?package-id=7818c1f0764a054d",
+        "pkg:npm/react@18.2.0?package-id=4ea7d2bd7e0b4956"
+      ],
+      "ref": "pkg:npm/web-dashboard-npm@1.0.0?package-id=34f296294f366e46"
+    },
+    {
+      "ref": "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b",
+        "pkg:pypi/pyyaml@5.3.1?package-id=5c384712a39f6c25",
+        "pkg:pypi/requests@2.28.1?package-id=cb9c2eb95e0ee330"
+      ],
+      "ref": "pkg:pypi/fastapi@0.110.0?package-id=c9993ab5e2ec3060"
+    },
+    {
+      "ref": "pkg:pypi/pyyaml@5.3.1?package-id=5c384712a39f6c25"
+    },
+    {
+      "dependsOn": [
+        "pkg:pypi/urllib3@1.26.15?package-id=952502369ef3b76b"
+      ],
+      "ref": "pkg:pypi/requests@2.28.1?package-id=cb9c2eb95e0ee330"
+    },
+    {
+      "ref": "pkg:pypi/urllib3@1.26.15?package-id=952502369ef3b76b"
+    }
+  ],
+  "vulnerabilities": [
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/pyyaml@5.3.1?package-id=5c384712a39f6c25"
+        }
+      ],
+      "description": "PyYAML full_load 任意 Python 对象反序列化远程代码执行漏洞",
+      "id": "CVE-2020-14343 (GHSA-8q59-q68h-6hv4)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 9.8,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 5.4.0",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:cargo/chrono@0.4.19?package-id=d9a2ec77fcb62c5b"
+        }
+      ],
+      "description": "Chrono 时区解析在多线程环境下调用 localtime_r 潜在内存不安全漏洞",
+      "id": "CVE-2020-26235 (RUSTSEC-2020-0159)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.3,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 0.4.20",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.19?package-id=7818c1f0764a054d"
+        }
+      ],
+      "description": "Lodash template 命令注入与原型链污染漏洞 (Command Injection)",
+      "id": "CVE-2021-23337 (GHSA-35jh-r3h4-6jhm)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.2,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 4.17.21",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=394d75ac1adf6b3a"
+        }
+      ],
+      "description": "Apache Log4j2 JNDI 远程代码执行漏洞 (Log4Shell)",
+      "id": "CVE-2021-44228 (GHSA-jfh8-c2jp-5v3q)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 10.0,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 2.17.1",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3?package-id=7e57ce9eb7c67a2a"
+        }
+      ],
+      "description": "Spring Framework DataBinder 远程代码执行漏洞 (Spring4Shell)",
+      "id": "CVE-2022-22965 (GHSA-36p3-wjmg-h94x)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 9.8,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 2.6.6",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:cargo/regex@1.5.4?package-id=33c7cf7034315e43"
+        }
+      ],
+      "description": "Rust regex 编译特定大型空匹配正则时导致内存耗尽拒绝服务漏洞",
+      "id": "CVE-2022-24713 (RUSTSEC-2022-0013)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 1.5.5",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/com.alibaba/fastjson@1.2.68?package-id=62870d1588767ded"
+        }
+      ],
+      "description": "Fastjson AutoType 反序列化远程代码执行漏洞 (RCE)",
+      "id": "CVE-2022-25845 (GHSA-pv7h-9867-5q6r)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 9.8,
+          "severity": "critical"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 1.2.83",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/github.com/gin-gonic/gin@v1.9.0?package-id=aaf7ed0e977a9978"
+        }
+      ],
+      "description": "Gin Web 框架 Context.FileAttachment 文件名头部注入漏洞",
+      "id": "CVE-2023-29401 (GHSA-2c4m-59x9-fr2g)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.5,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 1.9.1",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/requests@2.28.1?package-id=cb9c2eb95e0ee330"
+        }
+      ],
+      "description": "Requests 跨源重定向时 Proxy-Authorization 凭据泄露漏洞",
+      "id": "CVE-2023-32681 (GHSA-j8r2-6x86-q33q)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.1,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 2.31.0",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/net@v0.17.0?package-id=d33c5808475660a6"
+        }
+      ],
+      "description": "Go x/net HTTP/2 CONTINUATION 帧洪水攻击拒绝服务漏洞",
+      "id": "CVE-2023-45288 (GO-2024-2687)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 0.23.0",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/urllib3@1.26.15?package-id=952502369ef3b76b"
+        }
+      ],
+      "description": "urllib3 HTTP 重定向未剥离请求体导致敏感数据泄露",
+      "id": "CVE-2023-45803 (GHSA-g4mx-q9vg-27p4)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.5,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 2.0.7",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/axios@1.5.0?package-id=40bac0eace070221"
+        }
+      ],
+      "description": "Axios 跨域请求 XSRF-TOKEN 凭据泄露漏洞",
+      "id": "CVE-2023-45857 (GHSA-wf5p-g6vw-rhxx)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.5,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 1.6.0",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/crypto@v0.14.0?package-id=5acabc4b95371653"
+        }
+      ],
+      "description": "Go x/crypto SSH 协议前缀截断攻击漏洞 (Terrapin Attack)",
+      "id": "CVE-2023-48795 (GHSA-45x7-px36-x8w8)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 5.9,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 0.17.0",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b"
+        }
+      ],
+      "description": "aiohttp 静态资源路由符号链接目录穿越任意文件读取漏洞",
+      "id": "CVE-2024-23334 (GHSA-jwhx-xcg6-8xhj)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 3.9.2",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/express@4.18.2?package-id=8dfd7557127e99d5"
+        }
+      ],
+      "description": "Express.js URL 重定向校验绕过漏洞 (Open Redirect)",
+      "id": "CVE-2024-29041 (GHSA-rv95-896h-c2vc)",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 6.1,
+          "severity": "medium"
+        }
+      ],
+      "recommendation": "建议升级至安全版本 >= 4.19.2",
+      "source": {
+        "name": "OSV Knowledge Base",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.19?package-id=7818c1f0764a054d"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-29mw-wpgm-hmr9)",
+      "id": "GHSA-29mw-wpgm-hmr9",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-2fqr-mr3j-6wp8)",
+      "id": "GHSA-2fqr-mr3j-6wp8",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-2g87-pp6c-29x5)",
+      "id": "GHSA-2g87-pp6c-29x5",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-2vrm-gr82-f7m5)",
+      "id": "GHSA-2vrm-gr82-f7m5",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/urllib3@1.26.15?package-id=952502369ef3b76b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-2xpw-w6gg-jr37)",
+      "id": "GHSA-2xpw-w6gg-jr37",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/urllib3@1.26.15?package-id=952502369ef3b76b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-34jh-p97f-mpxf)",
+      "id": "GHSA-34jh-p97f-mpxf",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/axios@1.5.0?package-id=40bac0eace070221"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-35jp-ww65-95wh)",
+      "id": "GHSA-35jp-ww65-95wh",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/urllib3@1.26.15?package-id=952502369ef3b76b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-38jv-5279-wg99)",
+      "id": "GHSA-38jv-5279-wg99",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/axios@1.5.0?package-id=40bac0eace070221"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-3g43-6gmg-66jw)",
+      "id": "GHSA-3g43-6gmg-66jw",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/axios@1.5.0?package-id=40bac0eace070221"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-3p68-rc4w-qgx5)",
+      "id": "GHSA-3p68-rc4w-qgx5",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=394d75ac1adf6b3a"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-3pxv-7cmr-fjr4)",
+      "id": "GHSA-3pxv-7cmr-fjr4",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/axios@1.5.0?package-id=40bac0eace070221"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-3w6x-2g7m-8v23)",
+      "id": "GHSA-3w6x-2g7m-8v23",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-3wq7-rqq7-wx6j)",
+      "id": "GHSA-3wq7-rqq7-wx6j",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/axios@1.5.0?package-id=40bac0eace070221"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-42h9-826w-cgv3)",
+      "id": "GHSA-42h9-826w-cgv3",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/crypto@v0.14.0?package-id=5acabc4b95371653"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-45gg-vh54-h5m9)",
+      "id": "GHSA-45gg-vh54-h5m9",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/aiohttp@3.9.1?package-id=c1a1464409c9f43b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-494j-54xm-rwp3)",
+      "id": "GHSA-494j-54xm-rwp3",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/net@v0.17.0?package-id=d33c5808475660a6"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-4v7x-pqxf-cx7m)",
+      "id": "GHSA-4v7x-pqxf-cx7m",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/crypto@v0.14.0?package-id=5acabc4b95371653"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-5cgq-3rg8-m6cv)",
+      "id": "GHSA-5cgq-3rg8-m6cv",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/net@v0.17.0?package-id=d33c5808475660a6"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-5cv4-jp36-h3mw)",
+      "id": "GHSA-5cv4-jp36-h3mw",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=394d75ac1adf6b3a"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-6hg6-v5c8-fphq)",
+      "id": "GHSA-6hg6-v5c8-fphq",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/crypto@v0.14.0?package-id=5acabc4b95371653"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-78mq-xcr3-xm33)",
+      "id": "GHSA-78mq-xcr3-xm33",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=394d75ac1adf6b3a"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-7rjr-3q55-vv33)",
+      "id": "GHSA-7rjr-3q55-vv33",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=394d75ac1adf6b3a"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-8489-44mv-ggj8)",
+      "id": "GHSA-8489-44mv-ggj8",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/urllib3@1.26.15?package-id=952502369ef3b76b"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-8988-9cw3-xx77)",
+      "id": "GHSA-8988-9cw3-xx77",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/crypto@v0.14.0?package-id=5acabc4b95371653"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-89gr-r52h-f8rx)",
+      "id": "GHSA-89gr-r52h-f8rx",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/requests@2.28.1?package-id=cb9c2eb95e0ee330"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-9hjg-9r4m-mvj7)",
+      "id": "GHSA-9hjg-9r4m-mvj7",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/requests@2.28.1?package-id=cb9c2eb95e0ee330"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-9wx4-h78v-vm56)",
+      "id": "GHSA-9wx4-h78v-vm56",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/com.alibaba/fastjson@1.2.68?package-id=62870d1588767ded"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-crf3-v9rr-v7hj)",
+      "id": "GHSA-crf3-v9rr-v7hj",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.19?package-id=7818c1f0764a054d"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-f23m-r3pf-42rh)",
+      "id": "GHSA-f23m-r3pf-42rh",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/requests@2.28.1?package-id=cb9c2eb95e0ee330"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-gc5v-m9x4-r6x2)",
+      "id": "GHSA-gc5v-m9x4-r6x2",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1?package-id=394d75ac1adf6b3a"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-h383-gmxw-35v2)",
+      "id": "GHSA-h383-gmxw-35v2",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:cargo/regex@1.5.4?package-id=33c7cf7034315e43"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-m5pq-gvj9-9vr8)",
+      "id": "GHSA-m5pq-gvj9-9vr8",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:maven/com.alibaba/fastjson@1.2.68?package-id=62870d1588767ded"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-pv7h-hx5h-mgfj)",
+      "id": "GHSA-pv7h-hx5h-mgfj",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/express@4.18.2?package-id=8dfd7557127e99d5"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-qw6h-vgh9-j6wx)",
+      "id": "GHSA-qw6h-vgh9-j6wx",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/net@v0.17.0?package-id=d33c5808475660a6"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-qxp5-gwg8-xv66)",
+      "id": "GHSA-qxp5-gwg8-xv66",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.19?package-id=7818c1f0764a054d"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-r5fr-rjxr-66jc)",
+      "id": "GHSA-r5fr-rjxr-66jc",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:cargo/tokio@1.38.0?package-id=b48c41d38e2aac29"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-rr8g-9fpq-6wmg)",
+      "id": "GHSA-rr8g-9fpq-6wmg",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/golang.org/x/net@v0.17.0?package-id=d33c5808475660a6"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-vvgc-356p-c3xw)",
+      "id": "GHSA-vvgc-356p-c3xw",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:npm/lodash@4.17.19?package-id=7818c1f0764a054d"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-xxjr-mmjv-4gpg)",
+      "id": "GHSA-xxjr-mmjv-4gpg",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:golang/github.com/gin-gonic/gin@v1.9.0?package-id=aaf7ed0e977a9978"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GO-2023-1737)",
+      "id": "GO-2023-1737",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/pyyaml@5.3.1?package-id=5c384712a39f6c25"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2021-142)",
+      "id": "PYSEC-2021-142",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/requests@2.28.1?package-id=cb9c2eb95e0ee330"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2023-74)",
+      "id": "PYSEC-2023-74",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:cargo/tokio@1.38.0?package-id=b48c41d38e2aac29"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (RUSTSEC-2025-0023)",
+      "id": "RUSTSEC-2025-0023",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:cargo/tokio@1.38.0?package-id=b48c41d38e2aac29"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (RUSTSEC-2026-0386)",
+      "id": "RUSTSEC-2026-0386",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    }
+  ]
+}

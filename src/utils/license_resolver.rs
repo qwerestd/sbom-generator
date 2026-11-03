@@ -36,7 +36,7 @@ impl LicenseResolver {
     }
 
     /// 从本地清单文件中提取指定组件的许可证声明
-    fn extract_from_local_manifest(manifest_path: &Path, dep_name: &str) -> Option<String> {
+    pub fn extract_from_local_manifest(manifest_path: &Path, dep_name: &str) -> Option<String> {
         let file_name = manifest_path.file_name()?.to_string_lossy().to_lowercase();
 
         // (A) package.json: 检查自身 name 是否匹配，或检查同级 node_modules/<dep_name>/package.json
@@ -111,16 +111,35 @@ impl LicenseResolver {
     pub fn normalize_spdx_id(raw: &str) -> String {
         let trimmed = raw.trim();
         let lower = trimmed.to_lowercase();
+
+        if lower.contains(" or ") {
+            let parts: Vec<String> = lower
+                .split(" or ")
+                .map(|p| Self::normalize_spdx_id(p.trim()))
+                .collect();
+            return parts.join(" OR ");
+        }
+
+        if lower.contains('/') {
+            let parts: Vec<String> = lower
+                .split('/')
+                .map(|p| Self::normalize_spdx_id(p.trim()))
+                .collect();
+            return parts.join(" OR ");
+        }
+
         match lower.as_str() {
             "mit" | "the mit license" | "mit license" => "MIT".to_string(),
             "apache 2"
             | "apache 2.0"
             | "apache-2.0"
             | "the apache software license, version 2.0" => "Apache-2.0".to_string(),
-            "bsd" | "bsd-3-clause" | "3-clause bsd" | "new bsd license" => {
+            "bsd" | "bsd-3-clause" | "bsd 3-clause" | "3-clause bsd" | "new bsd license" => {
                 "BSD-3-Clause".to_string()
             }
-            "bsd-2-clause" | "2-clause bsd" | "simplified bsd" => "BSD-2-Clause".to_string(),
+            "bsd-2-clause" | "bsd 2-clause" | "2-clause bsd" | "simplified bsd" => {
+                "BSD-2-Clause".to_string()
+            }
             "isc" | "isc license" => "ISC".to_string(),
             "mpl-2.0" | "mozilla public license 2.0" => "MPL-2.0".to_string(),
             "lgpl-2.1" | "lgpl-2.1-only" => "LGPL-2.1-only".to_string(),
@@ -128,7 +147,7 @@ impl LicenseResolver {
             "epl-1.0" | "eclipse public license 1.0" => "EPL-1.0".to_string(),
             "epl-2.0" | "eclipse public license 2.0" => "EPL-2.0".to_string(),
             "unlicense" => "Unlicense".to_string(),
-            _ => trimmed.replace('/', " OR "),
+            _ => trimmed.to_string(),
         }
     }
 
@@ -275,5 +294,93 @@ mod tests {
             LicenseResolver::resolve_license(&dep_explicit),
             Some("MIT".to_string())
         );
+
+        let dep_cargo = Dependency {
+            name: "tokio".to_string(),
+            version: Some("1.38.0".to_string()),
+            purl: "pkg:cargo/tokio@1.38.0".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(
+            LicenseResolver::resolve_license(&dep_cargo),
+            Some("MIT".to_string())
+        );
+
+        let dep_golang = Dependency {
+            name: "golang.org/x/crypto".to_string(),
+            version: Some("v0.14.0".to_string()),
+            purl: "pkg:golang/golang.org/x/crypto@v0.14.0".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(
+            LicenseResolver::resolve_license(&dep_golang),
+            Some("BSD-3-Clause".to_string())
+        );
+    }
+
+    #[test]
+    fn test_normalize_spdx_id_variants() {
+        assert_eq!(
+            LicenseResolver::normalize_spdx_id("apache 2.0"),
+            "Apache-2.0"
+        );
+        assert_eq!(
+            LicenseResolver::normalize_spdx_id("apache-2.0"),
+            "Apache-2.0"
+        );
+        assert_eq!(
+            LicenseResolver::normalize_spdx_id("bsd 3-clause"),
+            "BSD-3-Clause"
+        );
+        assert_eq!(
+            LicenseResolver::normalize_spdx_id("bsd-2-clause"),
+            "BSD-2-Clause"
+        );
+        assert_eq!(
+            LicenseResolver::normalize_spdx_id("gpl-3.0-only"),
+            "GPL-3.0-only"
+        );
+        assert_eq!(
+            LicenseResolver::normalize_spdx_id("lgpl-2.1"),
+            "LGPL-2.1-only"
+        );
+        assert_eq!(LicenseResolver::normalize_spdx_id("mpl-2.0"), "MPL-2.0");
+        assert_eq!(
+            LicenseResolver::normalize_spdx_id("mit or apache-2.0"),
+            "MIT OR Apache-2.0"
+        );
+        assert_eq!(LicenseResolver::normalize_spdx_id("unlicense"), "Unlicense");
+    }
+
+    #[test]
+    fn test_extract_license_from_manifests() {
+        let temp_dir = std::env::temp_dir().join("sbom_license_test");
+        let _ = std::fs::create_dir_all(&temp_dir);
+
+        let cargo_toml = temp_dir.join("Cargo.toml");
+        let _ = std::fs::write(&cargo_toml, "[package]\nname = \"my-crate\"\nversion = \"0.1.0\"\nlicense = \"MIT OR Apache-2.0\"\n");
+
+        let lic = LicenseResolver::extract_from_local_manifest(&cargo_toml, "my-crate");
+        assert_eq!(lic, Some("MIT OR Apache-2.0".to_string()));
+
+        let pyproject = temp_dir.join("pyproject.toml");
+        let _ = std::fs::write(
+            &pyproject,
+            "[project]\nname = \"my-python\"\nversion = \"1.0.0\"\nlicense = \"BSD-3-Clause\"\n",
+        );
+
+        let lic_py = LicenseResolver::extract_from_local_manifest(&pyproject, "my-python");
+        assert_eq!(lic_py, Some("BSD-3-Clause".to_string()));
+
+        let pkg_json = temp_dir.join("package.json");
+        let _ = std::fs::write(
+            &pkg_json,
+            "{\"name\": \"my-js\", \"version\": \"1.0.0\", \"license\": \"ISC\"}",
+        );
+
+        let lic_js = LicenseResolver::extract_from_local_manifest(&pkg_json, "my-js");
+        assert_eq!(lic_js, Some("ISC".to_string()));
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
     }
 }

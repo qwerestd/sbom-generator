@@ -254,4 +254,70 @@ version = "0.36.3"
         assert_eq!(fastapi.dependencies.len(), 2);
         assert_eq!(fastapi.r#type, DependencyType::Application);
     }
+
+    #[test]
+    fn test_parse_uv_lock() {
+        let uv_lock = r#"
+version = 1
+revision = 1
+
+[[package]]
+name = "flask"
+version = "3.0.0"
+dependencies = [
+    { name = "werkzeug" },
+    { name = "click" }
+]
+
+[[package]]
+name = "werkzeug"
+version = "3.0.1"
+
+[[package]]
+name = "click"
+version = "8.1.7"
+"#;
+        let deps =
+            PypiLockProducer::parse_toml_lock(uv_lock, "test/uv.lock", Path::new("test/uv.lock"))
+                .unwrap();
+
+        assert_eq!(deps.len(), 3);
+        let flask = deps.iter().find(|d| d.name == "flask").unwrap();
+        assert_eq!(flask.dependencies.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_pipfile_lock() {
+        let pipfile_lock = r#"{
+            "_meta": { "hash": { "sha256": "abc" } },
+            "default": {
+                "requests": {
+                    "version": "==2.31.0"
+                },
+                "urllib3": {
+                    "version": "==2.0.7"
+                }
+            },
+            "develop": {
+                "pytest": {
+                    "version": "==8.0.0"
+                }
+            }
+        }"#;
+
+        let deps = PypiLockProducer::parse_pipfile_lock(
+            pipfile_lock,
+            "test/Pipfile.lock",
+            Path::new("my-service/Pipfile.lock"),
+        )
+        .unwrap();
+
+        assert_eq!(deps.len(), 4, "1 root application + 3 leaf dependencies");
+        let root = deps
+            .iter()
+            .find(|d| d.r#type == DependencyType::Application)
+            .unwrap();
+        assert_eq!(root.name, "my-service");
+        assert_eq!(root.dependencies.len(), 3);
+    }
 }
