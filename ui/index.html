@@ -2102,6 +2102,18 @@
                 ecosB[e] = (ecosB[e] || 0) + 1;
             });
 
+            const ecosPurlsA = {};
+            purlsA.forEach(p => {
+                const e = extractEcoName(p);
+                ecosPurlsA[e] = (ecosPurlsA[e] || 0) + 1;
+            });
+
+            const ecosPurlsB = {};
+            purlsB.forEach(p => {
+                const e = extractEcoName(p);
+                ecosPurlsB[e] = (ecosPurlsB[e] || 0) + 1;
+            });
+
             const allEcos = Array.from(new Set([...Object.keys(ecosA), ...Object.keys(ecosB)])).sort();
 
             const ecoCommon = {};
@@ -2153,8 +2165,9 @@
                 const cA = ecosA[e] || 0;
                 const cB = ecosB[e] || 0;
                 const cCom = ecoCommon[e] || 0;
+                const pB_count = ecosPurlsB[e] || 0;
                 const delta = cA - cB;
-                const cov = cB > 0 ? (cCom / cB * 100).toFixed(1) + '%' : '100%';
+                const cov = pB_count > 0 ? (cCom / pB_count * 100).toFixed(1) + '%' : (cB === 0 ? '100.0%' : '0.0%');
                 return `| ${e.toUpperCase()} | ${cA} | ${cB} | ${cCom} | ${delta >= 0 ? '+' + delta : delta} | ${cov} |`;
             }).join('\n')}\n\n## 3. 评测结论\n- 本工具在多语言微服务复杂工程中，对主流权威工具 (${toolB}) 的依赖召回覆盖率达到 **${recallB.toFixed(2)}%**，具有极高的行业基准兼容度。\n- 依托高精度静态多语言解析与智能动态监测，成功挖掘出 **+${onlyInA} 个** 参照工具未能覆盖的深层/子模块依赖。`;
 
@@ -2253,11 +2266,12 @@
                                 const cA = ecosA[e] || 0;
                                 const cB = ecosB[e] || 0;
                                 const cCom = ecoCommon[e] || 0;
+                                const pB_count = ecosPurlsB[e] || 0;
                                 const diff = cA - cB;
                                 const diffBadge = diff > 0 
                                     ? `<span style="color:#38bdf8;font-weight:bold;">(+${diff})</span>` 
                                     : (diff < 0 ? `<span style="color:#fb923c;font-weight:bold;">(${diff})</span>` : `<span style="color:#8b949e;">(持平)</span>`);
-                                const covPct = cB > 0 ? (cCom / cB * 100).toFixed(1) : '100.0';
+                                const covPct = pB_count > 0 ? (cCom / pB_count * 100).toFixed(1) : (cB === 0 ? '100.0' : '0.0');
                                 return `
                                     <tr>
                                         <td><b style="color: #58a6ff;">${e.toUpperCase()}</b></td>
