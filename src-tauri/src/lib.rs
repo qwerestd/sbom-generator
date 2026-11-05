@@ -109,13 +109,16 @@ async fn run_sbom_analyze(
     directory: String,
     output_path: String,
     dynamic: Option<bool>,
+    allow_exec: Option<bool>,
 ) -> Result<String, String> {
     let is_dynamic = dynamic.unwrap_or(true);
+    let is_allow_exec = allow_exec.unwrap_or(false);
     let configuration = Configuration {
         directory: directory.clone(),
         output: output_path.clone(),
         use_debug: false,
         dynamic: is_dynamic,
+        allow_exec: is_allow_exec,
     };
 
     let output_clone = output_path.clone();

@@ -5,6 +5,7 @@ pub struct Configuration {
     pub output: String,
     pub use_debug: bool,
     pub dynamic: bool,
+    pub allow_exec: bool,
 }
 
 impl Configuration {

@@ -29,11 +29,11 @@
 - [📊 实测对比实验与基准分析 (`test/` 数据集)](#-实测对比实验与基准分析-test-数据集)
   - [实验 1：大型多语言微服务架构对齐评测 (`test/opentelemetry/`)](#实验-1大型多语言微服务架构对齐评测-testopentelemetry)
   - [实验 2：云原生分布式微服务基准与实例隔离 (`test/mircoservices/`)](#实验-2云原生分布式微服务基准与实例隔离-testmircoservices)
-  - [实验 3：缺失锁定文件时的语法树容错解析 (`test/juice-shop/`)](#实验-3缺失锁定文件时的语法树容错解析-testjuice-shop)
+  - [实验 3：全生命周期开发依赖覆盖评测 (`test/juice-shop/`)](#实验-3全生命周期开发依赖覆盖评测-testjuice-shop)
 - [🛡️ 安全审计与开源许可证合规](#️-安全审计与开源许可证合规)
   - [1. 基于 Google OSV 的已知脆弱性匹配](#1-基于-google-osv-的已知脆弱性匹配)
   - [2. SPDX 开源许可证多级提取与规范化](#2-spdx-开源许可证多级提取与规范化)
-- [⚡ 动态系统资源与吞吐量监控](#-动态系统资源与吞吐量监控)
+- [⚡ 依赖加载可达性监测与安全沙箱策略](#-依赖加载可达性监测与安全沙箱策略)
 - [🚀 快速开始与实验复现](#-快速开始与实验复现)
   - [环境准备](#环境准备)
   - [编译构建](#编译构建)
@@ -91,7 +91,7 @@
 | **Java** | `Maven` | `mvn dependency:tree` | 双趟 `pom.xml` AST | `<parent>` 继承、`<dependencyManagement>` 穿透、`${VAR}` 插值 |
 | **Java / Kotlin** | `Gradle` | `gradlew dependencies` | `build.gradle(.kts)`, `libs.versions.toml` | Tree-sitter Kotlin 语法树解析、Version Catalog 声明提取 |
 | **Node.js** | `NPM` | `npm ls --json --all` | `package-lock.json` + `package.json` | 向上递归寻址、`catalog:` 语法、Lockfile v1/v2/v3 兼容 |
-| **Python** | `PyPI` | 本地虚拟环境 + `pip inspect` | `poetry.lock`, `uv.lock`, `requirements.txt` | BFS 可达性剪枝、`-r` 级联包含、PEP 621 与 Poetry 规范 |
+| **Python** | `PyPI` | 宿主机受信任解释器 + `pip inspect` | `poetry.lock`, `uv.lock`, `requirements.txt` | BFS 可达性剪枝、`-r` 级联包含、PEP 621 与 Poetry 规范 |
 
 ---
 
@@ -103,8 +103,8 @@
                 ┌────────────────┴────────────────┐
                 ▼                                 ▼
      [ 动态探针分析引擎 ]               [ 静态语法分析责任链 ]
-     • 宿主编译器/环境探测               • 目录遍历与构建产物剪枝过滤
-     • 本地 Wrapper / 虚拟环境优先       • 单子项目领地作用域聚类 (Scope Cluster)
+     • 宿主机受信任工具链探测            • 目录遍历与构建产物剪枝过滤
+     • 禁用被扫仓库内不可信解释器        • 单子项目领地作用域聚类 (Scope Cluster)
      • 权威运行时拓扑图提取 (MVS/BFS)    • 智能降级回退 (Lockfile -> Manifest AST)
                 │                                 │
                 └────────────────┬────────────────┘
@@ -122,9 +122,9 @@
                                  │
                 ┌────────────────┼────────────────┐
                 ▼                ▼                ▼
-       [ OSV 漏洞匹配器 ]  [ 许可证标准化引擎 ]  [ 资源监控探针 ]
-       • 在线 Batch API    • SPDX ID 标准化     • CPU / RAM 动态采样
-       • 内置离线漏洞库    • 本地多级清单提取   • 分析耗时与吞吐率统计
+       [ OSV 漏洞匹配器 ]  [ 许可证标准化引擎 ]  [ 依赖加载可达性监测 ]
+       • 在线 Batch API    • SPDX ID 标准化     • 静态源码动态导入扫描
+       • 内置离线漏洞库    • 本地多级清单提取   • --allow-exec 沙箱钩子探测
                 │                │                │
                 └────────────────┼────────────────┘
                                  ▼
@@ -132,7 +132,7 @@
       ▼                                                     ▼
 [ CycloneDX 1.6 标准 JSON ]                       [ 交互式终端 / Tauri 2.0 GUI ]
 • 规范化顶级定序结构                              • 层次分明的 ASCII 依赖拓扑树
-• 物理实例隔离与源码锚点                          • 力导向动力学图谱与漏洞红点审查
+• 物理实例隔离与相对路径源码锚点                  • 力导向动力学图谱与漏洞红点审查
 • PURL / CVE / SPDX 全量富化                     • 双 SBOM 横向对比实验评测台
 ```
 
@@ -140,7 +140,7 @@
 
 ## 📊 实测对比实验与基准分析 (`test/` 数据集)
 
-为验证本系统在真实工业代码环境中的有效性与可靠性，课题选取了 3 个具有不同架构特性的经典开源项目作为测试基准，放置于 [`test/`](test/) 目录下，与当前全球网络安全事实标准 **Aqua Security Trivy (v0.76.1)** 进行同台严格对照实验。
+为验证本系统在真实工业代码环境中的有效性与可靠性，课题选取了 3 个具有不同架构特性的经典开源项目作为测试基准，放置于 [`test/`](test/) 目录下，与当前主流安全扫描工具 **Aqua Security Trivy (v0.76.1)** 进行同台严格对照实验。所有报告均同时披露**目标生态基准覆盖率 (Target Eco Coverage)** 与**全仓库跨生态总覆盖率 (Total Repo Coverage)** 两个口径。
 
 ### 实验 1：大型多语言微服务架构对齐评测 (`test/opentelemetry/`)
 
@@ -148,58 +148,62 @@
 * **数据源**：
   - 本系统输出：[`test/opentelemetry/opentelemetry-demo_sbom.json`](test/opentelemetry/opentelemetry-demo_sbom.json)
   - Trivy 对照产物：[`test/opentelemetry/opentelemetry-trivy.json`](test/opentelemetry/opentelemetry-trivy.json)
+  - 对比评测报告：[`test/opentelemetry/benchmark_report.md`](test/opentelemetry/benchmark_report.md)
 
-两款工具在各语言生态的组件发现与对齐数据如下：
+在严格剔除 `type == "application"` 本地工程虚拟根节点并完成 PURL 规范化对齐后，两款工具在各语言生态的第三方依赖库对比数据如下：
 
-| 语言生态分类 | 本系统实例数 (唯一包) | 参照工具实例数 (唯一包) | 共同唯一包 | 增量差值 (Delta) | 唯一组件召回率 (%) | 实验结果深度分析 |
+| 语言生态分类 | 本系统：实例数 (唯一包) | 参照工具：实例数 (唯一包) | 共同唯一包 | 实例差值 (Delta) | 参照基准覆盖率 (%) | 差异机制与实验分析 |
 | :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **Cargo (Rust)** | **306** (306) | 305 (305) | 302 | **+1** | **99.0%** | **极高精度对齐**：基础解析与 PURL 规范化极为扎实，验证了核心算法准确性。 |
-| **Maven (Java)** | **20** (20) | **0** (0) | 0 | **+20** | **100.0%** | **发现盲区**：Trivy 因嵌套目录完全漏检 Java 微服务模块，本系统成功捕获。 |
-| **NPM (Node.js)** | **1959** (1251) | 925 (801) | 801 | **+1034** | **100.0%** | **深度穿透与全召回**：完全召回 Trivy 801 个唯一依赖包（100%），并深挖出一倍以上嵌套依赖。 |
-| **Golang (Go)** | **194** (126) | 156 (100) | 97 | **+38** | **97.0%** | **极高覆盖**：Trivy 检出的 100 个唯一 Go 依赖中本系统命中 97 个（97%），总发现量全面领先。 |
-| **PyPI (Python)** | **531** (260) | 525 (254) | 254 | **+6** | **100.0%** | **全量无损召回**：Trivy 检出的 254 个唯一 Python 依赖全部 100% 完整捕获（254/254）。 |
+| **Cargo (Rust)** | **305** (305) | 305 (305) | **305** | 0 (持平) | **100.0%** (305/305) | **完全一致**：解码 `%2B` 与 `+` 编码差异后，305 个第三方 Crate 100% 精确对齐。 |
+| **PyPI (Python)** | **525** (254) | 525 (254) | **254** | 0 (持平) | **100.0%** (254/254) | **完全一致**：剥离本地服务目录节点后，物理实例数（525）与唯一包数（254）100% 吻合。 |
+| **Golang (Go)** | **151** (95) | 153 (97) | **95** | -2 | **97.9%** (95/97) | **高覆盖率对齐**：剔除 `go.sum` 冗余历史条目后，精确对齐 95/97 个 `go.mod` 核心依赖。 |
+| **NPM (Node.js)** | **1959** (1251) | 925 (801) | **801** | **+1034** | **100.0%** (801/801) | **全生命周期覆盖**：100% 覆盖 801 个生产依赖；多出的 450 个唯一包经核查 `package-lock.json` **100% (450/450)** 为 `"dev": true` 开发测试依赖。 |
+| **Maven / Gradle** | **18** (17) | **0** (0) | 0 | **+18** | **100.0% (基准漏检)** | **无锁 AST 补盲**：Trivy 因缺失 `gradle.lockfile` 漏检 Java/Kotlin 服务，本系统通过 AST 成功恢复 18 个依赖。 |
+| **非目标语言 (Gem/Hex/NuGet)** | 0 (0) | 222 (219) | 0 | -222 | 非目标设计边界 | 属于未适配辅助服务（Ruby 132 / Erlang 57 / .NET 30），归入后续扩展工作。 |
+| **合计（双口径汇总）** | **2958** (1922) | 2130 (1676) | **1455** | **+828** | **目标生态: 99.86%** (1455/1457)<br>**全仓总体: 86.81%** (1455/1676) | 目标 5 大核心生态覆盖率达 **99.86%**；计入 3 个未适配语言后的全仓库总体覆盖率为 **86.81%**。 |
 
-> **关键统计口径说明与学术讨论**：
-> 1. **为什么此前在微服务大仓中直观计算的百分比较低？** 
->    在微服务 Monorepo 架构中，多个不同微服务（如 5 个独立 Python 服务）会重复引入如 `urllib3`、`requests` 等基础库。Trivy 的 components 数组中累计记录了 **525 个带重复的组件实例**，但去重后的**真实唯一依赖包只有 254 个**。若简单用“去重交集 (254)”直接除以“未去重实例总量 (525)”，会得出 48.4% 的假象。而采用学术界严格对齐的 **去重唯一包 PURL 集合比较**，本系统对 Trivy 的 PyPI 召回率实为 **100.0% (254/254)**，Go 召回率实为 **97.0% (97/100)**，NPM 召回率实为 **100.0% (801/801)**！
-> 2. **关于未支持生态（GEM、HEX、NUGET）**：
->    在评测中，Trivy 识别出的 GEM (Ruby: 135)、HEX (Erlang: 57)、NUGET (.NET: 30) 属于微服务演示中用于边缘多语言调用的辅助微服务。本课题设计之初严格聚焦于现代互联网与云原生领域最核心的 **Top 5 核心主流生态（Rust, Go, Java, JS/TS, Python）**，该设计边界明确且合理。
+> **严谨对比方法学说明（Methodology）**：
+> 1. **剔除本地工程虚拟根（`application` 节点过滤）**：严格排除 `type == "application"` 及版本为 `0.0.0` 的本地目录合成节点，仅统计真实第三方开源库（`type == "library"`），避免将本地服务文件夹名或 `go 1.2x` 语言指令计入第三方依赖增量。
+> 2. **NPM 扩展依赖的 `"dev": true` 实证核查**：针对本系统在 `opentelemetry-demo` 中额外识别出的 **450 个** 唯一 NPM 包，对仓库内全部 4 个 `package-lock.json`（根目录、`src/frontend`、`src/payment`、`src/react-native-app`）进行字段级比对，证实 **450 个包中有 450 个（100.0%）在锁文件中显式标记为 `"dev": true`**。这是因为 Trivy 默认跳过 `devDependencies`，而本系统保留了开发与测试工具链依赖。
+> 3. **双口径覆盖率披露**：同时报告**目标生态基准覆盖率（99.86%，1455/1457）**与包含 Ruby/Erlang/.NET 在内的**全仓库跨生态总覆盖率（86.81%，1455/1676）**，不隐瞒未适配语言边界。
 
 ---
 
 ### 实验 2：云原生分布式微服务基准与实例隔离 (`test/mircoservices/`)
 
-* **测试对象**：Google 官方开源的经典 10 语言云原生微服务靶场 [Google Cloud Microservices Demo](https://github.com/GoogleCloudPlatform/microservices-demo)。
+* **测试对象**：Google 官方开源的经典云原生微服务靶场 [Google Cloud Microservices Demo](https://github.com/GoogleCloudPlatform/microservices-demo)。
 * **数据源**：
   - 本系统输出：[`test/mircoservices/microservices-demo_sbom.json`](test/mircoservices/microservices-demo_sbom.json)
   - Trivy 对照产物：[`test/mircoservices/sbom-cyclonedx.json`](test/mircoservices/sbom-cyclonedx.json)
   - 自动生成对比报告：[`test/benchmark_report.md`](test/benchmark_report.md)
 
-运行本系统的 `sbom_compare` 对比引擎生成的综合指标如下：
+在清理测试目录嵌套副本并重新生成后，运行 `sbom_compare` 对比引擎得到的综合指标如下：
 
-| 评估指标 (Metric) | 本系统 (sbom-generator) | 参照工具 (Trivy v0.76.1) | 差异与优势说明 |
+| 评估指标 (Metric) | 本系统 (sbom-generator) | 参照工具 (Trivy v0.76.1) | 差异与机制说明 |
 | :--- | :---: | :---: | :--- |
-| **物理组件实例数 (Total Instances)** | **1,024 个** | 860 个 | **提升 19.1%**：基于路径盐精确分离各微服务的实体实例 |
-| **去重唯一组件数 (Unique PURLs)** | **556 个** | 480 个 | 多挖掘出 **80 个** 深度传递依赖与受管依赖 |
-| **参照工具召回重合率 (Recall Rate)** | **99.17%** | 基准对照 | 证明本系统对工业级主流依赖的捕获覆盖率达到 99%+ |
-| **依赖图 DAG 拓扑边数 (Edges)** | **1,462 条** | 1,410 条 | 完整还原深层微服务依赖链路拓扑网络 |
-| **依赖集合 Jaccard 相似度** | **85.00%** | 基准对照 | 双方共有 476 个核心依赖，两款工具具有极高拟合度 |
-| **多模块大仓实例冲突隔离** | **支持 (`instance_id`)** | 不支持 (扁平合并) | 避免同名不同版本依赖拓扑短路 |
-| **运行时动态依赖状态标记** | **支持 (Loaded / Dormant)** | 不支持 | 辨识编译实操痕迹，有效降低 CVE 虚报疲劳 |
+| **第三方库物理实例数 (Instances)** | **903 个** | 846 个 | Go (178=178)、PyPI (184=184) 实例数完全一致；NPM 多保留子模块嵌套实例 |
+| **去重唯一第三方包数 (Unique PURLs)** | **478 个** | 476 个 | 100% 覆盖全部 476 个基准包，并扩展发现 **+2 个** 无锁 Gradle 依赖 |
+| **目标生态基准覆盖率 (Target Eco Coverage)** | **100.00%** (476/476) | 基准对照 (100%) | Go (82/82)、NPM (262/262)、PyPI (132/132) 唯一包实现 100% 精确对齐 |
+| **全仓库跨生态总覆盖率 (Total Repo Coverage)** | **100.00%** (476/476) | 基准对照 (100%) | 全仓库所有生态唯一包 100% 覆盖 |
+| **无锁 Gradle 模块 AST 补盲** | **2 个** | 0 个 | 通过 AST 静态穿透恢复 `src/adservice/build.gradle` 中的 2 个依赖 |
+| **多模块大仓实例冲突隔离** | **支持 (`instance_id`)** | 不支持 (全局扁平合并) | 基于相对路径哈希盐隔离不同微服务的同名依赖实例 |
 
 ---
 
-### 实验 3：缺失锁定文件时的语法树容错解析 (`test/juice-shop/`)
+### 实验 3：全生命周期开发依赖覆盖评测 (`test/juice-shop/`)
 
-* **测试对象**：OWASP 著名全栈靶场工程 [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)。
-* **边界场景**：工程代码仓库默认仅提交声明清单 `package.json`，**未提供 `package-lock.json` 锁定文件**。
+* **测试对象**：OWASP 著名全栈靶场工程 [OWASP Juice Shop](https://github.com/juice-shop/juice-shop)（包含根目录与 `frontend/` 两个子工程 `package-lock.json`）。
 * **数据源**：
   - 本系统输出：[`test/juice-shop/juice-shop_sbom.json`](test/juice-shop/juice-shop_sbom.json)
   - Trivy 对照产物：[`test/juice-shop/juice-shop-trivy.json`](test/juice-shop/juice-shop-trivy.json)
+  - 自动生成对比报告：[`test/juice-shop/benchmark_report.md`](test/juice-shop/benchmark_report.md)
 
-**实验结果对照**：
-* **Trivy v0.76.1**：由于缺乏 Lock 文件，解析流程直接中断，输出的物料清单组件数组为空（`components: []`，**检出 0 个依赖构件**）。
-* **本系统 (sbom-generator)**：自适应触发静态 AST 责任链与模糊版本范围解算引擎，**成功恢复出 1,126 个组件，并重建出 2,013 条依赖关系有向边**！充分证明了本系统在边缘工程场景下的高容错性。
+| 评估指标 (Metric) | 本系统 (sbom-generator) | 参照工具 (Trivy v0.76.1) | 差异与实证归因分析 |
+| :--- | :---: | :---: | :--- |
+| **第三方库物理实例数 / 唯一包数** | **1,125 个** | 655 个 | 剔除本地 `application` 根节点后，本系统多检出 +470 个组件 |
+| **目标生态基准覆盖率 (Target Eco Coverage)** | **99.85%** (654/655) | 基准对照 (100%) | 精确覆盖参照工具 654/655 个核心生产依赖 |
+| **全仓库跨生态总覆盖率 (Total Repo Coverage)** | **99.85%** (654/655) | 基准对照 (100%) | 单一 NPM 生态工程，目标生态口径与全仓口径一致 |
+| **扩展依赖发现增量 (`+471` 唯一包) 归因** | **468 个 `dev: true` + 3 个生产包** | 默认忽略 `dev` 依赖 | 经核对 `package-lock.json` 与 `frontend/package-lock.json`，额外检出的 471 个包中有 **468 个 (99.36%)** 为 `"dev": true` 的测试/构建期依赖 |
 
 ---
 
@@ -216,11 +220,12 @@
 
 ---
 
-## ⚡ 动态系统资源与吞吐量监控
+## ⚡ 依赖加载可达性监测与安全沙箱策略
 
-为便于科学评估平台在大型工程环境中的开销表现，系统实现了动态硬件监控模块（[`src/analyze/dynamic_monitor.rs`](src/analyze/dynamic_monitor.rs)）：
-* **性能指标采集**：采样并记录分析生命周期内的 **CPU 使用率峰值** 与 **物理常驻内存 (RSS RAM)**；
-* **吞吐与效率统计**：度量各个语言生态处理耗时与构件生成吞吐率，数据可在控制台日志及桌面端面板中统一展示。
+为辅助识别实际被业务代码引用的活跃依赖，同时严格防范扫描不可信仓库时的代码执行风险，系统实现了分层安全设计的依赖加载监测模块（[`src/analyze/dynamic_monitor.rs`](src/analyze/dynamic_monitor.rs)）：
+* **默认安全模式（纯静态导入与编译痕迹分析，`allow_exec = false`）**：默认**禁止执行被扫描仓库中的任何入口脚本或测试代码**，仅通过源码静态分析扫描 `require()`、`import()`、`importlib.import_module()`、`__import__` 等动态导入语句以及本地构建产物痕迹（如 `node_modules`、`__pycache__`、`target`）。
+* **显式受控运行时探针（`--allow-exec` 显式授权）**：仅当用户在受信任环境下显式传入 `--allow-exec` 参数时，才启动带超时熔断的运行时模块加载钩子（Node.js `Module._load` 拦截与 Python `sys.modules` 快照）；且**严禁调用被扫描仓库目录内自带的 `.venv/venv` 解释器二进制**，强制仅使用宿主机受信任的系统解释器。
+* **严谨的可达性状态表述**：对于静态与动态阶段均未观测到加载痕迹的组件，前端与报告统一标记为 **`⚪ 未观测到加载（不代表不可达）`**，避免因分支覆盖不全而误导用户将潜在受影响依赖直接豁免。
 
 ---
 
@@ -246,14 +251,17 @@ cargo build --release --bins
 
 ### 命令行 CLI 使用说明
 ```bash
-# 1. 扫描 test 目录下的 Juice Shop 工程并生成 CycloneDX 1.6 SBOM
-./target/release/sbom-generator -i ./test/juice-shop -o ./test/juice-shop/juice-shop_sbom.json
+# 1. 扫描目标工程并生成 CycloneDX 1.6 SBOM（默认关闭入口代码执行，安全扫描）
+./target/release/sbom-generator -i /path/to/project -o ./output_sbom.json
 
 # 2. 扫描并同步在终端打印彩色多语言依赖拓扑树与 CVE 告警
-./target/release/sbom-generator -i ./test/juice-shop -o ./test/juice-shop/juice-shop_sbom.json --tree
+./target/release/sbom-generator -i /path/to/project -o ./output_sbom.json --tree
 
-# 3. 纯离线/沙箱模式运行（完全跳过外部 CLI 探针，使用静态 AST 责任链）
-./target/release/sbom-generator -i ./test/juice-shop -o ./test/juice-shop/juice-shop_sbom.json -s --tree
+# 3. 纯离线/静态模式运行（完全跳过外部包管理器 CLI 探针，仅使用静态 AST 责任链）
+./target/release/sbom-generator -i /path/to/project -o ./output_sbom.json -s --tree
+
+# 4. 在受控沙箱中显式开启运行时入口加载探针（可选）
+./target/release/sbom-generator -i /path/to/project -o ./output_sbom.json --allow-exec
 ```
 
 #### CLI 参数表：
@@ -262,7 +270,8 @@ cargo build --release --bins
 | `-i` | `--directory` | **必填** | 待扫描分析的目标工程根目录物理路径 |
 | `-o` | `--output` | **必填** | 输出的 CycloneDX 1.6 标准 SBOM JSON 路径 |
 | `-t` | `--tree` | 可选 | 在终端打印层次依赖拓扑树（带生态、许可证与漏洞内联告警） |
-| `-s` | `--static-only` | 可选 | 强制仅使用静态 AST 责任链（纯离线环境或安全沙箱） |
+| `-s` | `--static-only` | 可选 | 强制仅使用静态 AST 责任链（纯离线环境或禁用包管理器 CLI） |
+| 无 | `--allow-exec` | 可选 | 显式允许在受控沙箱中启动运行时入口模块加载探针（默认关闭） |
 | `-d` | `--debug` | 可选 | 开启详细调试日志，打印各子模块实例、文件路径与变量插值详情 |
 | `-h` | `--help` | 可选 | 查看命令行帮助说明 |
 
@@ -418,7 +427,7 @@ sbom-generator/
 ├── test/                         # 毕设实测数据集与基准报告
 │   ├── opentelemetry/            # CNCF OpenTelemetry Demo 实测数据 (vs Trivy)
 │   ├── mircoservices/            # Google Microservices Demo 实测数据 (vs Trivy)
-│   ├── juice-shop/               # OWASP Juice Shop 无锁边界实测数据 (vs Trivy)
+│   ├── juice-shop/               # OWASP Juice Shop 全栈靶场实测数据 (vs Trivy)
 │   └── benchmark_report.md       # 自动化对比评测实验报告样例
 └── src/
     ├── main.rs                   # CLI 命令行入口与参数驱动
@@ -436,7 +445,7 @@ sbom-generator/
     │   ├── graph_utils.rs        # 4-Pass DAG 图引擎与拓扑排序
     │   └── tree_sitter/          # Tree-sitter 运行时绑定与源码行列计算
     └── analyze/
-        ├── dynamic_monitor.rs    # 运行时 CPU/内存/吞吐量动态监控模块
+        ├── dynamic_monitor.rs    # 依赖加载可达性静态分析与受控沙箱探测模块
         ├── sbom_generate.rs      # 多生态编排主入口
         └── producers/            # 语言生态专用解析器
             ├── cargo/            # Rust Cargo 生态 (Dynamic + Lock + Toml Workspace)

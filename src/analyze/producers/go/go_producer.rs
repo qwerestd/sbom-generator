@@ -28,7 +28,6 @@ struct GoReplace {
 #[derive(Clone, Debug, Default)]
 struct ParsedGoMod {
     module_name: Option<String>,
-    go_version: Option<String>,
     requires: Vec<GoRequire>,
     replaces: Vec<GoReplace>,
     excludes: HashSet<(String, String)>,
@@ -175,10 +174,8 @@ impl GoProducer {
                     .to_string()
             });
 
-        let root_version = parsed_mod
-            .as_ref()
-            .and_then(|m| m.go_version.clone())
-            .unwrap_or_else(|| "0.0.0".to_string());
+        // Go 模块自身的版本默认标记为 0.0.0（go.mod 中的 `go 1.2x` 为编译器语言版本而非包版本）
+        let root_version = "0.0.0".to_string();
 
         let root_purl_raw = format!("pkg:golang/{}@{}", root_module_name, root_version);
         let root_purl = Dependency::auto_fix_and_validate_purl(&root_purl_raw);
@@ -219,20 +216,23 @@ impl GoProducer {
             }
         }
 
-        for (sum_mod, sum_ver) in sum_entries {
-            if seen_module_names.contains(&sum_mod) {
-                continue;
-            }
-            if excludes.contains(&(sum_mod.clone(), sum_ver.clone())) {
-                continue;
-            }
-            if let Some((final_mod, final_ver)) =
-                Self::apply_replace(&sum_mod, &sum_ver, &combined_replaces)
-            {
-                seen_module_names.insert(sum_mod);
-                seen_module_names.insert(final_mod.clone());
-                if seen_mod_ver.insert((final_mod.clone(), final_ver.clone())) {
-                    resolved_modules.push((final_mod, final_ver, true));
+        // 仅当 go.mod 缺失或未包含有效 require 时，才回退使用 go.sum 补全（避免引入 go.sum 中不参与构建的历史/测试校验项）
+        if parsed_mod.is_none() || resolved_modules.is_empty() {
+            for (sum_mod, sum_ver) in sum_entries {
+                if seen_module_names.contains(&sum_mod) {
+                    continue;
+                }
+                if excludes.contains(&(sum_mod.clone(), sum_ver.clone())) {
+                    continue;
+                }
+                if let Some((final_mod, final_ver)) =
+                    Self::apply_replace(&sum_mod, &sum_ver, &combined_replaces)
+                {
+                    seen_module_names.insert(sum_mod);
+                    seen_module_names.insert(final_mod.clone());
+                    if seen_mod_ver.insert((final_mod.clone(), final_ver.clone())) {
+                        resolved_modules.push((final_mod, final_ver, true));
+                    }
                 }
             }
         }
@@ -357,11 +357,6 @@ impl GoProducer {
                         let mod_name = rest.trim().trim_matches('"');
                         if !mod_name.is_empty() {
                             parsed.module_name = Some(mod_name.to_string());
-                        }
-                    } else if let Some(rest) = code_part.strip_prefix("go ") {
-                        let go_ver = rest.trim().trim_matches('"');
-                        if !go_ver.is_empty() {
-                            parsed.go_version = Some(go_ver.to_string());
                         }
                     } else if let Some(rest) = code_part.strip_prefix("require") {
                         let rest = rest.trim();
@@ -537,7 +532,6 @@ exclude github.com/bad/vuln v1.2.3
             parsed.module_name.as_deref(),
             Some("github.com/bnbu/demo-service")
         );
-        assert_eq!(parsed.go_version.as_deref(), Some("1.22"));
         assert_eq!(parsed.requires.len(), 7);
         assert_eq!(parsed.replaces.len(), 2);
         assert!(parsed

@@ -24,11 +24,15 @@ pub fn main() {
     );
     opts.optflag("d", "debug", "use debug mode");
 
-    // 【修改点1】：反转设计逻辑！默认开启动态，新增 -s 供用户强制离线纯静态
     opts.optflag(
         "s",
         "static-only",
-        "force static analysis only (disable dynamic detection)",
+        "force static analysis only (disable package manager CLI probes)",
+    );
+    opts.optflag(
+        "",
+        "allow-exec",
+        "explicitly allow runtime entrypoint execution probe in sandbox (disabled by default)",
     );
     opts.optflag(
         "t",
@@ -69,11 +73,13 @@ pub fn main() {
     }
 
     let enable_dynamic = !matches.opt_present("s");
+    let allow_exec = matches.opt_present("allow-exec");
     let configuration = Configuration {
         directory: directory_to_analyze_option.unwrap(),
         output: output.unwrap(),
         use_debug: matches.opt_present("d"),
         dynamic: enable_dynamic,
+        allow_exec,
     };
 
     analyze(&configuration, enable_dynamic).expect("error when generating SBOM");

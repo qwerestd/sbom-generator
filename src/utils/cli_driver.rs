@@ -51,23 +51,9 @@ impl CliLocator {
         }
     }
 
-    /// 探测项目目录内的本地虚拟环境 Python 解释器（避免误扫全局 Python 环境）
-    pub fn resolve_python_for_dir(project_dir: &Path) -> Option<String> {
-        // 1. 优先检查项目目录下的本地虚拟环境 (.venv, venv, env, .env)
-        let venv_names = [".venv", "venv", "env", ".env"];
-        for vname in venv_names {
-            let venv_dir = project_dir.join(vname);
-            let candidate = if cfg!(target_os = "windows") {
-                venv_dir.join("Scripts").join("python.exe")
-            } else {
-                venv_dir.join("bin").join("python")
-            };
-            if candidate.exists() {
-                return Some(candidate.to_string_lossy().to_string());
-            }
-        }
-
-        // 2. 检查当前激活的 VIRTUAL_ENV 或 CONDA_PREFIX
+    /// 探测宿主机受控 Python 解释器（安全加固：严禁直接执行被扫描仓库目录内的 `.venv/venv` 自带解释器二进制）
+    pub fn resolve_python_for_dir(_project_dir: &Path) -> Option<String> {
+        // 1. 检查宿主机当前显式激活的 VIRTUAL_ENV 或 CONDA_PREFIX
         for env_key in ["VIRTUAL_ENV", "CONDA_PREFIX"] {
             if let Ok(venv_root) = env::var(env_key) {
                 let root = PathBuf::from(venv_root);
@@ -82,7 +68,7 @@ impl CliLocator {
             }
         }
 
-        // 3. 回退到全局缓存的 Python 探测器
+        // 2. 回退到全局缓存的宿主机 Python 探测器
         Self::resolve_global_tool(
             "python",
             &["python3", "python"],
@@ -374,11 +360,15 @@ mod tests {
             "python"
         };
         let py_file = venv_dir.join(py_name);
-        let _ = fs::write(&py_file, "echo python");
+        let _ = fs::write(&py_file, "echo untrusted repo python");
 
         let resolved = CliLocator::resolve_python_for_dir(&temp_dir);
-        assert!(resolved.is_some());
-        assert!(resolved.unwrap().contains(".venv"));
+        if let Some(ref p) = resolved {
+            assert!(
+                !p.contains("sbom_test_py_venv"),
+                "must never use untrusted interpreter inside scanned repo"
+            );
+        }
         let _ = fs::remove_dir_all(&temp_dir);
     }
 }

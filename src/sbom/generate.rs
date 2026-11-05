@@ -145,9 +145,14 @@ pub fn generate_sbom(
                 // 【方向二兑现：注入文件物理路径与 OSV 风险标签 (Properties)】
                 let mut props = Vec::new();
                 if let Some(loc) = &d.location {
+                    let rel_path = std::path::Path::new(&loc.block.file)
+                        .strip_prefix(&configuration.directory)
+                        .map(|p| p.to_string_lossy().replace('\\', "/"))
+                        .unwrap_or_else(|_| loc.block.file.replace('\\', "/"));
+                    let clean_path = rel_path.trim_start_matches('/').to_string();
                     props.push(serde_json::json!({
                         "name": "syft:location:0:path",
-                        "value": loc.block.file
+                        "value": if clean_path.is_empty() { loc.block.file.replace('\\', "/") } else { clean_path }
                     }));
                 }
                 if let Some(vulns) = vuln_map.get(&d.instance_id) {

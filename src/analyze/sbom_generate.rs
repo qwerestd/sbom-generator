@@ -233,13 +233,14 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
     }
 
     // =====================================================================
-    // 动态依赖加载监测引擎 (4 层工业级防御：环境预检、沙箱执行、超时熔断、平滑降级)
+    // 依赖加载可达性监测引擎 (默认仅执行纯静态源码引用扫描；仅当显式开启 --allow-exec 时才执行入口沙箱探针)
     // =====================================================================
     if dynamic {
         crate::analyze::dynamic_monitor::monitor_dependency_loading(
             &configuration.directory,
             &mut final_dependencies,
             configuration.use_debug,
+            configuration.allow_exec,
         );
     }
 
@@ -287,6 +288,7 @@ mod tests {
             output: out_path.to_string_lossy().to_string(),
             use_debug: true,
             dynamic: false,
+            allow_exec: false,
         };
 
         // 分别用静态轨和动态轨压测该生态
@@ -349,6 +351,7 @@ mod tests {
             output: out_path.to_string_lossy().to_string(),
             use_debug: false,
             dynamic: false,
+            allow_exec: false,
         };
 
         analyze(&config, false).expect("多语言靶场分析失败");
