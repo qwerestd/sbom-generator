@@ -178,12 +178,8 @@ impl PyprojectProducer {
                 continue;
             }
 
-            let clean_ver = ver_opt
-                .map(|v| {
-                    v.trim_start_matches(['^', '~', '=', '>', '<', ' '])
-                        .to_string()
-                })
-                .filter(|v| !v.is_empty() && !v.contains('*'));
+            let (clean_ver, requirement) =
+                crate::utils::version_spec::manifest_version(ver_opt.as_deref(), "pypi");
 
             let purl_str = match &clean_ver {
                 Some(v) => format!("pkg:pypi/{}@{}", norm_name, v),
@@ -201,6 +197,7 @@ impl PyprojectProducer {
             if let Ok(dep) = DependencyBuilder::default()
                 .name(raw_name)
                 .version(clean_ver)
+                .version_requirement(requirement)
                 .r#type(DependencyType::Library)
                 .purl(valid_purl)
                 .instance_id(child_id)
@@ -258,7 +255,9 @@ impl PyprojectProducer {
         let clean = spec.split(';').next().unwrap_or("").trim();
         let caps = PEP508_SPEC_RE.captures(clean)?;
         let name = caps.get(1)?.as_str().to_string();
-        let ver = caps.get(3).map(|m| m.as_str().to_string());
+        let ver = caps
+            .get(2)
+            .map(|m| clean[m.start()..].trim().trim_end_matches(')').to_string());
         Some((name, ver))
     }
 }
@@ -294,8 +293,8 @@ python = "^3.11"
         assert!(deps
             .iter()
             .any(|d| d.name == "uvicorn" && d.version.as_deref() == Some("0.29.0")));
-        assert!(deps
-            .iter()
-            .any(|d| d.name == "pytest" && d.version.as_deref() == Some("8.1.1")));
+        assert!(deps.iter().any(|d| d.name == "pytest"
+            && d.version.is_none()
+            && d.version_requirement.as_deref() == Some("^8.1.1")));
     }
 }

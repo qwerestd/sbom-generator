@@ -91,3 +91,32 @@ fn comparison_cli_exports_report_and_rejects_invalid_input() {
     assert!(!invalid.status.success());
     assert!(!String::from_utf8_lossy(&invalid.stderr).contains("panicked"));
 }
+
+#[test]
+fn comparison_reports_unresolved_components_without_counting_them_as_matches() {
+    let dir = workspace().join("target/test_outputs/unresolved_comparison");
+    fs::create_dir_all(&dir).unwrap();
+    let a = dir.join("a.json");
+    let b = dir.join("b.json");
+    let report = dir.join("report.md");
+    fs::write(&a, r#"{"bomFormat":"CycloneDX","components":[{"type":"library","name":"demo","purl":"pkg:npm/demo"}]}"#).unwrap();
+    fs::write(&b, r#"{"bomFormat":"CycloneDX","components":[{"type":"library","name":"demo","version":"1.0.0","purl":"pkg:npm/demo@1.0.0"}]}"#).unwrap();
+    let result = Command::new(env!("CARGO_BIN_EXE_sbom_compare"))
+        .arg("--our-sbom")
+        .arg(a)
+        .arg("--competitor-sbom")
+        .arg(b)
+        .arg("--output")
+        .arg(&report)
+        .output()
+        .unwrap();
+    assert!(
+        result.status.success(),
+        "{}",
+        String::from_utf8_lossy(&result.stderr)
+    );
+    let md = fs::read_to_string(report).unwrap();
+    assert!(md.contains("| 组件记录数 | 1 | 1 |"), "{md}");
+    assert!(md.contains("| 版本未解析记录数 | 1 | 0 |"), "{md}");
+    assert!(md.contains("0.00% (0/1)"), "{md}");
+}

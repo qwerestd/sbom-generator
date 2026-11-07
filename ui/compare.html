@@ -918,6 +918,13 @@
     <!-- 轻量提示 -->
     <div id="toast" class="toast-notify">操作成功</div>
 
+    <details style="padding:16px; margin:12px;">
+        <summary>版本未解析组件（计入总数，不参与精确版本重合率）</summary>
+        <table class="industrial-table" style="width:100%;">
+            <thead><tr><th>来源</th><th>组件</th><th>PURL</th><th>版本约束</th></tr></thead>
+            <tbody id="unresolved-tbody"></tbody>
+        </table>
+    </details>
     <script src="compare.js"></script>
 </body>
 </html>

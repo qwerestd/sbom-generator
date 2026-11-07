@@ -3,7 +3,7 @@
   "specVersion": "1.6",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-07T12:20:09Z",
+    "timestamp": "2026-11-07T18:38:32Z",
     "tools": [
       {
         "name": "sbom-generator",
@@ -101,32 +101,28 @@
       "version": "2.6.3"
     },
     {
-      "bom-ref": "pkg:npm/axios@0.21.1?package-id=bd7b9d1ee4feb7d8",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
+      "bom-ref": "pkg:npm/axios?package-id=43dddbe56f8995df",
       "name": "axios",
       "properties": [
         {
-          "name": "syft:location:0:path",
-          "value": "web/package.json"
+          "name": "sbom:version:requirement",
+          "value": "^0.21.1"
         },
         {
-          "name": "osv:vulnerabilities",
-          "value": "CVE-2023-45857 (GHSA-wf5p-g6vw-rhxx)"
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "web/package.json"
         },
         {
           "name": "sbom:runtime:status",
           "value": "untraced"
         }
       ],
-      "purl": "pkg:npm/axios@0.21.1",
-      "type": "library",
-      "version": "0.21.1"
+      "purl": "pkg:npm/axios",
+      "type": "library"
     },
     {
       "bom-ref": "pkg:npm/express@4.17.1?package-id=315aa754a45ec73a",
@@ -265,16 +261,17 @@
       "version": "3.9.1"
     },
     {
-      "bom-ref": "pkg:pypi/flask@2.2.0?package-id=721193e8ae830059",
-      "licenses": [
-        {
-          "license": {
-            "id": "BSD-3-Clause"
-          }
-        }
-      ],
+      "bom-ref": "pkg:pypi/flask?package-id=9976a9b4c331fbff",
       "name": "flask",
       "properties": [
+        {
+          "name": "sbom:version:requirement",
+          "value": "~=2.2.0"
+        },
+        {
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
         {
           "name": "syft:location:0:path",
           "value": "python-service/requirements.txt"
@@ -284,9 +281,8 @@
           "value": "untraced"
         }
       ],
-      "purl": "pkg:pypi/flask@2.2.0",
-      "type": "library",
-      "version": "2.2.0"
+      "purl": "pkg:pypi/flask",
+      "type": "library"
     },
     {
       "bom-ref": "pkg:pypi/python-service@0.0.0?package-id=d69d865e2e19c30f",
@@ -369,32 +365,28 @@
       "version": "2.28.1"
     },
     {
-      "bom-ref": "pkg:pypi/urllib3@1.26.18?package-id=acdd1d2b81d3ec9e",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
+      "bom-ref": "pkg:pypi/urllib3?package-id=2d0a3f88665ae47c",
       "name": "urllib3",
       "properties": [
         {
-          "name": "syft:location:0:path",
-          "value": "python-service/requirements.txt"
+          "name": "sbom:version:requirement",
+          "value": "<1.26.18,>=1.26.0"
         },
         {
-          "name": "osv:vulnerabilities",
-          "value": "CVE-2023-45803 (GHSA-g4mx-q9vg-27p4)"
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "python-service/requirements.txt"
         },
         {
           "name": "sbom:runtime:status",
           "value": "untraced"
         }
       ],
-      "purl": "pkg:pypi/urllib3@1.26.18",
-      "type": "library",
-      "version": "1.26.18"
+      "purl": "pkg:pypi/urllib3",
+      "type": "library"
     }
   ],
   "dependencies": [
@@ -408,14 +400,14 @@
       "ref": "pkg:maven/org.springframework.boot/spring-boot-starter-web@2.6.3?package-id=15cafda693919dcd"
     },
     {
-      "ref": "pkg:npm/axios@0.21.1?package-id=bd7b9d1ee4feb7d8"
+      "ref": "pkg:npm/axios?package-id=43dddbe56f8995df"
     },
     {
       "ref": "pkg:npm/express@4.17.1?package-id=315aa754a45ec73a"
     },
     {
       "dependsOn": [
-        "pkg:npm/axios@0.21.1?package-id=bd7b9d1ee4feb7d8",
+        "pkg:npm/axios?package-id=43dddbe56f8995df",
         "pkg:npm/express@4.17.1?package-id=315aa754a45ec73a",
         "pkg:npm/lodash@4.17.19?package-id=e3946076c24ee525",
         "pkg:npm/minimist@1.2.5?package-id=d62dcfd60ca0ec8d"
@@ -432,15 +424,15 @@
       "ref": "pkg:pypi/aiohttp@3.9.1?package-id=b0bf2335e58dbb5c"
     },
     {
-      "ref": "pkg:pypi/flask@2.2.0?package-id=721193e8ae830059"
+      "ref": "pkg:pypi/flask?package-id=9976a9b4c331fbff"
     },
     {
       "dependsOn": [
         "pkg:pypi/pyyaml@5.3.1?package-id=76484b7764337f3c",
         "pkg:pypi/requests@2.28.1?package-id=b6908c73a5b25c43",
         "pkg:pypi/aiohttp@3.9.1?package-id=b0bf2335e58dbb5c",
-        "pkg:pypi/urllib3@1.26.18?package-id=acdd1d2b81d3ec9e",
-        "pkg:pypi/flask@2.2.0?package-id=721193e8ae830059"
+        "pkg:pypi/urllib3?package-id=2d0a3f88665ae47c",
+        "pkg:pypi/flask?package-id=9976a9b4c331fbff"
       ],
       "ref": "pkg:pypi/python-service@0.0.0?package-id=d69d865e2e19c30f"
     },
@@ -451,7 +443,7 @@
       "ref": "pkg:pypi/requests@2.28.1?package-id=b6908c73a5b25c43"
     },
     {
-      "ref": "pkg:pypi/urllib3@1.26.18?package-id=acdd1d2b81d3ec9e"
+      "ref": "pkg:pypi/urllib3?package-id=2d0a3f88665ae47c"
     }
   ],
   "vulnerabilities": [
@@ -597,48 +589,6 @@
         }
       ],
       "recommendation": "建议升级至安全版本 >= 2.31.0",
-      "source": {
-        "name": "OSV Knowledge Base",
-        "url": "https://osv.dev"
-      }
-    },
-    {
-      "affects": [
-        {
-          "ref": "pkg:pypi/urllib3@1.26.18?package-id=acdd1d2b81d3ec9e"
-        }
-      ],
-      "description": "urllib3 HTTP 重定向未剥离请求体导致敏感数据泄露",
-      "id": "CVE-2023-45803 (GHSA-g4mx-q9vg-27p4)",
-      "ratings": [
-        {
-          "method": "CVSSv3",
-          "score": 6.5,
-          "severity": "medium"
-        }
-      ],
-      "recommendation": "建议升级至安全版本 >= 2.0.7",
-      "source": {
-        "name": "OSV Knowledge Base",
-        "url": "https://osv.dev"
-      }
-    },
-    {
-      "affects": [
-        {
-          "ref": "pkg:npm/axios@0.21.1?package-id=bd7b9d1ee4feb7d8"
-        }
-      ],
-      "description": "Axios 跨域请求 XSRF-TOKEN 凭据泄露漏洞",
-      "id": "CVE-2023-45857 (GHSA-wf5p-g6vw-rhxx)",
-      "ratings": [
-        {
-          "method": "CVSSv3",
-          "score": 6.5,
-          "severity": "medium"
-        }
-      ],
-      "recommendation": "建议升级至安全版本 >= 1.6.0",
       "source": {
         "name": "OSV Knowledge Base",
         "url": "https://osv.dev"

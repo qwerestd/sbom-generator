@@ -105,6 +105,10 @@ impl OsvScanner {
         let mut unique_purls: Vec<String> = Vec::new();
         let mut seen_purls: HashSet<String> = HashSet::new();
         for dep in dependencies {
+            // Unknown manifest versions cannot be matched against advisory version ranges.
+            if dep.version.is_none() || dep.version_requirement.is_some() {
+                continue;
+            }
             let base_purl = dep.purl.split('?').next().unwrap_or(&dep.purl).to_string();
             if !base_purl.is_empty() && seen_purls.insert(base_purl.clone()) {
                 unique_purls.push(base_purl);

@@ -97,19 +97,11 @@ impl MavenDependency {
         let group_clean = self.group_id.trim();
         let name_clean = self.artifact_id.trim();
 
-        let (version_opt, purl_str) = match &self.version {
-            Some(raw_v) => {
-                let clean_v = raw_v.trim();
-                if clean_v.is_empty() || clean_v.contains('$') {
-                    (None, format!("pkg:maven/{}/{}", group_clean, name_clean))
-                } else {
-                    (
-                        Some(clean_v.to_string()),
-                        format!("pkg:maven/{}/{}@{}", group_clean, name_clean, clean_v),
-                    )
-                }
-            }
-            None => (None, format!("pkg:maven/{}/{}", group_clean, name_clean)),
+        let (version_opt, requirement) =
+            crate::utils::version_spec::manifest_version(self.version.as_deref(), "maven");
+        let purl_str = match &version_opt {
+            Some(v) => format!("pkg:maven/{}/{}@{}", group_clean, name_clean, v),
+            None => format!("pkg:maven/{}/{}", group_clean, name_clean),
         };
 
         let valid_purl = Dependency::auto_fix_and_validate_purl(&purl_str);
@@ -121,6 +113,7 @@ impl MavenDependency {
             .group(Some(group_clean.to_string()))
             .name(name_clean.to_string())
             .version(version_opt)
+            .version_requirement(requirement)
             .location(self.location.clone())
             .r#type(DependencyType::Library)
             .purl(valid_purl)

@@ -245,7 +245,12 @@ impl GradleProducer {
         let mut seen_ids = HashSet::new();
 
         for dep in extracted_deps {
-            let raw_purl = format!("pkg:maven/{}/{}@{}", dep.group, dep.name, dep.version);
+            let (version, requirement) =
+                crate::utils::version_spec::manifest_version(Some(&dep.version), "gradle");
+            let raw_purl = match &version {
+                Some(v) => format!("pkg:maven/{}/{}@{}", dep.group, dep.name, v),
+                None => format!("pkg:maven/{}/{}", dep.group, dep.name),
+            };
             let valid_purl = Dependency::auto_fix_and_validate_purl(&raw_purl);
             let instance_id = make_instance_id(&valid_purl, file_salt);
 
@@ -258,7 +263,8 @@ impl GradleProducer {
             if let Ok(built) = DependencyBuilder::default()
                 .group(Some(dep.group))
                 .name(dep.name)
-                .version(Some(dep.version))
+                .version(version)
+                .version_requirement(requirement)
                 .r#type(DependencyType::Library)
                 .purl(valid_purl)
                 .instance_id(instance_id)

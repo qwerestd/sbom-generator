@@ -79,3 +79,86 @@ fn root_dynamic_probe_cannot_hide_independent_nested_project() {
         assert_eq!(components.iter().filter(|c| c["name"] == name).count(), 1);
     }
 }
+
+#[test]
+fn manifest_ranges_are_preserved_without_inventing_versions() {
+    let (dir, cfg) = fixture("version_ranges");
+    fs::write(dir.join("package.json"), r#"{"name":"range-demo","version":"1.0.0","dependencies":{"range-demo-npm":"^1.2.3","pinned-demo":"1.2.3","any-demo":"*","tag-demo":"latest"}}"#).unwrap();
+    fs::write(
+        dir.join("requirements.txt"),
+        "python-range>=1.0,<2.0\npython-pinned==1.2.3\n",
+    )
+    .unwrap();
+    fs::write(dir.join("Cargo.toml"), "[package]\nname='range-demo'\nversion='1.0.0'\n[dependencies]\ncargo-range='1.2.3'\ncargo-pinned='=1.2.3'\n").unwrap();
+    analyze(&cfg, false).unwrap();
+    let bom: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&cfg.output).unwrap()).unwrap();
+    let components = bom["components"].as_array().unwrap();
+    for (name, requirement) in [
+        ("range-demo-npm", "^1.2.3"),
+        ("any-demo", "*"),
+        ("tag-demo", "latest"),
+        ("python-range", ">=1.0,<2.0"),
+        ("cargo-range", "1.2.3"),
+    ] {
+        let c = components.iter().find(|c| c["name"] == name).unwrap();
+        assert!(c.get("version").is_none(), "{c}");
+        assert!(!c["purl"].as_str().unwrap().contains('@'), "{c}");
+        assert!(
+            c["properties"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|p| p["name"] == "sbom:version:requirement" && p["value"] == requirement),
+            "{c}"
+        );
+    }
+    for name in ["pinned-demo", "python-pinned", "cargo-pinned"] {
+        let c = components.iter().find(|c| c["name"] == name).unwrap();
+        assert_eq!(c["version"], "1.2.3");
+    }
+}
+
+#[test]
+fn java_ranges_and_python_prereleases_are_handled_end_to_end() {
+    let (dir, cfg) = fixture("java_ranges_python_prerelease");
+    fs::write(dir.join("pom.xml"), "<project><modelVersion>4.0.0</modelVersion><groupId>org.example</groupId><artifactId>app</artifactId><version>1.0</version><dependencies><dependency><groupId>org.example</groupId><artifactId>java-range</artifactId><version>[1.0,2.0)</version></dependency></dependencies></project>").unwrap();
+    fs::write(
+        dir.join("build.gradle"),
+        "dependencies { implementation 'org.example:gradle-range:1.+' }",
+    )
+    .unwrap();
+    fs::write(
+        dir.join("requirements.txt"),
+        "python-rc==2.0rc1\npython-post==1!2.0.post1+cpu\n",
+    )
+    .unwrap();
+    analyze(&cfg, false).unwrap();
+    let bom: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(&cfg.output).unwrap()).unwrap();
+    let cs = bom["components"].as_array().unwrap();
+    for (name, req) in [("java-range", "[1.0,2.0)"), ("gradle-range", "1.+")] {
+        let c = cs.iter().find(|c| c["name"] == name).unwrap();
+        assert!(c.get("version").is_none(), "{c}");
+        assert!(!c["purl"].as_str().unwrap().contains('@'));
+        assert!(c["properties"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|p| p["name"] == "sbom:version:requirement" && p["value"] == req));
+    }
+    for (name, ver) in [("python-rc", "2.0rc1"), ("python-post", "1!2.0.post1+cpu")] {
+        assert_eq!(
+            cs.iter().find(|c| c["name"] == name).unwrap()["version"],
+            ver
+        );
+    }
+    let refs: std::collections::HashSet<_> =
+        cs.iter().filter_map(|c| c["bom-ref"].as_str()).collect();
+    for dep in bom["dependencies"].as_array().unwrap() {
+        assert!(refs.contains(dep["ref"].as_str().unwrap()));
+        for child in dep["dependsOn"].as_array().into_iter().flatten() {
+            assert!(refs.contains(child.as_str().unwrap()));
+        }
+    }
+}

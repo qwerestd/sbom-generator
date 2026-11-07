@@ -5,3 +5,4 @@ pub mod graph_utils;
 pub mod license_resolver;
 pub mod osv_scanner;
 pub mod tree_sitter;
+pub mod version_spec;

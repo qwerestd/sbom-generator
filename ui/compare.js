@@ -77,7 +77,7 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
             if (!c || !c.purl || typeof c.purl !== 'string' || !c.purl.trim()) return false;
             if (c.type === 'application') return false;
             const ver = typeof c.version === 'string' ? c.version.trim() : '';
-            if (!ver || ver.toLowerCase() === 'runtime' || ver === '0.0.0' || c.purl.trim().endsWith('@0.0.0')) return false;
+            if (ver.toLowerCase() === 'runtime' || ver === '0.0.0' || c.purl.trim().endsWith('@0.0.0')) return false;
             return true;
         }
 
@@ -122,11 +122,19 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
             const toolA = extractToolName(sbomA, labelA);
             const toolB = extractToolName(sbomB, labelB);
 
-            const compsA = (sbomA.components || []).filter(isValidThirdParty);
-            const compsB = (sbomB.components || []).filter(isValidThirdParty);
+            const recordsA = (sbomA.components || []).filter(isValidThirdParty);
+            const compsA = recordsA.filter(c => typeof c.version === 'string' && c.version.trim());
+            const recordsB = (sbomB.components || []).filter(isValidThirdParty);
+            const compsB = recordsB.filter(c => typeof c.version === 'string' && c.version.trim());
 
-            const totalA = compsA.length;
-            const totalB = compsB.length;
+            const totalA = recordsA.length;
+            const totalB = recordsB.length;
+            const unresolved = [...recordsA.filter(c => !c.version?.trim()).map(c => ({ side: 'A', c })),
+                ...recordsB.filter(c => !c.version?.trim()).map(c => ({ side: 'B', c }))];
+            document.getElementById('unresolved-tbody').innerHTML = unresolved.map(({ side, c }) => {
+                const requirement = c.properties?.find(p => p.name === 'sbom:version:requirement')?.value || '未提供';
+                return `<tr><td>${side}</td><td>${escapeHtml(c.name)}</td><td>${escapeHtml(c.purl)}</td><td>${escapeHtml(requirement)}</td></tr>`;
+            }).join('');
 
             const mapA = new Map();
             const statusMapA = new Map();
@@ -268,7 +276,7 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
             document.getElementById('kpi-instances-a').innerText = `${totalA}`;
             document.getElementById('kpi-instances-b').innerText = `vs ${totalB} 个`;
             const deltaInstances = totalA - totalB;
-            document.getElementById('kpi-instances-diff').innerText = `组件记录差值: ${deltaInstances >= 0 ? '+' : ''}${deltaInstances} 个`;
+            document.getElementById('kpi-instances-diff').innerText = `版本已声明/未解析 A:${compsA.length}/${totalA - compsA.length}，B:${compsB.length}/${totalB - compsB.length}；记录差值: ${deltaInstances >= 0 ? '+' : ''}${deltaInstances} 个`;
 
             document.getElementById('kpi-unique-diff').innerText = `+${onlyPurlsA.size}`;
             document.getElementById('kpi-unique-stats').innerText = `A:${purlsA.size} vs B:${purlsB.size}`;
@@ -1216,8 +1224,9 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                 `- 目标生态相对重合率: ${targetCov}\n- 全部生态相对重合率: ${totalCov}\n` +
                 `- 目标生态 Jaccard: ${document.getElementById('kpi-jaccard').innerText}\n` +
                 `- A 组件记录数: ${instA}；B: ${instB}\n` +
+                `- ${document.getElementById('kpi-instances-diff').innerText}\n` +
                 `- 仅 A 出现: ${currentDiffList.filter(c => c.type === 'onlyA').length}；仅 B 出现: ${currentDiffList.filter(c => c.type === 'onlyB').length}\n\n` +
-                `## 统计规则与解读限制\n\n排除 application、空版本、0.0.0 和 runtime；去除 PURL qualifier/subpath，归一化已知编码与 PyPI 包名后去重。0.0.0 过滤可能排除合法组件。记录数不等于已核实的物理部署实例数。空参照集合的相对重合率为 N/A。\n\n` +
+                `## 统计规则与解读限制\n\n排除 application、0.0.0 和 runtime；版本未解析组件计入总数并单独统计，但不参与精确版本 PURL 集合比较；去除 PURL qualifier/subpath，归一化已知编码与 PyPI 包名后去重。0.0.0 过滤可能排除合法组件。记录数不等于已核实的物理部署实例数。空参照集合的相对重合率为 N/A。\n\n` +
                 `参照 SBOM 不是独立真值；重合率不等于准确率或召回率。独有项需回查清单、锁文件、依赖作用域及版本。仅凭这两份文件不能认定误报、漏报、达标或工具能力优劣。运行时未观测到加载不代表不可达。`;
 
             navigator.clipboard.writeText(md).then(() => {
@@ -1238,6 +1247,8 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                 toolA: extractToolName(sbomA, labelA),
                 toolB: extractToolName(sbomB, labelB),
                 benchmarkProfile: extractToolBDetails(sbomB),
+                unresolvedA: (sbomA.components || []).filter(c => isValidThirdParty(c) && !c.version?.trim()),
+                unresolvedB: (sbomB.components || []).filter(c => isValidThirdParty(c) && !c.version?.trim()),
                 differences: currentDiffList
             }, null, 2));
             const dlAnchor = document.createElement('a');

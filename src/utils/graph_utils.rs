@@ -207,6 +207,7 @@ impl AsciiTreeStackBuilder {
                 r#type: dep_type,
                 name,
                 version: Some(version),
+                version_requirement: None,
                 purl: valid_purl,
                 instance_id: instance_id.clone(),
                 dependencies: Vec::new(),

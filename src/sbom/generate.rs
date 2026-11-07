@@ -168,6 +168,14 @@ pub fn generate_sbom(
 
                 // 【方向二兑现：注入文件物理路径与 OSV 风险标签 (Properties)】
                 let mut props = Vec::new();
+                if let Some(requirement) = &d.version_requirement {
+                    props.push(serde_json::json!({
+                        "name": "sbom:version:requirement", "value": requirement
+                    }));
+                    props.push(serde_json::json!({
+                        "name": "sbom:version:status", "value": "unresolved"
+                    }));
+                }
                 if let Some(loc) = &d.location {
                     let rel_path = std::path::Path::new(&loc.block.file)
                         .strip_prefix(&configuration.directory)

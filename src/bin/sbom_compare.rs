@@ -9,6 +9,7 @@ struct SbomSummary {
     tool_name: String,
     spec_version: String,
     total_components: usize,
+    unresolved_components: usize,
     unique_purls: HashSet<String>,
     ecosystems: HashMap<String, usize>,
     ecosystem_unique_purls: HashMap<String, HashSet<String>>,
@@ -27,11 +28,7 @@ fn is_valid_third_party_lib(comp: &Value) -> bool {
         return false;
     }
     let version = comp["version"].as_str().unwrap_or("").trim();
-    if version.is_empty()
-        || version == "0.0.0"
-        || version.eq_ignore_ascii_case("runtime")
-        || purl.ends_with("@0.0.0")
-    {
+    if version == "0.0.0" || version.eq_ignore_ascii_case("runtime") || purl.ends_with("@0.0.0") {
         return false;
     }
     true
@@ -116,6 +113,7 @@ fn analyze_sbom(path: &str) -> anyhow::Result<SbomSummary> {
     }
 
     let mut total_components = 0;
+    let mut unresolved_components = 0;
     let mut unique_purls = HashSet::new();
     let mut ecosystems: HashMap<String, usize> = HashMap::new();
     let mut ecosystem_unique_purls: HashMap<String, HashSet<String>> = HashMap::new();
@@ -125,6 +123,10 @@ fn analyze_sbom(path: &str) -> anyhow::Result<SbomSummary> {
             continue;
         }
         total_components += 1;
+        if comp["version"].as_str().unwrap_or("").trim().is_empty() {
+            unresolved_components += 1;
+            continue;
+        }
 
         if let Some(raw_purl) = comp["purl"].as_str() {
             let norm_purl = normalize_purl(raw_purl);
@@ -144,6 +146,7 @@ fn analyze_sbom(path: &str) -> anyhow::Result<SbomSummary> {
         tool_name,
         spec_version,
         total_components,
+        unresolved_components,
         unique_purls,
         ecosystems,
         ecosystem_unique_purls,
@@ -221,6 +224,10 @@ pub fn main() -> anyhow::Result<()> {
 
     let summary_a = analyze_sbom(&our_path)?;
     let summary_b = analyze_sbom(&comp_path)?;
+    println!(
+        "未解析版本组件（纳入记录总数，不参与精确 PURL 重合率）：A={}，B={}",
+        summary_a.unresolved_components, summary_b.unresolved_components
+    );
 
     // 计算集合交集与独有集
     let purls_a = &summary_a.unique_purls;
@@ -425,7 +432,7 @@ pub fn main() -> anyhow::Result<()> {
 
 ## 统计规则
 
-排除 `type=application`、空版本、`0.0.0` 及明显误作版本的 `runtime`；按 PURL 去重。PURL 比较去除 qualifier/subpath，并仅统一已知编码及 PyPI 包名写法。实例数是过滤后的组件记录数，未核实物理部署路径。过滤可能误排合法的 `0.0.0` 组件。
+排除 `type=application`、`0.0.0` 及明显误作版本的 `runtime`；未解析版本组件计入记录总数并单独统计，不参与精确版本 PURL 集合比较；其余按 PURL 去重。PURL 比较去除 qualifier/subpath，并仅统一已知编码及 PyPI 包名写法。实例数是过滤后的组件记录数，未核实物理部署路径。过滤可能误排合法的 `0.0.0` 组件。
 
 ## 汇总
 
@@ -433,6 +440,7 @@ pub fn main() -> anyhow::Result<()> {
 | --- | ---: | ---: |
 | CycloneDX 版本 | {spec_a} | {spec_b} |
 | 组件记录数 | {total_a} | {total_b} |
+| 版本未解析记录数 | {unresolved_a} | {unresolved_b} |
 | 去重 PURL | {unique_a} | {unique_b} |
 | 记录数差值 | {inst_diff:+} | — |
 | 目标生态相对重合率（交集 / 参照集合） | {overlap_supported} | 目标生态 {supp_b} 个 |
@@ -462,6 +470,8 @@ pub fn main() -> anyhow::Result<()> {
         comp_file = comp_path,
         spec_a = summary_a.spec_version,
         spec_b = summary_b.spec_version,
+        unresolved_a = summary_a.unresolved_components,
+        unresolved_b = summary_b.unresolved_components,
         total_a = summary_a.total_components,
         total_b = summary_b.total_components,
         inst_diff = inst_diff,

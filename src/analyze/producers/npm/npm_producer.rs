@@ -12,20 +12,9 @@ use crate::utils::tree_sitter::tree::{build_location_from_offsets, get_tree};
 #[derive(Clone, Default)]
 pub struct NpmProducer {}
 
-/// NPM SemVer 范围清洗器
+/// Keep the complete declaration; constraints must never be reduced to their lower bound.
 fn sanitize_semver_range(raw: &str) -> &str {
-    let s = raw.trim();
-    let cleaned = s.trim_start_matches(['^', '~', '>', '<', '=', ' ']);
-
-    if cleaned == "*"
-        || cleaned.eq_ignore_ascii_case("x")
-        || cleaned.starts_with("workspace:")
-        || cleaned.starts_with("catalog:")
-    {
-        ""
-    } else {
-        cleaned
-    }
+    raw.trim()
 }
 
 impl SbomProducer for NpmProducer {
@@ -210,6 +199,11 @@ impl NpmProducer {
                             .or_else(|| Some(clean_ver.to_string()))
                     };
 
+                    let (resolved_ver_opt, requirement) =
+                        crate::utils::version_spec::manifest_version(
+                            resolved_ver_opt.as_deref(),
+                            "npm",
+                        );
                     let purl_str = match &resolved_ver_opt {
                         Some(v) if !v.is_empty() => format!("pkg:npm/{}@{}", name, v),
                         _ => format!("pkg:npm/{}", name),
@@ -227,6 +221,7 @@ impl NpmProducer {
                     let leaf = DependencyBuilder::default()
                         .name(name.clone())
                         .version(resolved_ver_opt)
+                        .version_requirement(requirement)
                         .r#type(DependencyType::Library)
                         .purl(valid_purl)
                         .instance_id(child_id)
@@ -278,13 +273,13 @@ mod tests {
             .find_dependencies(&[d], &config)
             .expect("Failed to parse package.json");
 
-        assert!(deps
-            .iter()
-            .any(|d| d.name == "react" && d.version.as_deref() == Some("18.0.0")));
+        assert!(deps.iter().any(|d| d.name == "react"
+            && d.version.is_none()
+            && d.version_requirement.as_deref() == Some("^18.0.0")));
 
-        assert!(deps
-            .iter()
-            .any(|d| d.name == "fsevents" && d.version.as_deref() == Some("2.3.2")));
+        assert!(deps.iter().any(|d| d.name == "fsevents"
+            && d.version.is_none()
+            && d.version_requirement.as_deref() == Some("~2.3.2")));
 
         assert!(!deps.iter().any(|d| d.name == "git-dep"));
 

@@ -125,7 +125,7 @@ const TREE_SITTER_QUERY_DEPENDENCY_MANAGEMENT: &str = r###"
                                     )
                                     (content)@value
                                  )
-                                 (CharData)
+                                 (CharData)?
                              )+
                            )
                            (#eq? @name "dependency")
@@ -164,7 +164,7 @@ const TREE_SITTER_QUERY_DEPENDENCIES: &str = r###"
                             )
                             (content)@value
                          )
-                         (CharData)
+                         (CharData)?
                      )+
                    )
                    (#eq? @name "dependency")

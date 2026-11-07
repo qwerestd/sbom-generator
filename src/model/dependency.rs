@@ -79,6 +79,10 @@ pub struct Dependency {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
 
+    #[builder(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version_requirement: Option<String>,
+
     #[allow(dead_code)]
     #[builder(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -170,6 +174,7 @@ impl DependencyBuilder {
             r#type: self.r#type.unwrap_or_default(),
             name,
             version: self.version.clone().unwrap_or_default(),
+            version_requirement: self.version_requirement.clone().unwrap_or_default(),
             license: self.license.clone().unwrap_or_default(),
             purl: clean_purl,
             instance_id: final_id, // 👈 干净合规的唯一身份证号优雅入库

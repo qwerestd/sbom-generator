@@ -118,10 +118,10 @@ impl PypiProducer {
             let normalized_name = pep503_normalize(&raw_name);
 
             // 利用 Maven 推广的分层上下文决议版本（支持 ${VAR} 插值 + constraints.txt 版本补全）
-            let resolved_ver = context
-                .resolve_version(&normalized_name, raw_ver_opt.as_deref())
-                .filter(|v| !v.contains('*'));
+            let resolved_ver = context.resolve_version(&normalized_name, raw_ver_opt.as_deref());
 
+            let (resolved_ver, requirement) =
+                crate::utils::version_spec::manifest_version(resolved_ver.as_deref(), "pypi");
             let purl_str = match &resolved_ver {
                 Some(v) => format!("pkg:pypi/{}@{}", normalized_name, v),
                 None => format!("pkg:pypi/{}", normalized_name),
@@ -139,6 +139,7 @@ impl PypiProducer {
                 DependencyBuilder::default()
                     .name(raw_name)
                     .version(resolved_ver)
+                    .version_requirement(requirement)
                     .r#type(DependencyType::Library)
                     .purl(valid_purl)
                     .instance_id(child_id)
@@ -185,7 +186,12 @@ impl PypiProducer {
                 if let Some(caps) = PYPI_LINE_RE.captures(clean) {
                     if let (Some(name_m), Some(ver_m)) = (caps.get(1), caps.get(3)) {
                         let norm = pep503_normalize(name_m.as_str());
-                        context.insert_managed_version(norm, ver_m.as_str().to_string());
+                        context.insert_managed_version(
+                            norm,
+                            clean[caps.get(2).map_or(ver_m.start(), |m| m.start())..]
+                                .trim()
+                                .to_string(),
+                        );
                     }
                 }
             }
@@ -267,7 +273,14 @@ impl PypiProducer {
 
             if let Some(caps) = PYPI_LINE_RE.captures(clean_line) {
                 let raw_name = caps.get(1).unwrap().as_str().to_string();
-                let raw_ver = caps.get(3).map(|m| m.as_str().to_string());
+                let raw_ver = caps.get(2).map(|m| {
+                    clean_line[m.start()..]
+                        .split(';')
+                        .next()
+                        .unwrap_or("")
+                        .trim()
+                        .to_string()
+                });
 
                 let loc = build_location_from_offsets(
                     current_file,
@@ -302,19 +315,17 @@ mod tests {
             .find_dependencies(&[d], &config)
             .expect("Failed to parse requirements.txt");
 
-        assert!(deps
-            .iter()
-            .any(|d| d.name == "Django" && d.version.as_deref() == Some("4.2.1")));
+        assert!(deps.iter().any(|d| d.name == "Django"
+            && d.version.is_none()
+            && d.version_requirement.as_deref() == Some("~= 4.2.1")));
 
-        assert!(deps
-            .iter()
-            .any(|d| d.name == "numpy" && d.version.as_deref() == Some("1.24.0")));
+        assert!(deps.iter().any(|d| d.name == "numpy"
+            && d.version.is_none()
+            && d.version_requirement.as_deref() == Some("!=   1.24.0")));
 
-        assert!(
-            deps.iter()
-                .any(|d| d.name == "my_custom-pkg.ext"
-                    && d.version.as_deref() == Some("1.0.0-alpha1"))
-        );
+        assert!(deps.iter().any(|d| d.name == "my_custom-pkg.ext"
+            && d.version.is_none()
+            && d.version_requirement.as_deref() == Some(">= 1.0.0-alpha1")));
 
         assert_eq!(
             deps.len(),

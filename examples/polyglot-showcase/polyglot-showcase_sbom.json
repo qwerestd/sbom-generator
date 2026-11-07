@@ -3,7 +3,7 @@
   "specVersion": "1.6",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-07T12:20:09Z",
+    "timestamp": "2026-11-07T18:38:31Z",
     "tools": [
       {
         "name": "sbom-generator",

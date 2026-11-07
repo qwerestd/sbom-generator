@@ -38,6 +38,19 @@ function comparisonContext() {
 }
 const component = purl => ({ type: 'library', name: 'component', version: '1.0', purl });
 
+test('unresolved components count toward totals and remain visible without matching pinned versions', () => {
+    const { c, elements } = comparisonContext();
+    c.sbomA = {components: [{name: '<range-demo>', type: 'library', purl: 'pkg:npm/demo',
+        properties: [{name: 'sbom:version:requirement', value: '^1.0.0'}]}]};
+    c.sbomB = {components: [component('pkg:npm/demo@1.0.0')]};
+    c.runBenchmarkComparison();
+    assert.equal(elements.get('kpi-instances-a').innerText, '1');
+    assert.equal(elements.get('kpi-target-coverage').innerText, '0.00%');
+    assert.ok(elements.get('kpi-instances-diff').innerText.includes('A:0/1'));
+    assert.ok(elements.get('unresolved-tbody').innerHTML.includes('&lt;range-demo&gt;'));
+    assert.ok(elements.get('unresolved-tbody').innerHTML.includes('^1.0.0'));
+});
+
 test('empty reference is N/A and target Jaccard excludes unsupported ecosystems', () => {
     const { c, elements } = comparisonContext();
     c.sbomA = { components: [component('pkg:npm/a@1.0'), component('pkg:gem/extra@1.0')] };

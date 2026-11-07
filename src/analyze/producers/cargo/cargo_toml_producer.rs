@@ -140,9 +140,14 @@ impl CargoTomlProducer {
                     let resolved_ver = workspace_ctx
                         .resolve_version(&real_name, raw_ver_opt.as_deref())
                         .or_else(|| workspace_ctx.resolve_version(dep_key, raw_ver_opt.as_deref()))
+                        .or_else(|| raw_ver_opt.clone())
                         .map(|v| Self::sanitize_cargo_ver(&v))
                         .filter(|v| !v.is_empty());
 
+                    let (resolved_ver, requirement) = crate::utils::version_spec::manifest_version(
+                        resolved_ver.as_deref(),
+                        "cargo",
+                    );
                     let purl_str = match &resolved_ver {
                         Some(v) => format!("pkg:cargo/{}@{}", real_name, v),
                         None => format!("pkg:cargo/{}", real_name),
@@ -159,6 +164,7 @@ impl CargoTomlProducer {
                     if let Ok(dep) = DependencyBuilder::default()
                         .name(real_name)
                         .version(resolved_ver)
+                        .version_requirement(requirement)
                         .r#type(DependencyType::Library)
                         .purl(valid_purl)
                         .instance_id(child_id)
@@ -219,9 +225,7 @@ impl CargoTomlProducer {
     }
 
     fn sanitize_cargo_ver(raw: &str) -> String {
-        raw.trim()
-            .trim_start_matches(['^', '~', '=', '>', '<', ' '])
-            .to_string()
+        raw.trim().to_string()
     }
 }
 
@@ -268,11 +272,11 @@ anyhow = "^1.0.89"
         assert_eq!(deps.len(), 4);
         let root = deps.iter().find(|d| d.name == "my-api-crate").unwrap();
         assert_eq!(root.version.as_deref(), Some("2.1.0"));
-        assert!(deps
-            .iter()
-            .any(|d| d.name == "tokio" && d.version.as_deref() == Some("1.37.0")));
-        assert!(deps
-            .iter()
-            .any(|d| d.name == "serde" && d.version.as_deref() == Some("1.0.210")));
+        assert!(deps.iter().any(|d| d.name == "tokio"
+            && d.version.is_none()
+            && d.version_requirement.as_deref() == Some("1.37.0")));
+        assert!(deps.iter().any(|d| d.name == "serde"
+            && d.version.is_none()
+            && d.version_requirement.as_deref() == Some("1.0.210")));
     }
 }

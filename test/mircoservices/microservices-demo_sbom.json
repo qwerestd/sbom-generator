@@ -3,7 +3,7 @@
   "specVersion": "1.6",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-05T12:22:07Z",
+    "timestamp": "2026-11-07T18:31:11Z",
     "tools": [
       {
         "name": "sbom-generator",
@@ -19862,32 +19862,32 @@
       "version": "0.3.1"
     },
     {
-      "bom-ref": "pkg:pypi/langgraph@1.0.10rc1?package-id=df4ad90231a1e634",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
+      "bom-ref": "pkg:pypi/langgraph?package-id=7beb67bffa43f967",
       "name": "langgraph",
       "properties": [
+        {
+          "name": "sbom:version:requirement",
+          "value": "==1.0.10rc1"
+        },
+        {
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
         {
           "name": "syft:location:0:path",
           "value": "src/shoppingassistantservice/requirements.txt"
         },
         {
           "name": "osv:vulnerabilities",
-          "value": "GHSA-g48c-2wqr-h844"
+          "value": "GHSA-3fx2-cqw9-xr3c, GHSA-g48c-2wqr-h844, PYSEC-2026-2194, PYSEC-2026-83"
         },
         {
           "name": "sbom:runtime:status",
           "value": "dormant"
         }
       ],
-      "purl": "pkg:pypi/langgraph@1.0.10rc1",
-      "type": "library",
-      "version": "1.0.10rc1"
+      "purl": "pkg:pypi/langgraph",
+      "type": "library"
     },
     {
       "bom-ref": "pkg:pypi/langsmith@0.6.3?package-id=bbd1f8273731a905",
@@ -20146,40 +20146,17 @@
       "version": "1.39.1"
     },
     {
-      "bom-ref": "pkg:pypi/opentelemetry-distro@0.60b1?package-id=4bfae267684457c8",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
+      "bom-ref": "pkg:pypi/opentelemetry-distro?package-id=0df1fc3c38c61942",
       "name": "opentelemetry-distro",
       "properties": [
         {
-          "name": "syft:location:0:path",
-          "value": "src/recommendationservice/requirements.txt"
+          "name": "sbom:version:requirement",
+          "value": "==0.60b1"
         },
         {
-          "name": "sbom:runtime:status",
-          "value": "dormant"
-        }
-      ],
-      "purl": "pkg:pypi/opentelemetry-distro@0.60b1",
-      "type": "library",
-      "version": "0.60b1"
-    },
-    {
-      "bom-ref": "pkg:pypi/opentelemetry-distro@0.60b1?package-id=a2e0fa82875cfe33",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "opentelemetry-distro",
-      "properties": [
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
         {
           "name": "syft:location:0:path",
           "value": "src/emailservice/requirements.txt"
@@ -20189,9 +20166,32 @@
           "value": "dormant"
         }
       ],
-      "purl": "pkg:pypi/opentelemetry-distro@0.60b1",
-      "type": "library",
-      "version": "0.60b1"
+      "purl": "pkg:pypi/opentelemetry-distro",
+      "type": "library"
+    },
+    {
+      "bom-ref": "pkg:pypi/opentelemetry-distro?package-id=ae77dc9afe8262ee",
+      "name": "opentelemetry-distro",
+      "properties": [
+        {
+          "name": "sbom:version:requirement",
+          "value": "==0.60b1"
+        },
+        {
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "src/recommendationservice/requirements.txt"
+        },
+        {
+          "name": "sbom:runtime:status",
+          "value": "dormant"
+        }
+      ],
+      "purl": "pkg:pypi/opentelemetry-distro",
+      "type": "library"
     },
     {
       "bom-ref": "pkg:pypi/opentelemetry-exporter-otlp-proto-common@1.39.1?package-id=b38ddd0e29cf9d8f",
@@ -20290,40 +20290,17 @@
       "version": "1.39.1"
     },
     {
-      "bom-ref": "pkg:pypi/opentelemetry-instrumentation-grpc@0.60b1?package-id=435273cb543a3688",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
+      "bom-ref": "pkg:pypi/opentelemetry-instrumentation-grpc?package-id=3f3243af78085610",
       "name": "opentelemetry-instrumentation-grpc",
       "properties": [
         {
-          "name": "syft:location:0:path",
-          "value": "src/emailservice/requirements.txt"
+          "name": "sbom:version:requirement",
+          "value": "==0.60b1"
         },
         {
-          "name": "sbom:runtime:status",
-          "value": "loaded"
-        }
-      ],
-      "purl": "pkg:pypi/opentelemetry-instrumentation-grpc@0.60b1",
-      "type": "library",
-      "version": "0.60b1"
-    },
-    {
-      "bom-ref": "pkg:pypi/opentelemetry-instrumentation-grpc@0.60b1?package-id=677646dae05da56b",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "opentelemetry-instrumentation-grpc",
-      "properties": [
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
         {
           "name": "syft:location:0:path",
           "value": "src/recommendationservice/requirements.txt"
@@ -20333,57 +20310,88 @@
           "value": "loaded"
         }
       ],
-      "purl": "pkg:pypi/opentelemetry-instrumentation-grpc@0.60b1",
-      "type": "library",
-      "version": "0.60b1"
+      "purl": "pkg:pypi/opentelemetry-instrumentation-grpc",
+      "type": "library"
     },
     {
-      "bom-ref": "pkg:pypi/opentelemetry-instrumentation@0.60b1?package-id=4f1b265355cb03b8",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "opentelemetry-instrumentation",
+      "bom-ref": "pkg:pypi/opentelemetry-instrumentation-grpc?package-id=ff256861728a70fa",
+      "name": "opentelemetry-instrumentation-grpc",
       "properties": [
+        {
+          "name": "sbom:version:requirement",
+          "value": "==0.60b1"
+        },
+        {
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
         {
           "name": "syft:location:0:path",
           "value": "src/emailservice/requirements.txt"
         },
         {
           "name": "sbom:runtime:status",
-          "value": "dormant"
+          "value": "loaded"
         }
       ],
-      "purl": "pkg:pypi/opentelemetry-instrumentation@0.60b1",
-      "type": "library",
-      "version": "0.60b1"
+      "purl": "pkg:pypi/opentelemetry-instrumentation-grpc",
+      "type": "library"
     },
     {
-      "bom-ref": "pkg:pypi/opentelemetry-instrumentation@0.60b1?package-id=b5fdb1719f73c957",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
+      "bom-ref": "pkg:pypi/opentelemetry-instrumentation?package-id=65caf8dc15497f12",
       "name": "opentelemetry-instrumentation",
       "properties": [
         {
+          "name": "sbom:version:requirement",
+          "value": "==0.60b1"
+        },
+        {
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
+        {
           "name": "syft:location:0:path",
           "value": "src/recommendationservice/requirements.txt"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "GHSA-5rv5-6h4r-h22v, PYSEC-2026-1752"
         },
         {
           "name": "sbom:runtime:status",
           "value": "dormant"
         }
       ],
-      "purl": "pkg:pypi/opentelemetry-instrumentation@0.60b1",
-      "type": "library",
-      "version": "0.60b1"
+      "purl": "pkg:pypi/opentelemetry-instrumentation",
+      "type": "library"
+    },
+    {
+      "bom-ref": "pkg:pypi/opentelemetry-instrumentation?package-id=92f48b616cd6d58e",
+      "name": "opentelemetry-instrumentation",
+      "properties": [
+        {
+          "name": "sbom:version:requirement",
+          "value": "==0.60b1"
+        },
+        {
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "src/emailservice/requirements.txt"
+        },
+        {
+          "name": "osv:vulnerabilities",
+          "value": "GHSA-5rv5-6h4r-h22v, PYSEC-2026-1752"
+        },
+        {
+          "name": "sbom:runtime:status",
+          "value": "dormant"
+        }
+      ],
+      "purl": "pkg:pypi/opentelemetry-instrumentation",
+      "type": "library"
     },
     {
       "bom-ref": "pkg:pypi/opentelemetry-proto@1.39.1?package-id=3aa4b524e54cea2c",
@@ -20482,40 +20490,17 @@
       "version": "1.39.1"
     },
     {
-      "bom-ref": "pkg:pypi/opentelemetry-semantic-conventions@0.60b1?package-id=38555f998ac8fae8",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
+      "bom-ref": "pkg:pypi/opentelemetry-semantic-conventions?package-id=a6c2352c5e1b2273",
       "name": "opentelemetry-semantic-conventions",
       "properties": [
         {
-          "name": "syft:location:0:path",
-          "value": "src/emailservice/requirements.txt"
+          "name": "sbom:version:requirement",
+          "value": "==0.60b1"
         },
         {
-          "name": "sbom:runtime:status",
-          "value": "dormant"
-        }
-      ],
-      "purl": "pkg:pypi/opentelemetry-semantic-conventions@0.60b1",
-      "type": "library",
-      "version": "0.60b1"
-    },
-    {
-      "bom-ref": "pkg:pypi/opentelemetry-semantic-conventions@0.60b1?package-id=ffeff2a26b3afabb",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "name": "opentelemetry-semantic-conventions",
-      "properties": [
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
         {
           "name": "syft:location:0:path",
           "value": "src/recommendationservice/requirements.txt"
@@ -20525,9 +20510,32 @@
           "value": "dormant"
         }
       ],
-      "purl": "pkg:pypi/opentelemetry-semantic-conventions@0.60b1",
-      "type": "library",
-      "version": "0.60b1"
+      "purl": "pkg:pypi/opentelemetry-semantic-conventions",
+      "type": "library"
+    },
+    {
+      "bom-ref": "pkg:pypi/opentelemetry-semantic-conventions?package-id=f16338e13f62d6ae",
+      "name": "opentelemetry-semantic-conventions",
+      "properties": [
+        {
+          "name": "sbom:version:requirement",
+          "value": "==0.60b1"
+        },
+        {
+          "name": "sbom:version:status",
+          "value": "unresolved"
+        },
+        {
+          "name": "syft:location:0:path",
+          "value": "src/emailservice/requirements.txt"
+        },
+        {
+          "name": "sbom:runtime:status",
+          "value": "dormant"
+        }
+      ],
+      "purl": "pkg:pypi/opentelemetry-semantic-conventions",
+      "type": "library"
     },
     {
       "bom-ref": "pkg:pypi/orjson@3.11.6?package-id=d71a12ad4e85ef9e",
@@ -26397,14 +26405,14 @@
         "pkg:pypi/jinja2@3.1.6?package-id=8d4607c5d6faec33",
         "pkg:pypi/markupsafe@2.1.3?package-id=91d832c0b8eb947a",
         "pkg:pypi/opentelemetry-api@1.39.1?package-id=96f50a4002ee6835",
-        "pkg:pypi/opentelemetry-distro@0.60b1?package-id=a2e0fa82875cfe33",
+        "pkg:pypi/opentelemetry-distro?package-id=0df1fc3c38c61942",
         "pkg:pypi/opentelemetry-exporter-otlp-proto-common@1.39.1?package-id=b38ddd0e29cf9d8f",
         "pkg:pypi/opentelemetry-exporter-otlp-proto-grpc@1.39.1?package-id=e0ab2104b6cdcdbf",
-        "pkg:pypi/opentelemetry-instrumentation@0.60b1?package-id=4f1b265355cb03b8",
-        "pkg:pypi/opentelemetry-instrumentation-grpc@0.60b1?package-id=435273cb543a3688",
+        "pkg:pypi/opentelemetry-instrumentation?package-id=92f48b616cd6d58e",
+        "pkg:pypi/opentelemetry-instrumentation-grpc?package-id=ff256861728a70fa",
         "pkg:pypi/opentelemetry-proto@1.39.1?package-id=6814f61f8630e252",
         "pkg:pypi/opentelemetry-sdk@1.39.1?package-id=a88771fe920f2471",
-        "pkg:pypi/opentelemetry-semantic-conventions@0.60b1?package-id=38555f998ac8fae8",
+        "pkg:pypi/opentelemetry-semantic-conventions?package-id=f16338e13f62d6ae",
         "pkg:pypi/packaging@25.0?package-id=2301b58e7710cd9d",
         "pkg:pypi/proto-plus@1.27.0?package-id=110c907d98c4ab7b",
         "pkg:pypi/protobuf@6.33.5?package-id=bc042e264444a666",
@@ -26607,7 +26615,7 @@
       "ref": "pkg:pypi/langgraph-sdk@0.3.1?package-id=779b4303bf63c651"
     },
     {
-      "ref": "pkg:pypi/langgraph@1.0.10rc1?package-id=df4ad90231a1e634"
+      "ref": "pkg:pypi/langgraph?package-id=7beb67bffa43f967"
     },
     {
       "ref": "pkg:pypi/langsmith@0.6.3?package-id=bbd1f8273731a905"
@@ -26681,10 +26689,10 @@
       "ref": "pkg:pypi/opentelemetry-api@1.39.1?package-id=c4d70e59b070a654"
     },
     {
-      "ref": "pkg:pypi/opentelemetry-distro@0.60b1?package-id=4bfae267684457c8"
+      "ref": "pkg:pypi/opentelemetry-distro?package-id=0df1fc3c38c61942"
     },
     {
-      "ref": "pkg:pypi/opentelemetry-distro@0.60b1?package-id=a2e0fa82875cfe33"
+      "ref": "pkg:pypi/opentelemetry-distro?package-id=ae77dc9afe8262ee"
     },
     {
       "ref": "pkg:pypi/opentelemetry-exporter-otlp-proto-common@1.39.1?package-id=b38ddd0e29cf9d8f"
@@ -26699,16 +26707,16 @@
       "ref": "pkg:pypi/opentelemetry-exporter-otlp-proto-grpc@1.39.1?package-id=e0ab2104b6cdcdbf"
     },
     {
-      "ref": "pkg:pypi/opentelemetry-instrumentation-grpc@0.60b1?package-id=435273cb543a3688"
+      "ref": "pkg:pypi/opentelemetry-instrumentation-grpc?package-id=3f3243af78085610"
     },
     {
-      "ref": "pkg:pypi/opentelemetry-instrumentation-grpc@0.60b1?package-id=677646dae05da56b"
+      "ref": "pkg:pypi/opentelemetry-instrumentation-grpc?package-id=ff256861728a70fa"
     },
     {
-      "ref": "pkg:pypi/opentelemetry-instrumentation@0.60b1?package-id=4f1b265355cb03b8"
+      "ref": "pkg:pypi/opentelemetry-instrumentation?package-id=65caf8dc15497f12"
     },
     {
-      "ref": "pkg:pypi/opentelemetry-instrumentation@0.60b1?package-id=b5fdb1719f73c957"
+      "ref": "pkg:pypi/opentelemetry-instrumentation?package-id=92f48b616cd6d58e"
     },
     {
       "ref": "pkg:pypi/opentelemetry-proto@1.39.1?package-id=3aa4b524e54cea2c"
@@ -26723,10 +26731,10 @@
       "ref": "pkg:pypi/opentelemetry-sdk@1.39.1?package-id=a88771fe920f2471"
     },
     {
-      "ref": "pkg:pypi/opentelemetry-semantic-conventions@0.60b1?package-id=38555f998ac8fae8"
+      "ref": "pkg:pypi/opentelemetry-semantic-conventions?package-id=a6c2352c5e1b2273"
     },
     {
-      "ref": "pkg:pypi/opentelemetry-semantic-conventions@0.60b1?package-id=ffeff2a26b3afabb"
+      "ref": "pkg:pypi/opentelemetry-semantic-conventions?package-id=f16338e13f62d6ae"
     },
     {
       "ref": "pkg:pypi/orjson@3.11.6?package-id=d71a12ad4e85ef9e"
@@ -26849,14 +26857,14 @@
         "pkg:pypi/idna@3.7?package-id=3253d88c75465c38",
         "pkg:pypi/importlib-metadata@6.8.0?package-id=bf7a9ad3e6ae8180",
         "pkg:pypi/opentelemetry-api@1.39.1?package-id=c4d70e59b070a654",
-        "pkg:pypi/opentelemetry-distro@0.60b1?package-id=4bfae267684457c8",
+        "pkg:pypi/opentelemetry-distro?package-id=ae77dc9afe8262ee",
         "pkg:pypi/opentelemetry-exporter-otlp-proto-common@1.39.1?package-id=ff6b25756f59eb13",
         "pkg:pypi/opentelemetry-exporter-otlp-proto-grpc@1.39.1?package-id=db4d54ae37e3f0c4",
-        "pkg:pypi/opentelemetry-instrumentation@0.60b1?package-id=b5fdb1719f73c957",
-        "pkg:pypi/opentelemetry-instrumentation-grpc@0.60b1?package-id=677646dae05da56b",
+        "pkg:pypi/opentelemetry-instrumentation?package-id=65caf8dc15497f12",
+        "pkg:pypi/opentelemetry-instrumentation-grpc?package-id=3f3243af78085610",
         "pkg:pypi/opentelemetry-proto@1.39.1?package-id=3aa4b524e54cea2c",
         "pkg:pypi/opentelemetry-sdk@1.39.1?package-id=8da151deaf16d30a",
-        "pkg:pypi/opentelemetry-semantic-conventions@0.60b1?package-id=ffeff2a26b3afabb",
+        "pkg:pypi/opentelemetry-semantic-conventions?package-id=a6c2352c5e1b2273",
         "pkg:pypi/packaging@25.0?package-id=f8e9a37ba4e924bd",
         "pkg:pypi/proto-plus@1.27.0?package-id=12c0af07874e7abb",
         "pkg:pypi/protobuf@6.33.5?package-id=a2d86bfc16ca83fb",
@@ -26940,7 +26948,7 @@
         "pkg:pypi/langchain-google-alloydb-pg@0.13.0?package-id=c60091ed78ae70bb",
         "pkg:pypi/langchain-google-genai@4.1.2?package-id=1237f556059a86fd",
         "pkg:pypi/langchain-postgres@0.0.16?package-id=980b9538987c4bfa",
-        "pkg:pypi/langgraph@1.0.10rc1?package-id=df4ad90231a1e634",
+        "pkg:pypi/langgraph?package-id=7beb67bffa43f967",
         "pkg:pypi/langgraph-checkpoint@3.0.1?package-id=486eea4563c8d12c",
         "pkg:pypi/langgraph-prebuilt@1.0.8?package-id=f2f2117888cee0f8",
         "pkg:pypi/langgraph-sdk@0.3.1?package-id=779b4303bf63c651",
@@ -27174,10 +27182,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
         },
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
         },
         {
           "ref": "pkg:pypi/pyasn1@0.6.4?package-id=6c6a619521b036f7"
@@ -27243,6 +27251,27 @@
     {
       "affects": [
         {
+          "ref": "pkg:pypi/langgraph?package-id=7beb67bffa43f967"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-3fx2-cqw9-xr3c)",
+      "id": "GHSA-3fx2-cqw9-xr3c",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
           "ref": "pkg:pypi/pygments@2.19.2?package-id=449d37a9a1e9a9f6"
         }
       ],
@@ -27285,6 +27314,30 @@
     {
       "affects": [
         {
+          "ref": "pkg:pypi/opentelemetry-instrumentation?package-id=92f48b616cd6d58e"
+        },
+        {
+          "ref": "pkg:pypi/opentelemetry-instrumentation?package-id=65caf8dc15497f12"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-5rv5-6h4r-h22v)",
+      "id": "GHSA-5rv5-6h4r-h22v",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
           "ref": "pkg:pypi/python-socketio@5.13.0?package-id=3fadf468d1591f9b"
         }
       ],
@@ -27306,7 +27359,7 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/idna@3.7?package-id=3253d88c75465c38"
+          "ref": "pkg:pypi/idna@3.10?package-id=a89deb9a09164789"
         },
         {
           "ref": "pkg:pypi/idna@3.10?package-id=42509b79b9da966e"
@@ -27315,7 +27368,7 @@
           "ref": "pkg:pypi/idna@3.7?package-id=448d3e654177091b"
         },
         {
-          "ref": "pkg:pypi/idna@3.10?package-id=a89deb9a09164789"
+          "ref": "pkg:pypi/idna@3.7?package-id=3253d88c75465c38"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-65pc-fj4g-8rjx)",
@@ -27384,16 +27437,16 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/certifi@2024.7.4?package-id=8b01ebb39168294f"
-        },
-        {
-          "ref": "pkg:pypi/certifi@2025.8.3?package-id=bcc8e834ee2f04af"
-        },
-        {
           "ref": "pkg:pypi/certifi@2024.7.4?package-id=b77c7f271a4b0442"
         },
         {
           "ref": "pkg:pypi/certifi@2025.8.3?package-id=4aa93c010f618c2c"
+        },
+        {
+          "ref": "pkg:pypi/certifi@2024.7.4?package-id=8b01ebb39168294f"
+        },
+        {
+          "ref": "pkg:pypi/certifi@2025.8.3?package-id=bcc8e834ee2f04af"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-6q48-6c7w-9gw2)",
@@ -27522,10 +27575,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:npm/%40opentelemetry/core@1.0.0?package-id=ea3b22c8bfbb6258"
+          "ref": "pkg:npm/%40opentelemetry/core@1.0.0?package-id=a67a951fabfdbc93"
         },
         {
-          "ref": "pkg:npm/%40opentelemetry/core@1.0.0?package-id=a67a951fabfdbc93"
+          "ref": "pkg:npm/%40opentelemetry/core@1.0.0?package-id=ea3b22c8bfbb6258"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-8988-4f7v-96qf)",
@@ -27576,10 +27629,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
         },
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-8ppf-4f7h-5ppj)",
@@ -27621,10 +27674,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
         },
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
         },
         {
           "ref": "pkg:pypi/pyasn1@0.6.4?package-id=6c6a619521b036f7"
@@ -27690,13 +27743,13 @@
     {
       "affects": [
         {
+          "ref": "pkg:npm/protobufjs@6.11.4?package-id=8528eda4bde11299"
+        },
+        {
           "ref": "pkg:npm/protobufjs@7.5.9?package-id=8e5f37bafed1375a"
         },
         {
           "ref": "pkg:npm/protobufjs@7.5.9?package-id=7e6afa375961aecc"
-        },
-        {
-          "ref": "pkg:npm/protobufjs@6.11.4?package-id=8528eda4bde11299"
         },
         {
           "ref": "pkg:npm/protobufjs@6.11.4?package-id=70ec576f8e006ea4"
@@ -27741,10 +27794,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:npm/%40grpc/grpc-js@1.14.4?package-id=e2fe94dc74a1d918"
+          "ref": "pkg:npm/%40grpc/grpc-js@1.14.4?package-id=7396c44604c80efc"
         },
         {
-          "ref": "pkg:npm/%40grpc/grpc-js@1.14.4?package-id=7396c44604c80efc"
+          "ref": "pkg:npm/%40grpc/grpc-js@1.14.4?package-id=e2fe94dc74a1d918"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-f596-whhp-79r4)",
@@ -27786,10 +27839,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
         },
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
         },
         {
           "ref": "pkg:pypi/pyasn1@0.6.4?package-id=6c6a619521b036f7"
@@ -27834,7 +27887,7 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/langgraph@1.0.10rc1?package-id=df4ad90231a1e634"
+          "ref": "pkg:pypi/langgraph?package-id=7beb67bffa43f967"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-g48c-2wqr-h844)",
@@ -27855,10 +27908,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/werkzeug@3.1.6?package-id=eefa3ebdac7d0c70"
+          "ref": "pkg:pypi/werkzeug@3.1.6?package-id=923e18a685386c92"
         },
         {
-          "ref": "pkg:pypi/werkzeug@3.1.6?package-id=923e18a685386c92"
+          "ref": "pkg:pypi/werkzeug@3.1.6?package-id=eefa3ebdac7d0c70"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-g6x2-hccm-hh4m)",
@@ -27900,10 +27953,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/requests@2.32.5?package-id=8f275466ec96a710"
+          "ref": "pkg:pypi/requests@2.32.5?package-id=af59e01d2032850a"
         },
         {
-          "ref": "pkg:pypi/requests@2.32.5?package-id=af59e01d2032850a"
+          "ref": "pkg:pypi/requests@2.32.5?package-id=8f275466ec96a710"
         },
         {
           "ref": "pkg:pypi/requests@2.32.5?package-id=08428eb28f8f1969"
@@ -27981,10 +28034,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
         },
         {
-          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=5791d1216ad161ce"
+          "ref": "pkg:pypi/pyasn1@0.5.0?package-id=72860552bbbe9b5a"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-hm4w-wwcw-mr6r)",
@@ -28074,10 +28127,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:npm/%40grpc/grpc-js@1.14.4?package-id=e2fe94dc74a1d918"
+          "ref": "pkg:npm/%40grpc/grpc-js@1.14.4?package-id=7396c44604c80efc"
         },
         {
-          "ref": "pkg:npm/%40grpc/grpc-js@1.14.4?package-id=7396c44604c80efc"
+          "ref": "pkg:npm/%40grpc/grpc-js@1.14.4?package-id=e2fe94dc74a1d918"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-m9gg-hp2v-232j)",
@@ -28380,22 +28433,16 @@
     {
       "affects": [
         {
-          "ref": "pkg:npm/uuid@8.3.2?package-id=812ac0cd70fcc828"
+          "ref": "pkg:npm/uuid@9.0.1?package-id=5b9edfe537d4b719"
         },
         {
-          "ref": "pkg:npm/uuid@8.3.2?package-id=2b35d30832cc1b24"
+          "ref": "pkg:npm/uuid@8.3.2?package-id=812ac0cd70fcc828"
         },
         {
           "ref": "pkg:npm/uuid@9.0.1?package-id=23aa2c9aa3456dff"
         },
         {
-          "ref": "pkg:npm/uuid@9.0.1?package-id=7bb82cda572ad950"
-        },
-        {
-          "ref": "pkg:npm/uuid@8.3.2?package-id=1fc119591525f1fb"
-        },
-        {
-          "ref": "pkg:npm/uuid@9.0.1?package-id=28e8026f3e83c076"
+          "ref": "pkg:npm/uuid@8.3.2?package-id=2b35d30832cc1b24"
         },
         {
           "ref": "pkg:npm/uuid@8.3.2?package-id=f5ce4797df4ca397"
@@ -28404,7 +28451,13 @@
           "ref": "pkg:npm/uuid@9.0.1?package-id=4afba7393f9cdaf1"
         },
         {
-          "ref": "pkg:npm/uuid@9.0.1?package-id=5b9edfe537d4b719"
+          "ref": "pkg:npm/uuid@9.0.1?package-id=7bb82cda572ad950"
+        },
+        {
+          "ref": "pkg:npm/uuid@9.0.1?package-id=28e8026f3e83c076"
+        },
+        {
+          "ref": "pkg:npm/uuid@8.3.2?package-id=1fc119591525f1fb"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GHSA-w5hq-g745-h8pq)",
@@ -28473,13 +28526,13 @@
     {
       "affects": [
         {
-          "ref": "pkg:golang/golang.org/x/crypto@v0.57.0?package-id=c04c23533aca9dcb"
-        },
-        {
           "ref": "pkg:golang/golang.org/x/crypto@v0.55.0?package-id=ed2133cdbb3f2caa"
         },
         {
           "ref": "pkg:golang/golang.org/x/crypto@v0.55.0?package-id=54effd84c04120d9"
+        },
+        {
+          "ref": "pkg:golang/golang.org/x/crypto@v0.57.0?package-id=c04c23533aca9dcb"
         },
         {
           "ref": "pkg:golang/golang.org/x/crypto@v0.55.0?package-id=f0fc0b9d7edb5d5a"
@@ -28560,13 +28613,13 @@
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=2ee2aaf94835b712"
         },
         {
+          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
+        },
+        {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=06434f5dd28c316e"
         },
         {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=d3c5c8cd0d68aa89"
-        },
-        {
-          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GO-2026-6603)",
@@ -28590,13 +28643,13 @@
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=2ee2aaf94835b712"
         },
         {
+          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
+        },
+        {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=06434f5dd28c316e"
         },
         {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=d3c5c8cd0d68aa89"
-        },
-        {
-          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GO-2026-6610)",
@@ -28620,13 +28673,13 @@
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=2ee2aaf94835b712"
         },
         {
+          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
+        },
+        {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=06434f5dd28c316e"
         },
         {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=d3c5c8cd0d68aa89"
-        },
-        {
-          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GO-2026-6611)",
@@ -28650,13 +28703,13 @@
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=2ee2aaf94835b712"
         },
         {
+          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
+        },
+        {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=06434f5dd28c316e"
         },
         {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=d3c5c8cd0d68aa89"
-        },
-        {
-          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GO-2026-6612)",
@@ -28680,17 +28733,41 @@
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=2ee2aaf94835b712"
         },
         {
+          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
+        },
+        {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=06434f5dd28c316e"
         },
         {
           "ref": "pkg:golang/golang.org/x/net@v0.58.0?package-id=d3c5c8cd0d68aa89"
-        },
-        {
-          "ref": "pkg:golang/golang.org/x/net@v0.59.0?package-id=212ce77ae6e8860c"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (GO-2026-6617)",
       "id": "GO-2026-6617",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/opentelemetry-instrumentation?package-id=92f48b616cd6d58e"
+        },
+        {
+          "ref": "pkg:pypi/opentelemetry-instrumentation?package-id=65caf8dc15497f12"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2026-1752)",
+      "id": "PYSEC-2026-1752",
       "ratings": [
         {
           "method": "CVSSv3",
@@ -28749,7 +28826,7 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/idna@3.7?package-id=3253d88c75465c38"
+          "ref": "pkg:pypi/idna@3.10?package-id=a89deb9a09164789"
         },
         {
           "ref": "pkg:pypi/idna@3.10?package-id=42509b79b9da966e"
@@ -28758,7 +28835,7 @@
           "ref": "pkg:pypi/idna@3.7?package-id=448d3e654177091b"
         },
         {
-          "ref": "pkg:pypi/idna@3.10?package-id=a89deb9a09164789"
+          "ref": "pkg:pypi/idna@3.7?package-id=3253d88c75465c38"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2026-215)",
@@ -28821,10 +28898,31 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/requests@2.32.5?package-id=8f275466ec96a710"
-        },
+          "ref": "pkg:pypi/langgraph?package-id=7beb67bffa43f967"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2026-2194)",
+      "id": "PYSEC-2026-2194",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
         {
           "ref": "pkg:pypi/requests@2.32.5?package-id=af59e01d2032850a"
+        },
+        {
+          "ref": "pkg:pypi/requests@2.32.5?package-id=8f275466ec96a710"
         },
         {
           "ref": "pkg:pypi/requests@2.32.5?package-id=08428eb28f8f1969"
@@ -29145,10 +29243,10 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/werkzeug@3.1.6?package-id=eefa3ebdac7d0c70"
+          "ref": "pkg:pypi/werkzeug@3.1.6?package-id=923e18a685386c92"
         },
         {
-          "ref": "pkg:pypi/werkzeug@3.1.6?package-id=923e18a685386c92"
+          "ref": "pkg:pypi/werkzeug@3.1.6?package-id=eefa3ebdac7d0c70"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2026-4312)",
@@ -29169,16 +29267,16 @@
     {
       "affects": [
         {
-          "ref": "pkg:pypi/certifi@2024.7.4?package-id=8b01ebb39168294f"
-        },
-        {
-          "ref": "pkg:pypi/certifi@2025.8.3?package-id=bcc8e834ee2f04af"
-        },
-        {
           "ref": "pkg:pypi/certifi@2024.7.4?package-id=b77c7f271a4b0442"
         },
         {
           "ref": "pkg:pypi/certifi@2025.8.3?package-id=4aa93c010f618c2c"
+        },
+        {
+          "ref": "pkg:pypi/certifi@2024.7.4?package-id=8b01ebb39168294f"
+        },
+        {
+          "ref": "pkg:pypi/certifi@2025.8.3?package-id=bcc8e834ee2f04af"
         }
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2026-4320)",
@@ -29204,6 +29302,27 @@
       ],
       "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2026-4322)",
       "id": "PYSEC-2026-4322",
+      "ratings": [
+        {
+          "method": "CVSSv3",
+          "score": 7.5,
+          "severity": "high"
+        }
+      ],
+      "recommendation": "请关注上游官方安全补丁",
+      "source": {
+        "name": "OSV.dev Batch API",
+        "url": "https://osv.dev"
+      }
+    },
+    {
+      "affects": [
+        {
+          "ref": "pkg:pypi/langgraph?package-id=7beb67bffa43f967"
+        }
+      ],
+      "description": "OSV.dev 实时检出开源组件安全漏洞 (PYSEC-2026-83)",
+      "id": "PYSEC-2026-83",
       "ratings": [
         {
           "method": "CVSSv3",

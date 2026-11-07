@@ -3,7 +3,7 @@
   "specVersion": "1.6",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-05T12:22:08Z",
+    "timestamp": "2026-11-07T18:13:48Z",
     "tools": [
       {
         "name": "sbom-generator",
@@ -17,9 +17,7 @@
       "bom-ref": "pkg:cargo/actix-codec@0.5.4?package-id=0988067429b97f78",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-codec",
@@ -41,9 +39,7 @@
       "bom-ref": "pkg:cargo/actix-http@3.20.0?package-id=58a104db3e9ec14c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-http",
@@ -65,9 +61,7 @@
       "bom-ref": "pkg:cargo/actix-macros@0.2.5?package-id=4c037e2bcbd976d8",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-macros",
@@ -89,9 +83,7 @@
       "bom-ref": "pkg:cargo/actix-router@0.5.4?package-id=f077ba6d705cae5e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-router",
@@ -113,9 +105,7 @@
       "bom-ref": "pkg:cargo/actix-rt@2.15.0?package-id=2ccfdd6e1c2172f4",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-rt",
@@ -137,9 +127,7 @@
       "bom-ref": "pkg:cargo/actix-server@2.10.0?package-id=48204ef8cc6fbbe6",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-server",
@@ -161,9 +149,7 @@
       "bom-ref": "pkg:cargo/actix-service@2.0.3?package-id=09b0a24b0fb256d2",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-service",
@@ -185,9 +171,7 @@
       "bom-ref": "pkg:cargo/actix-tls@3.6.1?package-id=efb7d2f62bd6d659",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-tls",
@@ -209,9 +193,7 @@
       "bom-ref": "pkg:cargo/actix-utils@3.0.2?package-id=b5d6057786c4b5a9",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-utils",
@@ -233,9 +215,7 @@
       "bom-ref": "pkg:cargo/actix-web-codegen@4.5.0?package-id=4088d2ca7a4e8dba",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-web-codegen",
@@ -257,9 +237,7 @@
       "bom-ref": "pkg:cargo/actix-web@4.18.1?package-id=7371d0480190a2cb",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "actix-web",
@@ -281,9 +259,7 @@
       "bom-ref": "pkg:cargo/adler2@2.0.1?package-id=1bcd4dbaf95122a5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "adler2",
@@ -305,9 +281,7 @@
       "bom-ref": "pkg:cargo/aho-corasick@1.1.5?package-id=2f691de1b000dfa8",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "aho-corasick",
@@ -329,9 +303,7 @@
       "bom-ref": "pkg:cargo/alloc-no-stdlib@3.0.0?package-id=dee216469a9e847b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "alloc-no-stdlib",
@@ -353,9 +325,7 @@
       "bom-ref": "pkg:cargo/alloc-stdlib@0.3.0?package-id=011689ad16a98e0c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "alloc-stdlib",
@@ -377,9 +347,7 @@
       "bom-ref": "pkg:cargo/anstyle@1.0.14?package-id=13b4a2970181c55b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "anstyle",
@@ -401,9 +369,7 @@
       "bom-ref": "pkg:cargo/anyhow@1.0.104?package-id=bb54dfaec1f1ba92",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "anyhow",
@@ -425,9 +391,7 @@
       "bom-ref": "pkg:cargo/async-trait@0.1.92?package-id=86c48f19e0d20d19",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "async-trait",
@@ -449,9 +413,7 @@
       "bom-ref": "pkg:cargo/atomic-waker@1.1.2?package-id=62b8bd2b5dbb94bf",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "atomic-waker",
@@ -473,9 +435,7 @@
       "bom-ref": "pkg:cargo/awc@3.11.0?package-id=84f77cedc535201f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "awc",
@@ -497,9 +457,7 @@
       "bom-ref": "pkg:cargo/axum-core@0.5.6?package-id=a9bc1dcc40061b42",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "axum-core",
@@ -521,9 +479,7 @@
       "bom-ref": "pkg:cargo/axum@0.8.9?package-id=82d5b311e2191ea8",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "axum",
@@ -545,9 +501,7 @@
       "bom-ref": "pkg:cargo/base64@0.22.1?package-id=9cfe38904b2226b5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "base64",
@@ -569,9 +523,7 @@
       "bom-ref": "pkg:cargo/base64@0.23.1?package-id=4e63697626a51736",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "base64",
@@ -593,9 +545,7 @@
       "bom-ref": "pkg:cargo/bitflags@2.13.2?package-id=6456dd6021d08038",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "bitflags",
@@ -617,9 +567,7 @@
       "bom-ref": "pkg:cargo/block-buffer@0.12.1?package-id=19bb0eb9ac5c6f97",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "block-buffer",
@@ -641,9 +589,7 @@
       "bom-ref": "pkg:cargo/brotli-decompressor@6.2.0?package-id=34e89e12f7713680",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "brotli-decompressor",
@@ -665,9 +611,7 @@
       "bom-ref": "pkg:cargo/brotli@9.1.1?package-id=5a7f5507f3ad1114",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "brotli",
@@ -689,9 +633,7 @@
       "bom-ref": "pkg:cargo/bumpalo@3.20.3?package-id=5f959798f24a560a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "bumpalo",
@@ -737,9 +679,7 @@
       "bom-ref": "pkg:cargo/bytestring@1.5.1?package-id=6ba34f002b263a1f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "bytestring",
@@ -761,9 +701,7 @@
       "bom-ref": "pkg:cargo/cc@1.10.0?package-id=4740a66a6555e434",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "cc",
@@ -785,9 +723,7 @@
       "bom-ref": "pkg:cargo/cfg-if@1.0.5?package-id=b4ec75d7bcb107e9",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "cfg-if",
@@ -809,9 +745,7 @@
       "bom-ref": "pkg:cargo/chacha20@0.10.2?package-id=35fe9b5c5b34c9b7",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "chacha20",
@@ -833,9 +767,7 @@
       "bom-ref": "pkg:cargo/ciborium-io@0.2.2?package-id=6008a4834df3d8f0",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "ciborium-io",
@@ -857,9 +789,7 @@
       "bom-ref": "pkg:cargo/ciborium-ll@0.2.2?package-id=9a80196b03529a47",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "ciborium-ll",
@@ -881,9 +811,7 @@
       "bom-ref": "pkg:cargo/ciborium@0.2.2?package-id=adfa8cc79d35a5fd",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "ciborium",
@@ -905,9 +833,7 @@
       "bom-ref": "pkg:cargo/const-oid@0.10.2?package-id=d5d62ddc977861f4",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "const-oid",
@@ -929,9 +855,7 @@
       "bom-ref": "pkg:cargo/convert_case@0.10.0?package-id=1b173a23dc4c03f8",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "convert_case",
@@ -953,9 +877,7 @@
       "bom-ref": "pkg:cargo/cookie@0.16.2?package-id=0e6712c90744ad20",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "cookie",
@@ -977,9 +899,7 @@
       "bom-ref": "pkg:cargo/core_detect@1.0.0?package-id=4efe6ad7dc6d68b9",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "core_detect",
@@ -1001,9 +921,7 @@
       "bom-ref": "pkg:cargo/cpufeatures@0.3.1?package-id=5463d502cc7f390e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "cpufeatures",
@@ -1025,9 +943,7 @@
       "bom-ref": "pkg:cargo/crc32fast@1.5.3?package-id=b61936e0a4d12cdf",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "crc32fast",
@@ -1049,9 +965,7 @@
       "bom-ref": "pkg:cargo/crunchy@0.2.4?package-id=3ac3fa211757f52e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "crunchy",
@@ -1073,9 +987,7 @@
       "bom-ref": "pkg:cargo/crypto-common@0.2.2?package-id=5d7d5be96cc3bb3f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "crypto-common",
@@ -1097,9 +1009,7 @@
       "bom-ref": "pkg:cargo/datalogic-rs@5.4.0?package-id=d2b407b02fb13bd8",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "datalogic-rs",
@@ -1121,9 +1031,7 @@
       "bom-ref": "pkg:cargo/datavalue-rs@0.2.3?package-id=63591c3bb4b0fad4",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "datavalue-rs",
@@ -1145,9 +1053,7 @@
       "bom-ref": "pkg:cargo/deranged@0.5.9?package-id=0f14398fe5d95ce7",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "deranged",
@@ -1169,9 +1075,7 @@
       "bom-ref": "pkg:cargo/derive_more-impl@2.1.1?package-id=961466ba6028f3d9",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "derive_more-impl",
@@ -1193,9 +1097,7 @@
       "bom-ref": "pkg:cargo/derive_more@2.1.1?package-id=59ea786f64cdc685",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "derive_more",
@@ -1217,9 +1119,7 @@
       "bom-ref": "pkg:cargo/digest@0.11.3?package-id=67d5c5d3c4d76c7c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "digest",
@@ -1241,9 +1141,7 @@
       "bom-ref": "pkg:cargo/displaydoc@0.2.7?package-id=c8ee5a320d712e95",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "displaydoc",
@@ -1265,9 +1163,7 @@
       "bom-ref": "pkg:cargo/downcast@0.11.0?package-id=dddeab32ab9f4472",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "downcast",
@@ -1289,9 +1185,7 @@
       "bom-ref": "pkg:cargo/either@1.19.0?package-id=1fe78b6a5e1f399e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "either",
@@ -1313,9 +1207,7 @@
       "bom-ref": "pkg:cargo/encoding_rs@0.8.42?package-id=531e41c54000f7c0",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "encoding_rs",
@@ -1337,9 +1229,7 @@
       "bom-ref": "pkg:cargo/equivalent@1.0.3?package-id=d3af99590d27c3b4",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "equivalent",
@@ -1361,9 +1251,7 @@
       "bom-ref": "pkg:cargo/errno@0.3.14?package-id=2163cd8b34769446",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "errno",
@@ -1385,9 +1273,7 @@
       "bom-ref": "pkg:cargo/fast-float2@0.2.4?package-id=abe5b8fb79bef7f9",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "fast-float2",
@@ -1409,9 +1295,7 @@
       "bom-ref": "pkg:cargo/fastrand@2.5.0?package-id=8138cadb4c6e692b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "fastrand",
@@ -1433,9 +1317,7 @@
       "bom-ref": "pkg:cargo/find-msvc-tools@0.1.15?package-id=3ec8ec2dd856966d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "find-msvc-tools",
@@ -1457,9 +1339,7 @@
       "bom-ref": "pkg:cargo/fixedbitset@0.5.7?package-id=62386c433df50902",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "fixedbitset",
@@ -1481,9 +1361,7 @@
       "bom-ref": "pkg:cargo/flagd-evaluation-engine@0.1.0?package-id=fe004dd2680fa9a3",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "flagd-evaluation-engine",
@@ -1505,9 +1383,7 @@
       "bom-ref": "pkg:cargo/flate2@1.1.10?package-id=3b4dc62757c4259c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "flate2",
@@ -1529,9 +1405,7 @@
       "bom-ref": "pkg:cargo/fnv@1.0.7?package-id=c87e10f7f38fbd6e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "fnv",
@@ -1553,9 +1427,7 @@
       "bom-ref": "pkg:cargo/foldhash@0.1.5?package-id=d142063a3c0f63bd",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "foldhash",
@@ -1577,9 +1449,7 @@
       "bom-ref": "pkg:cargo/foldhash@0.2.0?package-id=0e73812e63f465e6",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "foldhash",
@@ -1601,9 +1471,7 @@
       "bom-ref": "pkg:cargo/form_urlencoded@1.2.2?package-id=5faaecdffbeebab7",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "form_urlencoded",
@@ -1625,9 +1493,7 @@
       "bom-ref": "pkg:cargo/fragile@2.1.0?package-id=f5d1fd4c74dad78d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "fragile",
@@ -1649,9 +1515,7 @@
       "bom-ref": "pkg:cargo/futures-channel@0.3.34?package-id=1174950fd3e9a0ce",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "futures-channel",
@@ -1673,9 +1537,7 @@
       "bom-ref": "pkg:cargo/futures-core@0.3.34?package-id=1e4436e7e6b4b843",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "futures-core",
@@ -1697,9 +1559,7 @@
       "bom-ref": "pkg:cargo/futures-executor@0.3.34?package-id=57bd5e68caf36210",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "futures-executor",
@@ -1721,9 +1581,7 @@
       "bom-ref": "pkg:cargo/futures-io@0.3.34?package-id=7e1995c074c0a5c1",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "futures-io",
@@ -1745,9 +1603,7 @@
       "bom-ref": "pkg:cargo/futures-macro@0.3.34?package-id=a9396f293724d70a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "futures-macro",
@@ -1769,9 +1625,7 @@
       "bom-ref": "pkg:cargo/futures-sink@0.3.34?package-id=1fc4b44c6f9ac594",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "futures-sink",
@@ -1793,9 +1647,7 @@
       "bom-ref": "pkg:cargo/futures-task@0.3.34?package-id=7ed72b3b9c3ac870",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "futures-task",
@@ -1817,9 +1669,7 @@
       "bom-ref": "pkg:cargo/futures-util@0.3.34?package-id=d746e2304434a47e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "futures-util",
@@ -1841,9 +1691,7 @@
       "bom-ref": "pkg:cargo/getrandom@0.2.17?package-id=6d7dc9d7052f5ec9",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "getrandom",
@@ -1865,9 +1713,7 @@
       "bom-ref": "pkg:cargo/getrandom@0.3.4?package-id=2bc1861c46a72566",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "getrandom",
@@ -1889,9 +1735,7 @@
       "bom-ref": "pkg:cargo/getrandom@0.4.3?package-id=08a0c6f5e74dc17a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "getrandom",
@@ -1913,9 +1757,7 @@
       "bom-ref": "pkg:cargo/h2@0.3.27?package-id=8d43930fed852592",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "h2",
@@ -1937,9 +1779,7 @@
       "bom-ref": "pkg:cargo/h2@0.4.20?package-id=d011dbb9feee6f74",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "h2",
@@ -1961,9 +1801,7 @@
       "bom-ref": "pkg:cargo/half@2.7.1?package-id=785ca8d521853608",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "half",
@@ -1985,9 +1823,7 @@
       "bom-ref": "pkg:cargo/hashbrown@0.15.5?package-id=6e3360d88c5a70a5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "hashbrown",
@@ -2009,9 +1845,7 @@
       "bom-ref": "pkg:cargo/hashbrown@0.17.1?package-id=dd250996ab27dcc4",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "hashbrown",
@@ -2033,9 +1867,7 @@
       "bom-ref": "pkg:cargo/heck@0.5.0?package-id=7d45cab6dfbdd668",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "heck",
@@ -2057,9 +1889,7 @@
       "bom-ref": "pkg:cargo/http-body-util@0.1.5?package-id=03067abd908f4d13",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "http-body-util",
@@ -2081,9 +1911,7 @@
       "bom-ref": "pkg:cargo/http-body@1.1.0?package-id=13229d83715c5498",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "http-body",
@@ -2105,9 +1933,7 @@
       "bom-ref": "pkg:cargo/http@0.2.12?package-id=40454937afb414e0",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "http",
@@ -2129,9 +1955,7 @@
       "bom-ref": "pkg:cargo/http@1.5.0?package-id=f8ceb2b5a9bc1e3b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "http",
@@ -2153,9 +1977,7 @@
       "bom-ref": "pkg:cargo/httparse@1.10.1?package-id=b901c450dc85a972",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "httparse",
@@ -2177,9 +1999,7 @@
       "bom-ref": "pkg:cargo/httpdate@1.0.3?package-id=cd02514c6fa69e67",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "httpdate",
@@ -2201,9 +2021,7 @@
       "bom-ref": "pkg:cargo/hybrid-array@0.4.15?package-id=c0b081481329d69a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "hybrid-array",
@@ -2225,9 +2043,7 @@
       "bom-ref": "pkg:cargo/hyper-timeout@0.5.2?package-id=8882192bb4ed0b52",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "hyper-timeout",
@@ -2249,9 +2065,7 @@
       "bom-ref": "pkg:cargo/hyper-util@0.1.21?package-id=e9fc75a58d65c02f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "hyper-util",
@@ -2297,9 +2111,7 @@
       "bom-ref": "pkg:cargo/icu_collections@2.4.0?package-id=ddcb4facefc7cacb",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "icu_collections",
@@ -2321,9 +2133,7 @@
       "bom-ref": "pkg:cargo/icu_locale_core@2.4.0?package-id=a367e287b3311a80",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "icu_locale_core",
@@ -2345,9 +2155,7 @@
       "bom-ref": "pkg:cargo/icu_normalizer@2.4.0?package-id=72ce7f8b4d2ababa",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "icu_normalizer",
@@ -2369,9 +2177,7 @@
       "bom-ref": "pkg:cargo/icu_normalizer_data@2.4.0?package-id=225554e0c69b2d40",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "icu_normalizer_data",
@@ -2393,9 +2199,7 @@
       "bom-ref": "pkg:cargo/icu_properties@2.4.0?package-id=f0ba0523a42acdd8",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "icu_properties",
@@ -2417,9 +2221,7 @@
       "bom-ref": "pkg:cargo/icu_properties_data@2.4.0?package-id=a01183912469d773",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "icu_properties_data",
@@ -2441,9 +2243,7 @@
       "bom-ref": "pkg:cargo/icu_provider@2.4.0?package-id=af73bca9f0b4ea73",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "icu_provider",
@@ -2465,9 +2265,7 @@
       "bom-ref": "pkg:cargo/idna@1.1.0?package-id=bfed8d48ee99f6ef",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "idna",
@@ -2489,9 +2287,7 @@
       "bom-ref": "pkg:cargo/idna_adapter@1.2.2?package-id=ef2f40d0335c4df1",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "idna_adapter",
@@ -2513,9 +2309,7 @@
       "bom-ref": "pkg:cargo/impl-more@0.3.10?package-id=fea69669d8f584c4",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "impl-more",
@@ -2537,9 +2331,7 @@
       "bom-ref": "pkg:cargo/indexmap@2.14.2?package-id=f62e8eb8ea53a881",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "indexmap",
@@ -2561,9 +2353,7 @@
       "bom-ref": "pkg:cargo/inotify-sys@0.1.8?package-id=065e66806e1a884c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "inotify-sys",
@@ -2585,9 +2375,7 @@
       "bom-ref": "pkg:cargo/inotify@0.11.5?package-id=c835fdd7c163f775",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "inotify",
@@ -2609,9 +2397,7 @@
       "bom-ref": "pkg:cargo/ipnet@2.12.2?package-id=46904ea4c7b227c6",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "ipnet",
@@ -2633,9 +2419,7 @@
       "bom-ref": "pkg:cargo/itertools@0.14.0?package-id=7bac0b1fa7efa639",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "itertools",
@@ -2657,9 +2441,7 @@
       "bom-ref": "pkg:cargo/itoa@1.0.18?package-id=0debbe231f123ea3",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "itoa",
@@ -2681,9 +2463,7 @@
       "bom-ref": "pkg:cargo/jobserver@0.1.35?package-id=0254c86b860b952c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "jobserver",
@@ -2705,9 +2485,7 @@
       "bom-ref": "pkg:cargo/js-sys@0.3.106?package-id=f20b066531fcb140",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "js-sys",
@@ -2729,9 +2507,7 @@
       "bom-ref": "pkg:cargo/kqueue-sys@1.1.2?package-id=6c9168332f10097d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "kqueue-sys",
@@ -2753,9 +2529,7 @@
       "bom-ref": "pkg:cargo/kqueue@1.2.1?package-id=b474d56ead14ef81",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "kqueue",
@@ -2777,9 +2551,7 @@
       "bom-ref": "pkg:cargo/language-tags@0.3.2?package-id=7cd38a336f88c51f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "language-tags",
@@ -2801,9 +2573,7 @@
       "bom-ref": "pkg:cargo/lazy_static@1.5.1?package-id=e4138c50cad6a768",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "lazy_static",
@@ -2825,9 +2595,7 @@
       "bom-ref": "pkg:cargo/libc@0.2.191?package-id=34270086a8d83f1f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "libc",
@@ -2849,9 +2617,7 @@
       "bom-ref": "pkg:cargo/linux-raw-sys@0.12.1?package-id=9c8074ab9a510981",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "linux-raw-sys",
@@ -2873,9 +2639,7 @@
       "bom-ref": "pkg:cargo/litemap@0.8.3?package-id=1f494a239170d16c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "litemap",
@@ -2897,9 +2661,7 @@
       "bom-ref": "pkg:cargo/local-channel@0.1.5?package-id=4b0804caf17eafb1",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "local-channel",
@@ -2921,9 +2683,7 @@
       "bom-ref": "pkg:cargo/local-waker@0.1.4?package-id=c75637dad7d24b99",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "local-waker",
@@ -2945,9 +2705,7 @@
       "bom-ref": "pkg:cargo/lock_api@0.4.14?package-id=8876032a352a1397",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "lock_api",
@@ -2969,9 +2727,7 @@
       "bom-ref": "pkg:cargo/log@0.4.34?package-id=e9d219fa3f956013",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "log",
@@ -2993,9 +2749,7 @@
       "bom-ref": "pkg:cargo/lru@0.18.5?package-id=351bae07903be3c2",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "lru",
@@ -3017,9 +2771,7 @@
       "bom-ref": "pkg:cargo/matchers@0.2.0?package-id=5384f8bcaabf593c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "matchers",
@@ -3041,9 +2793,7 @@
       "bom-ref": "pkg:cargo/matchit@0.8.4?package-id=913265da2572ce76",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "matchit",
@@ -3065,9 +2815,7 @@
       "bom-ref": "pkg:cargo/memchr@2.8.3?package-id=235d7fd0061f2a3d",
       "licenses": [
         {
-          "license": {
-            "id": "Unlicense OR MIT"
-          }
+          "expression": "Unlicense OR MIT"
         }
       ],
       "name": "memchr",
@@ -3089,9 +2837,7 @@
       "bom-ref": "pkg:cargo/mime@0.3.17?package-id=1936b08b62cfdcc7",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "mime",
@@ -3113,9 +2859,7 @@
       "bom-ref": "pkg:cargo/miniz_oxide@0.9.1?package-id=39fbe1acac9423be",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "miniz_oxide",
@@ -3161,9 +2905,7 @@
       "bom-ref": "pkg:cargo/mockall@0.14.0?package-id=7d50dd402b48c39f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "mockall",
@@ -3185,9 +2927,7 @@
       "bom-ref": "pkg:cargo/mockall_derive@0.14.0?package-id=7c1a8109f84a19c5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "mockall_derive",
@@ -3209,9 +2949,7 @@
       "bom-ref": "pkg:cargo/multimap@0.10.1?package-id=f77025903e45fc58",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "multimap",
@@ -3233,9 +2971,7 @@
       "bom-ref": "pkg:cargo/multiversion_no_op@1.0.0?package-id=e0877116516db6ea",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "multiversion_no_op",
@@ -3257,9 +2993,7 @@
       "bom-ref": "pkg:cargo/murmurhash3@0.0.5?package-id=63778dab75a39384",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "murmurhash3",
@@ -3281,9 +3015,7 @@
       "bom-ref": "pkg:cargo/notify-types@2.1.0?package-id=99cd95eee3c34f0b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "notify-types",
@@ -3305,9 +3037,7 @@
       "bom-ref": "pkg:cargo/notify@8.2.1?package-id=18a219ccb7fd207e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "notify",
@@ -3329,9 +3059,7 @@
       "bom-ref": "pkg:cargo/nu-ansi-term@0.50.3?package-id=c12ff0eac576b66a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "nu-ansi-term",
@@ -3353,9 +3081,7 @@
       "bom-ref": "pkg:cargo/num-conv@0.2.2?package-id=25ccee1004a628cc",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "num-conv",
@@ -3377,9 +3103,7 @@
       "bom-ref": "pkg:cargo/objc2-core-foundation@0.3.2?package-id=981263bb02bf7408",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "objc2-core-foundation",
@@ -3401,9 +3125,7 @@
       "bom-ref": "pkg:cargo/objc2-core-services@0.3.2?package-id=a15655a43d8fa42b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "objc2-core-services",
@@ -3425,9 +3147,7 @@
       "bom-ref": "pkg:cargo/once_cell@1.21.4?package-id=158b3cfb509c93bc",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "once_cell",
@@ -3449,9 +3169,7 @@
       "bom-ref": "pkg:cargo/open-feature-flagd@0.3.0?package-id=5434b19c11b1d199",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "open-feature-flagd",
@@ -3473,9 +3191,7 @@
       "bom-ref": "pkg:cargo/open-feature@0.3.0?package-id=f0078bfec8e610ba",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "open-feature",
@@ -3497,9 +3213,7 @@
       "bom-ref": "pkg:cargo/opentelemetry-appender-tracing@0.33.1?package-id=6c213c09e1b4c237",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry-appender-tracing",
@@ -3521,9 +3235,7 @@
       "bom-ref": "pkg:cargo/opentelemetry-http@0.33.1?package-id=87fec3943ca14e1a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry-http",
@@ -3545,9 +3257,7 @@
       "bom-ref": "pkg:cargo/opentelemetry-instrumentation-actix-web@0.25.0?package-id=02be422f87a1b9a2",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry-instrumentation-actix-web",
@@ -3569,9 +3279,7 @@
       "bom-ref": "pkg:cargo/opentelemetry-otlp@0.33.1?package-id=93f58445c4639cdc",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry-otlp",
@@ -3593,9 +3301,7 @@
       "bom-ref": "pkg:cargo/opentelemetry-proto@0.33.1?package-id=b9b8d07e92960013",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry-proto",
@@ -3617,9 +3323,7 @@
       "bom-ref": "pkg:cargo/opentelemetry-resource-detectors@0.13.0?package-id=0e06936dbee463ff",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry-resource-detectors",
@@ -3641,9 +3345,7 @@
       "bom-ref": "pkg:cargo/opentelemetry-semantic-conventions@0.33.1?package-id=acc17f958bdfeb74",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry-semantic-conventions",
@@ -3665,9 +3367,7 @@
       "bom-ref": "pkg:cargo/opentelemetry@0.33.1?package-id=02fd6dfdd763a809",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry",
@@ -3689,9 +3389,7 @@
       "bom-ref": "pkg:cargo/opentelemetry_sdk@0.33.1?package-id=54caab38f899270d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "opentelemetry_sdk",
@@ -3713,9 +3411,7 @@
       "bom-ref": "pkg:cargo/parking_lot@0.12.5?package-id=38bae6a92f3a3fd9",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "parking_lot",
@@ -3737,9 +3433,7 @@
       "bom-ref": "pkg:cargo/parking_lot_core@0.9.12?package-id=be303975a914fa06",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "parking_lot_core",
@@ -3761,9 +3455,7 @@
       "bom-ref": "pkg:cargo/percent-encoding@2.3.2?package-id=b33a155ae666ba27",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "percent-encoding",
@@ -3785,9 +3477,7 @@
       "bom-ref": "pkg:cargo/petgraph@0.8.3?package-id=75deced7eaf2f199",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "petgraph",
@@ -3809,9 +3499,7 @@
       "bom-ref": "pkg:cargo/pin-project-internal@1.1.13?package-id=cbb605ede671a43d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "pin-project-internal",
@@ -3857,9 +3545,7 @@
       "bom-ref": "pkg:cargo/pin-project@1.1.13?package-id=ae74d23881dbad3a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "pin-project",
@@ -3881,9 +3567,7 @@
       "bom-ref": "pkg:cargo/pkg-config@0.3.34?package-id=c1cab451e32c5c46",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "pkg-config",
@@ -3905,9 +3589,7 @@
       "bom-ref": "pkg:cargo/portable-atomic@1.15.0?package-id=36951bce4228c188",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "portable-atomic",
@@ -3929,9 +3611,7 @@
       "bom-ref": "pkg:cargo/potential_utf@0.1.6?package-id=fe6604d02b1beb6b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "potential_utf",
@@ -3953,9 +3633,7 @@
       "bom-ref": "pkg:cargo/powerfmt@0.2.1?package-id=128e5de924456105",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "powerfmt",
@@ -3977,9 +3655,7 @@
       "bom-ref": "pkg:cargo/ppv-lite86@0.2.21?package-id=6c6b3763cac177e2",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "ppv-lite86",
@@ -4001,9 +3677,7 @@
       "bom-ref": "pkg:cargo/predicates-core@1.0.10?package-id=e75663d30111385f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "predicates-core",
@@ -4025,9 +3699,7 @@
       "bom-ref": "pkg:cargo/predicates-tree@1.0.13?package-id=236c2fab6bad42e1",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "predicates-tree",
@@ -4049,9 +3721,7 @@
       "bom-ref": "pkg:cargo/predicates@3.1.4?package-id=672da63d4b76623d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "predicates",
@@ -4073,9 +3743,7 @@
       "bom-ref": "pkg:cargo/prettyplease@0.2.37?package-id=1e112571259d80bd",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "prettyplease",
@@ -4097,9 +3765,7 @@
       "bom-ref": "pkg:cargo/proc-macro2@1.0.107?package-id=951d7b83c422abe2",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "proc-macro2",
@@ -4121,9 +3787,7 @@
       "bom-ref": "pkg:cargo/prost-build@0.14.4?package-id=c531827c0071e978",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "prost-build",
@@ -4145,9 +3809,7 @@
       "bom-ref": "pkg:cargo/prost-derive@0.14.4?package-id=289f875ce0ca9ab0",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "prost-derive",
@@ -4169,9 +3831,7 @@
       "bom-ref": "pkg:cargo/prost-types@0.14.4?package-id=2cb15ae4e602d348",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "prost-types",
@@ -4193,9 +3853,7 @@
       "bom-ref": "pkg:cargo/prost@0.14.4?package-id=1e2e116c7807f820",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "prost",
@@ -4217,9 +3875,7 @@
       "bom-ref": "pkg:cargo/pulldown-cmark-to-cmark@22.0.3?package-id=9a502b127d8319ea",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "pulldown-cmark-to-cmark",
@@ -4241,9 +3897,7 @@
       "bom-ref": "pkg:cargo/pulldown-cmark@0.13.5?package-id=b7932163b6f13be8",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "pulldown-cmark",
@@ -4265,9 +3919,7 @@
       "bom-ref": "pkg:cargo/quote@1.0.47?package-id=d3a86db3d90d92e6",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "quote",
@@ -4289,9 +3941,7 @@
       "bom-ref": "pkg:cargo/r-efi@5.3.0?package-id=f1fdae49fa8c4094",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "r-efi",
@@ -4313,9 +3963,7 @@
       "bom-ref": "pkg:cargo/r-efi@6.0.0?package-id=2b65155d7f571bc3",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "r-efi",
@@ -4337,9 +3985,7 @@
       "bom-ref": "pkg:cargo/rand@0.10.3?package-id=198d7f394971bbd5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rand",
@@ -4361,9 +4007,7 @@
       "bom-ref": "pkg:cargo/rand@0.9.5?package-id=d9a4f61f4f2f3212",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rand",
@@ -4385,9 +4029,7 @@
       "bom-ref": "pkg:cargo/rand_chacha@0.9.0?package-id=9c5bfb54abf35779",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rand_chacha",
@@ -4409,9 +4051,7 @@
       "bom-ref": "pkg:cargo/rand_core@0.10.1?package-id=c779ed4faf114e0c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rand_core",
@@ -4433,9 +4073,7 @@
       "bom-ref": "pkg:cargo/rand_core@0.9.5?package-id=2ebc8bb012efa38a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rand_core",
@@ -4457,9 +4095,7 @@
       "bom-ref": "pkg:cargo/redox_syscall@0.5.18?package-id=2f85e1ffe6c87186",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "redox_syscall",
@@ -4481,9 +4117,7 @@
       "bom-ref": "pkg:cargo/regex-automata@0.4.18?package-id=359cb052b0c13123",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "regex-automata",
@@ -4505,9 +4139,7 @@
       "bom-ref": "pkg:cargo/regex-lite@0.1.9?package-id=82a8017b2a98aa30",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "regex-lite",
@@ -4529,9 +4161,7 @@
       "bom-ref": "pkg:cargo/regex-syntax@0.8.11?package-id=77793d04382a84dc",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "regex-syntax",
@@ -4553,9 +4183,7 @@
       "bom-ref": "pkg:cargo/regex@1.13.1?package-id=91b118c65e6ac85a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "regex",
@@ -4577,9 +4205,7 @@
       "bom-ref": "pkg:cargo/reqwest@0.13.5?package-id=52d302120321579d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "reqwest",
@@ -4601,9 +4227,7 @@
       "bom-ref": "pkg:cargo/ring@0.17.14?package-id=eeb5d72dd0a17040",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "ring",
@@ -4625,9 +4249,7 @@
       "bom-ref": "pkg:cargo/rustc_version@0.4.1?package-id=76d9f1b1711bbc38",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rustc_version",
@@ -4649,9 +4271,7 @@
       "bom-ref": "pkg:cargo/rustix@1.1.6?package-id=788e4746aab7088c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rustix",
@@ -4673,9 +4293,7 @@
       "bom-ref": "pkg:cargo/rustls-pki-types@1.15.1?package-id=92eef046586ccdc6",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rustls-pki-types",
@@ -4697,9 +4315,7 @@
       "bom-ref": "pkg:cargo/rustls-webpki@0.103.16?package-id=1dcf14afd3bbdabe",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rustls-webpki",
@@ -4721,9 +4337,7 @@
       "bom-ref": "pkg:cargo/rustls@0.23.46?package-id=6307be98f96a3f02",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rustls",
@@ -4745,9 +4359,7 @@
       "bom-ref": "pkg:cargo/rustversion@1.0.23?package-id=88bf68dec795acaa",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "rustversion",
@@ -4769,9 +4381,7 @@
       "bom-ref": "pkg:cargo/ryu@1.0.23?package-id=815c1412e247c4dd",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "ryu",
@@ -4793,9 +4403,7 @@
       "bom-ref": "pkg:cargo/same-file@1.0.6?package-id=32feef7961e6f428",
       "licenses": [
         {
-          "license": {
-            "id": "Unlicense OR MIT"
-          }
+          "expression": "Unlicense OR MIT"
         }
       ],
       "name": "same-file",
@@ -4817,9 +4425,7 @@
       "bom-ref": "pkg:cargo/scopeguard@1.2.0?package-id=2f0002186d01a140",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "scopeguard",
@@ -4841,9 +4447,7 @@
       "bom-ref": "pkg:cargo/self_cell@1.3.0?package-id=3a2ab3f42e18489c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "self_cell",
@@ -4865,9 +4469,7 @@
       "bom-ref": "pkg:cargo/semver@1.0.28?package-id=5c4c3e013d1e7144",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "semver",
@@ -4889,9 +4491,7 @@
       "bom-ref": "pkg:cargo/serde@1.0.229?package-id=d44bfa0f0c8fb35c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "serde",
@@ -4913,9 +4513,7 @@
       "bom-ref": "pkg:cargo/serde_core@1.0.229?package-id=15f6c0f279baa010",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "serde_core",
@@ -4937,9 +4535,7 @@
       "bom-ref": "pkg:cargo/serde_derive@1.0.229?package-id=e2186231fe30389a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "serde_derive",
@@ -4961,9 +4557,7 @@
       "bom-ref": "pkg:cargo/serde_json@1.0.154?package-id=ddeb3557ff271adc",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "serde_json",
@@ -4985,9 +4579,7 @@
       "bom-ref": "pkg:cargo/serde_urlencoded@0.7.1?package-id=b755994ae0a8c8b3",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "serde_urlencoded",
@@ -5009,9 +4601,7 @@
       "bom-ref": "pkg:cargo/sha1@0.11.0?package-id=0fd08e9d7d860787",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "sha1",
@@ -5033,9 +4623,7 @@
       "bom-ref": "pkg:cargo/sharded-slab@0.1.7?package-id=aa13ad448f372527",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "sharded-slab",
@@ -5057,9 +4645,7 @@
       "bom-ref": "pkg:cargo/shipping@0.0.0?package-id=221e242119aa1047",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "shipping",
@@ -5081,9 +4667,7 @@
       "bom-ref": "pkg:cargo/shlex@2.0.1?package-id=f9eef51b1bf066cc",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "shlex",
@@ -5105,9 +4689,7 @@
       "bom-ref": "pkg:cargo/signal-hook-registry@1.4.8?package-id=96a774203655fb79",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "signal-hook-registry",
@@ -5129,9 +4711,7 @@
       "bom-ref": "pkg:cargo/simd-adler32@0.3.10?package-id=2c30896ac092a462",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "simd-adler32",
@@ -5153,9 +4733,7 @@
       "bom-ref": "pkg:cargo/simdutf8@0.1.5?package-id=4a9ab39f0404182e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "simdutf8",
@@ -5177,9 +4755,7 @@
       "bom-ref": "pkg:cargo/slab@0.4.12?package-id=95e7f0c1e27617fe",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "slab",
@@ -5201,9 +4777,7 @@
       "bom-ref": "pkg:cargo/smallvec@1.16.4?package-id=9da8889285b7952a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "smallvec",
@@ -5225,9 +4799,7 @@
       "bom-ref": "pkg:cargo/socket2@0.6.5?package-id=668105e5e585c45f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "socket2",
@@ -5249,9 +4821,7 @@
       "bom-ref": "pkg:cargo/stable_deref_trait@1.2.1?package-id=ee98c2db920ed37b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "stable_deref_trait",
@@ -5273,9 +4843,7 @@
       "bom-ref": "pkg:cargo/subtle@2.6.1?package-id=39e09fba1e5bef8a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "subtle",
@@ -5297,9 +4865,7 @@
       "bom-ref": "pkg:cargo/syn@2.0.119?package-id=e513345e158be5be",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "syn",
@@ -5321,9 +4887,7 @@
       "bom-ref": "pkg:cargo/syn@3.0.9?package-id=244848563ed1849d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "syn",
@@ -5345,9 +4909,7 @@
       "bom-ref": "pkg:cargo/sync_wrapper@1.0.2?package-id=bf0f426dd673ba94",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "sync_wrapper",
@@ -5369,9 +4931,7 @@
       "bom-ref": "pkg:cargo/synstructure@0.14.0?package-id=a69d825ee55e26d0",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "synstructure",
@@ -5393,9 +4953,7 @@
       "bom-ref": "pkg:cargo/tempfile@3.27.0?package-id=1d47cb3810a82dac",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tempfile",
@@ -5417,9 +4975,7 @@
       "bom-ref": "pkg:cargo/termtree@0.5.1?package-id=557291eabd3f80cf",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "termtree",
@@ -5441,9 +4997,7 @@
       "bom-ref": "pkg:cargo/thiserror-impl@2.0.21?package-id=27932ff90ddc0796",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "thiserror-impl",
@@ -5465,9 +5019,7 @@
       "bom-ref": "pkg:cargo/thiserror@2.0.21?package-id=f9f251a5725fb9e0",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "thiserror",
@@ -5489,9 +5041,7 @@
       "bom-ref": "pkg:cargo/thread_local@1.1.10?package-id=b3b9a002508e3d91",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "thread_local",
@@ -5513,9 +5063,7 @@
       "bom-ref": "pkg:cargo/time-core@0.1.9?package-id=4c1c4f3f51c74960",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "time-core",
@@ -5537,9 +5085,7 @@
       "bom-ref": "pkg:cargo/time-macros@0.2.32?package-id=0025544d76a327e0",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "time-macros",
@@ -5561,9 +5107,7 @@
       "bom-ref": "pkg:cargo/time@0.3.55?package-id=7442fa5b6fb37615",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "time",
@@ -5585,9 +5129,7 @@
       "bom-ref": "pkg:cargo/tinystr@0.8.5?package-id=800424981ec5a914",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tinystr",
@@ -5609,9 +5151,7 @@
       "bom-ref": "pkg:cargo/tokio-macros@2.7.2?package-id=8f67b4cacfef9d73",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tokio-macros",
@@ -5633,9 +5173,7 @@
       "bom-ref": "pkg:cargo/tokio-rustls@0.26.6?package-id=ca0def1b930b3147",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tokio-rustls",
@@ -5657,9 +5195,7 @@
       "bom-ref": "pkg:cargo/tokio-stream@0.1.19?package-id=7cbe98a6a69f7082",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tokio-stream",
@@ -5681,9 +5217,7 @@
       "bom-ref": "pkg:cargo/tokio-util@0.7.20?package-id=d38774e72ff4fb12",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tokio-util",
@@ -5729,9 +5263,7 @@
       "bom-ref": "pkg:cargo/tonic-build@0.14.7?package-id=f3de26d220d20793",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tonic-build",
@@ -5753,9 +5285,7 @@
       "bom-ref": "pkg:cargo/tonic-prost-build@0.14.7?package-id=1c1f5c3e39d05d1c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tonic-prost-build",
@@ -5777,9 +5307,7 @@
       "bom-ref": "pkg:cargo/tonic-prost@0.14.7?package-id=084a8547dfec8dd5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tonic-prost",
@@ -5801,9 +5329,7 @@
       "bom-ref": "pkg:cargo/tonic@0.14.7?package-id=331aea626c2bb47f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tonic",
@@ -5825,9 +5351,7 @@
       "bom-ref": "pkg:cargo/tower-http@0.6.11?package-id=8cce847b8b8666db",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tower-http",
@@ -5849,9 +5373,7 @@
       "bom-ref": "pkg:cargo/tower-layer@0.3.3?package-id=5af897942e4d7438",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tower-layer",
@@ -5873,9 +5395,7 @@
       "bom-ref": "pkg:cargo/tower-service@0.3.3?package-id=5835976f75aa78ff",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tower-service",
@@ -5921,9 +5441,7 @@
       "bom-ref": "pkg:cargo/tracing-attributes@0.1.31?package-id=fcb76044e337e190",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tracing-attributes",
@@ -5945,9 +5463,7 @@
       "bom-ref": "pkg:cargo/tracing-core@0.1.36?package-id=a0448acc1daa345d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tracing-core",
@@ -5969,9 +5485,7 @@
       "bom-ref": "pkg:cargo/tracing-log@0.2.0?package-id=49ac508816794536",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tracing-log",
@@ -5993,9 +5507,7 @@
       "bom-ref": "pkg:cargo/tracing-subscriber@0.3.23?package-id=29fe1a5c6dce8d13",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "tracing-subscriber",
@@ -6041,9 +5553,7 @@
       "bom-ref": "pkg:cargo/try-lock@0.2.5?package-id=0f04d9b2321b4540",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "try-lock",
@@ -6065,9 +5575,7 @@
       "bom-ref": "pkg:cargo/typed-builder-macro@0.22.0?package-id=6b12c3fb3b1ec01f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "typed-builder-macro",
@@ -6089,9 +5597,7 @@
       "bom-ref": "pkg:cargo/typed-builder@0.22.0?package-id=b4b75b9c410695ec",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "typed-builder",
@@ -6113,9 +5619,7 @@
       "bom-ref": "pkg:cargo/typenum@1.20.1?package-id=08cc1f08b5c68bdc",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "typenum",
@@ -6137,9 +5641,7 @@
       "bom-ref": "pkg:cargo/unicase@2.10.0?package-id=86dc603c9d587b83",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "unicase",
@@ -6161,9 +5663,7 @@
       "bom-ref": "pkg:cargo/unicode-ident@1.0.27?package-id=7dd68c554f7aabd2",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "unicode-ident",
@@ -6185,9 +5685,7 @@
       "bom-ref": "pkg:cargo/unicode-segmentation@1.13.3?package-id=56c2cf4b4b6f8021",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "unicode-segmentation",
@@ -6209,9 +5707,7 @@
       "bom-ref": "pkg:cargo/unicode-xid@0.2.6?package-id=e4227e4097f984ad",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "unicode-xid",
@@ -6233,9 +5729,7 @@
       "bom-ref": "pkg:cargo/untrusted@0.9.0?package-id=2447ddee44fe6fc6",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "untrusted",
@@ -6257,9 +5751,7 @@
       "bom-ref": "pkg:cargo/url@2.5.8?package-id=71bdf83946e22d91",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "url",
@@ -6281,9 +5773,7 @@
       "bom-ref": "pkg:cargo/utf8_iter@1.0.4?package-id=c6aaf9091b772eff",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "utf8_iter",
@@ -6305,9 +5795,7 @@
       "bom-ref": "pkg:cargo/uuid@1.29.0?package-id=282704276fdb8e5d",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "uuid",
@@ -6329,9 +5817,7 @@
       "bom-ref": "pkg:cargo/valuable@0.1.1?package-id=836a9148d1add1b5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "valuable",
@@ -6353,9 +5839,7 @@
       "bom-ref": "pkg:cargo/version_check@0.9.5?package-id=698379256b870bd9",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "version_check",
@@ -6377,9 +5861,7 @@
       "bom-ref": "pkg:cargo/walkdir@2.5.0?package-id=106ff7cdf671f7c8",
       "licenses": [
         {
-          "license": {
-            "id": "Unlicense OR MIT"
-          }
+          "expression": "Unlicense OR MIT"
         }
       ],
       "name": "walkdir",
@@ -6401,9 +5883,7 @@
       "bom-ref": "pkg:cargo/want@0.3.2?package-id=f734f85d91c889ea",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "want",
@@ -6425,9 +5905,7 @@
       "bom-ref": "pkg:cargo/wasi@0.11.1+wasi-snapshot-preview1?package-id=a9c7792560cf3a86",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "wasi",
@@ -6449,9 +5927,7 @@
       "bom-ref": "pkg:cargo/wasip2@1.0.4+wasi-0.2.12?package-id=26fb0c34c5ddfb4e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "wasip2",
@@ -6473,9 +5949,7 @@
       "bom-ref": "pkg:cargo/wasm-bindgen-futures@0.4.79?package-id=3bfd9d69749da2db",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "wasm-bindgen-futures",
@@ -6497,9 +5971,7 @@
       "bom-ref": "pkg:cargo/wasm-bindgen-macro-support@0.2.129?package-id=91df285bd0152733",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "wasm-bindgen-macro-support",
@@ -6521,9 +5993,7 @@
       "bom-ref": "pkg:cargo/wasm-bindgen-macro@0.2.129?package-id=edca834b4d173546",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "wasm-bindgen-macro",
@@ -6545,9 +6015,7 @@
       "bom-ref": "pkg:cargo/wasm-bindgen-shared@0.2.129?package-id=fca4f4c87e26d46e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "wasm-bindgen-shared",
@@ -6569,9 +6037,7 @@
       "bom-ref": "pkg:cargo/wasm-bindgen@0.2.129?package-id=d7fa1cfec1a44c53",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "wasm-bindgen",
@@ -6593,9 +6059,7 @@
       "bom-ref": "pkg:cargo/web-sys@0.3.106?package-id=37ccf24eb47b4ed2",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "web-sys",
@@ -6617,9 +6081,7 @@
       "bom-ref": "pkg:cargo/webpki-roots@1.0.11?package-id=1d604a1773b5fda7",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "webpki-roots",
@@ -6641,9 +6103,7 @@
       "bom-ref": "pkg:cargo/winapi-util@0.1.11?package-id=c9db46f5d7be2b48",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "winapi-util",
@@ -6665,9 +6125,7 @@
       "bom-ref": "pkg:cargo/windows-link@0.2.1?package-id=4ba268ee70134ef4",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows-link",
@@ -6689,9 +6147,7 @@
       "bom-ref": "pkg:cargo/windows-sys@0.52.0?package-id=fcdb20178c2bd931",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows-sys",
@@ -6713,9 +6169,7 @@
       "bom-ref": "pkg:cargo/windows-sys@0.61.2?package-id=3d071692f31beace",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows-sys",
@@ -6737,9 +6191,7 @@
       "bom-ref": "pkg:cargo/windows-targets@0.52.6?package-id=2aecf26a409ff30e",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows-targets",
@@ -6761,9 +6213,7 @@
       "bom-ref": "pkg:cargo/windows_aarch64_gnullvm@0.52.6?package-id=fba5455d09270a1a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows_aarch64_gnullvm",
@@ -6785,9 +6235,7 @@
       "bom-ref": "pkg:cargo/windows_aarch64_msvc@0.52.6?package-id=4ce48ab1b6e7d616",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows_aarch64_msvc",
@@ -6809,9 +6257,7 @@
       "bom-ref": "pkg:cargo/windows_i686_gnu@0.52.6?package-id=56434ce4637eacd5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows_i686_gnu",
@@ -6833,9 +6279,7 @@
       "bom-ref": "pkg:cargo/windows_i686_gnullvm@0.52.6?package-id=c8e5ef12e5259a12",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows_i686_gnullvm",
@@ -6857,9 +6301,7 @@
       "bom-ref": "pkg:cargo/windows_i686_msvc@0.52.6?package-id=cea95f2b861a9d10",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows_i686_msvc",
@@ -6881,9 +6323,7 @@
       "bom-ref": "pkg:cargo/windows_x86_64_gnu@0.52.6?package-id=abad21a242bbb38b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows_x86_64_gnu",
@@ -6905,9 +6345,7 @@
       "bom-ref": "pkg:cargo/windows_x86_64_gnullvm@0.52.6?package-id=ba9891c5a32d6cea",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows_x86_64_gnullvm",
@@ -6929,9 +6367,7 @@
       "bom-ref": "pkg:cargo/windows_x86_64_msvc@0.52.6?package-id=1810ac828833b684",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "windows_x86_64_msvc",
@@ -6953,9 +6389,7 @@
       "bom-ref": "pkg:cargo/wit-bindgen@0.57.1?package-id=a80cdd664da8653f",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "wit-bindgen",
@@ -6977,9 +6411,7 @@
       "bom-ref": "pkg:cargo/writeable@0.6.4?package-id=4f57c18624fbb376",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "writeable",
@@ -7001,9 +6433,7 @@
       "bom-ref": "pkg:cargo/yoke-derive@0.8.4?package-id=1ce7236441e23333",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "yoke-derive",
@@ -7025,9 +6455,7 @@
       "bom-ref": "pkg:cargo/yoke@0.8.4?package-id=c09cdd0abb754fa3",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "yoke",
@@ -7049,9 +6477,7 @@
       "bom-ref": "pkg:cargo/zerocopy-derive@0.8.63?package-id=3a42583f86714fbf",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zerocopy-derive",
@@ -7073,9 +6499,7 @@
       "bom-ref": "pkg:cargo/zerocopy@0.8.63?package-id=0c4e6b980a1e98b1",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zerocopy",
@@ -7097,9 +6521,7 @@
       "bom-ref": "pkg:cargo/zerofrom-derive@0.1.8?package-id=d1d8ac11be88ec4a",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zerofrom-derive",
@@ -7121,9 +6543,7 @@
       "bom-ref": "pkg:cargo/zerofrom@0.1.8?package-id=79590ea219dfe0a4",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zerofrom",
@@ -7145,9 +6565,7 @@
       "bom-ref": "pkg:cargo/zeroize@1.9.1?package-id=7403f2cbe9741f00",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zeroize",
@@ -7169,9 +6587,7 @@
       "bom-ref": "pkg:cargo/zerotrie@0.2.5?package-id=0df5fafcbc4d7b32",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zerotrie",
@@ -7193,9 +6609,7 @@
       "bom-ref": "pkg:cargo/zerovec-derive@0.11.7?package-id=dfd9a5de174729a5",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zerovec-derive",
@@ -7217,9 +6631,7 @@
       "bom-ref": "pkg:cargo/zerovec@0.11.9?package-id=a30b1926e281c813",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zerovec",
@@ -7241,9 +6653,7 @@
       "bom-ref": "pkg:cargo/zlib-rs@0.6.8?package-id=d9559f06778de840",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zlib-rs",
@@ -7265,9 +6675,7 @@
       "bom-ref": "pkg:cargo/zmij@1.0.23?package-id=0a68558eedb132bf",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zmij",
@@ -7289,9 +6697,7 @@
       "bom-ref": "pkg:cargo/zstd-safe@8.2.0?package-id=c4d7a2e3f39a128b",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zstd-safe",
@@ -7313,9 +6719,7 @@
       "bom-ref": "pkg:cargo/zstd-sys@2.1.2+zstd.1.5.7?package-id=6327c72be39e736c",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zstd-sys",
@@ -7337,9 +6741,7 @@
       "bom-ref": "pkg:cargo/zstd@0.14.3?package-id=036f1771155501cd",
       "licenses": [
         {
-          "license": {
-            "id": "MIT OR Apache-2.0"
-          }
+          "expression": "MIT OR Apache-2.0"
         }
       ],
       "name": "zstd",
