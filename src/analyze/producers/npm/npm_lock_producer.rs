@@ -22,9 +22,7 @@ impl SbomProducer for NpmLockProducer {
         let mut result = Vec::new();
 
         for p in paths {
-            let Ok(content) = std::fs::read_to_string(p) else {
-                continue;
-            };
+            let content = std::fs::read_to_string(p)?;
             let clean_content = content.trim_start_matches('\u{FEFF}').trim();
             let file_salt = p.to_string_lossy().replace('\\', "/");
             let location = Some(DependencyLocation::from_file(p));
@@ -34,10 +32,7 @@ impl SbomProducer for NpmLockProducer {
                     result.extend(Self::parse_npm_lock(&json, &file_salt, location)?);
                 }
                 Err(e) => {
-                    eprintln!(
-                        "❌ [Debug] 无法解析 package-lock.json {:?}，错误原因: {}",
-                        p, e
-                    );
+                    anyhow::bail!("invalid package-lock.json {}: {e}", p.display());
                 }
             }
         }

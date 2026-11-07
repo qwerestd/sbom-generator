@@ -4,9 +4,10 @@ use std::process::exit;
 use getopts::Options;
 use sbom_generator::analyze::sbom_generate::analyze;
 use sbom_generator::model::configuration::Configuration;
+use sbom_generator::report::print_dependency_tree;
 
 fn print_usage(program: &str, opts: Options) {
-    let brief = format!("Usage: {} FILE [options]", program);
+    let brief = format!("Usage: {} -i DIRECTORY -o OUTPUT [options]", program);
     print!("{}", opts.usage(&brief));
 }
 
@@ -49,7 +50,11 @@ pub fn main() {
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
-        Err(f) => panic!("error when parsing arguments: {}", f),
+        Err(f) => {
+            eprintln!("invalid arguments: {}", f);
+            print_usage(&program, opts);
+            exit(2);
+        }
     };
 
     if matches.opt_present("h") {
@@ -82,5 +87,14 @@ pub fn main() {
         allow_exec,
     };
 
-    analyze(&configuration, enable_dynamic).expect("error when generating SBOM");
+    if let Err(error) = analyze(&configuration, enable_dynamic) {
+        eprintln!("error when generating SBOM: {error:#}");
+        exit(1);
+    }
+    if matches.opt_present("tree") {
+        if let Err(error) = print_dependency_tree(&configuration.output) {
+            eprintln!("error when displaying dependency tree: {error:#}");
+            exit(1);
+        }
+    }
 }

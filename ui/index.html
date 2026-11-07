@@ -792,117 +792,119 @@
             opacity: 1;
         }
     </style>
+    <link rel="stylesheet" href="theme.css">
 </head>
 <body>
 
     <!-- 隐藏的文件选择输入 (浏览器环境兜底) -->
     <input type="file" id="file-import-fallback" accept=".json" style="display:none;" />
 
-    <!-- 1. 紧凑型工业顶栏 -->
+    <!-- 应用顶栏 (48px 紧凑工业顶栏) -->
     <header class="industrial-header">
         <div class="header-brand">
             <div class="header-logo-box">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 4.2L19.4 19H4.6L12 6.2zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="4" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="M11 6 6 15m7-9 5 9M7 17h10"/></svg>
             </div>
             <div class="header-title">
                 <span>SBOM Studio</span>
-                <span class="header-tag">CycloneDX 1.6</span>
-                <span class="header-tag active-tag" title="动态监测引擎已就绪">Reachable SBOM</span>
-                <span class="header-tag">OSV.dev</span>
+                <small>软件供应链可视化工作台</small>
             </div>
+            <span class="header-version">CycloneDX 1.6</span>
         </div>
 
         <div class="control-actions">
-            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer;" title="开启动态依赖监测与源码可达性分析">
-                <input type="checkbox" id="toggle-dynamic" checked />
-                <span>动态监测</span>
-            </label>
-            <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer;" title="显式允许在受控沙箱中启动入口加载钩子探针 (--allow-exec，默认关闭以保障安全)">
-                <input type="checkbox" id="toggle-allow-exec" />
-                <span>--allow-exec 沙箱</span>
-            </label>
             <button id="btn-import-sbom" class="btn-industrial-default" title="导入本地已有的 CycloneDX SBOM JSON 进行快速解析与图谱渲染">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
                 <span>导入已有 SBOM</span>
             </button>
             <button id="btn-open-explorer" class="btn-industrial-default" title="在 Windows 资源管理器中高亮定位生成的文件">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
                 <span>资源管理器</span>
             </button>
-            <button id="analyze-btn" class="btn-industrial-primary">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                <span>执行分析构建</span>
+            <button class="btn-pop-window" id="btn-open-compare-window" title="以独立大窗口全屏展开 SBOM 交叉对比评测中心（提供 7 大图表与深度量化指标）">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                <span>🗗 SBOM 对比评测中心</span>
             </button>
         </div>
     </header>
 
-    <!-- 2. 紧凑型路径输入与操作条 -->
-    <section class="industrial-control-bar">
-        <div class="input-group-compact">
-            <span class="input-label-tag">📂 工程目录</span>
-            <input type="text" id="input-dir" class="input-compact" placeholder="点击右侧按钮选择项目根目录..." />
-            <button type="button" class="btn-input-browse" id="btn-browse-dir" title="唤起系统窗口选择待分析的代码目录">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
-                <span>打开文件夹</span>
-            </button>
-        </div>
-
-        <div class="input-group-compact">
-            <span class="input-label-tag">💾 输出文件</span>
-            <input type="text" id="input-save" class="input-compact" placeholder="点击右侧按钮指定生成的 JSON 保存路径..." />
-            <button type="button" class="btn-input-browse" id="btn-browse-save" title="唤起系统保存窗口指定输出文件路径">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-                <span>指定输出路径</span>
+    <!-- 紧凑单行扫描控制条 (超低高度 38px，不占画幅) -->
+    <section class="industrial-control-bar" id="app-control-bar">
+        <div class="scan-fields">
+            <div class="input-group-compact">
+                <span class="input-label-tag">📂 工程目录</span>
+                <input type="text" id="input-dir" class="input-compact" placeholder="选择项目代码根目录..." />
+                <button type="button" class="btn-input-browse" id="btn-browse-dir" title="选择待分析代码目录">浏览</button>
+            </div>
+            <div class="input-group-compact">
+                <span class="input-label-tag">💾 输出文件</span>
+                <input type="text" id="input-save" class="input-compact" placeholder="指定 JSON 输出路径..." />
+                <button type="button" class="btn-input-browse" id="btn-browse-save" title="指定输出路径">路径</button>
+            </div>
+            <div class="scan-options">
+                <label title="开启动态依赖监测与源码可达性分析">
+                    <input type="checkbox" id="toggle-dynamic" checked />
+                    <span>动态监测</span>
+                </label>
+                <label title="允许在受控沙箱中启动入口加载钩子探针 (--allow-exec)">
+                    <input type="checkbox" id="toggle-allow-exec" />
+                    <span>探针</span>
+                </label>
+            </div>
+            <button id="analyze-btn" class="btn-industrial-primary">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+                <span>生成 SBOM</span>
             </button>
         </div>
     </section>
 
-    <!-- 3. 紧凑状态与指标栏 -->
+    <!-- 极简单行状态指标栏 (28px 紧凑条) -->
     <section class="industrial-status-bar">
         <div class="metric-badge-group">
-            <div class="metric-item">
-                <span>组件实例:</span>
+            <div class="metric-pill">
+                <span>组件:</span>
                 <span id="metric-components" class="metric-val">0</span>
             </div>
-            <div class="metric-item">
-                <span>唯一依赖包:</span>
+            <div class="metric-pill">
+                <span>唯一包:</span>
                 <span id="metric-unique" class="metric-val">0</span>
             </div>
-            <div class="metric-item">
-                <span>语言生态:</span>
+            <div class="metric-pill">
+                <span>生态:</span>
                 <span id="metric-ecos" class="metric-val">0</span>
             </div>
-            <div class="metric-item">
-                <span>OSV 漏洞告警:</span>
-                <span id="metric-vulns" class="metric-val">0</span>
+            <div class="metric-pill" style="border-color: rgba(248,81,73,0.3); background: rgba(248,81,73,0.1);">
+                <span style="color: #ff7b72;">🚨 漏洞:</span>
+                <span id="metric-vulns" class="metric-val" style="color: #ff7b72;">0</span>
             </div>
         </div>
 
         <div class="status-indicator-text">
             <div id="status-dot" class="status-dot-sm"></div>
-            <span id="status-text">系统就绪，请选择项目目录或直接导入已有 SBOM</span>
+            <span id="status-text">就绪：选择项目目录生成或直接导入已有 SBOM</span>
         </div>
+
+        <button class="tool-btn-sm" id="btn-toggle-topbar" style="height: 22px; font-size: 10px; padding: 0 6px;" title="收起/展开上方配置栏以最大化依赖图视口">
+            <span>🔼 收起配置栏</span>
+        </button>
     </section>
 
-    <!-- 4. 主体全视口工作区 -->
+    <!-- 4. 主体全视口工作区 (大面积独占) -->
     <main class="industrial-workspace">
         <div class="view-tab-nav">
             <div class="tab-buttons">
                 <button class="view-tab-btn active" data-tab="tab-graph">
-                    <span>拓扑依赖网络图</span>
+                    <span>🌐 拓扑依赖网络图</span>
                 </button>
                 <button class="view-tab-btn" data-tab="tab-vulns">
-                    <span>漏洞安全雷达</span>
+                    <span>🛡️ 漏洞安全雷达</span>
                     <span id="tab-vuln-badge" class="nav-badge-pill" style="display: none;">0</span>
                 </button>
                 <button class="view-tab-btn" data-tab="tab-components">
-                    <span>组件全量清单</span>
-                </button>
-                <button class="view-tab-btn" data-tab="tab-benchmark">
-                    <span>🔬 行业对比评测 (Benchmark)</span>
+                    <span>📦 组件全量清单</span>
                 </button>
                 <button class="view-tab-btn" data-tab="tab-json">
-                    <span>CycloneDX 1.6 原文</span>
+                    <span>📄 CycloneDX 原文</span>
                 </button>
             </div>
 
@@ -919,9 +921,19 @@
                     <input type="checkbox" id="filter-vuln-only" />
                     <span>仅看漏洞</span>
                 </label>
+                <!-- 布局切换与疏密控制 -->
+                <select id="select-graph-layout" class="select-filter-sm" style="height:28px; padding:0 6px; font-size:11px; background:#0c1726; color:#fff; border:1px solid var(--border-subtle); border-radius:6px;" title="切换拓扑排布算法">
+                    <option value="force" selected>🌀 空间力导向</option>
+                    <option value="circular">⭕ 环形无重叠</option>
+                </select>
+                <div style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--text-secondary);" title="拖动滑块拉大节点物理间距，消除部件挤压">
+                    <span>间距:</span>
+                    <input type="range" id="slider-node-repulsion" min="1" max="3.5" step="0.2" value="1.8" style="width:75px; accent-color:var(--accent-cyan); cursor:pointer;" />
+                </div>
                 <button class="tool-btn-sm" id="btn-zoom-in" title="放大画布">+</button>
                 <button class="tool-btn-sm" id="btn-zoom-out" title="缩小画布">-</button>
                 <button class="tool-btn-sm" id="btn-reset-view" title="重置图谱比例与居中">1:1 重置</button>
+                <button class="tool-btn-sm" id="btn-fullscreen-graph" title="全屏最大化展开拓扑图，获得最大展示空间">⛶ 全屏</button>
                 <button class="tool-btn-sm" id="btn-export-png" title="导出高分辨率 PNG 图片">导出图片</button>
             </div>
         </div>
@@ -929,119 +941,117 @@
         <!-- 视图 1: 拓扑网络图谱 -->
         <div id="tab-graph" class="tab-panel-container active">
             <div id="chart-container"></div>
-        </div>
-
-        <!-- 视图 2: 漏洞列表 -->
-        <div id="tab-vulns" class="tab-panel-container industrial-table-scroll">
-            <table class="industrial-table">
-                <thead>
-                    <tr>
-                        <th style="width: 140px;">漏洞编号</th>
-                        <th style="width: 90px;">严重等级</th>
-                        <th style="width: 70px;">CVSS</th>
-                        <th style="width: 240px;">波及组件实例 (bom-ref)</th>
-                        <th style="width: 130px;">运行时可达性</th>
-                        <th>漏洞机理与影响范围</th>
-                        <th style="width: 180px;">修复版本建议</th>
-                        <th style="width: 70px; text-align: center;">操作</th>
-                    </tr>
-                </thead>
-                <tbody id="vuln-table-body">
-                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- 视图 3: 组件全量清单 -->
-        <div id="tab-components" class="tab-panel-container industrial-table-scroll">
-            <table class="industrial-table">
-                <thead>
-                    <tr>
-                        <th style="width: 200px;">组件名称</th>
-                        <th style="width: 100px;">版本</th>
-                        <th style="width: 100px;">语言生态</th>
-                        <th style="width: 120px;">运行时状态</th>
-                        <th style="width: 140px;">开源许可证 (SPDX)</th>
-                        <th>标准 PURL 坐标</th>
-                        <th>清单物理路径 (syft:location:0:path)</th>
-                        <th style="width: 80px; text-align: center;">漏洞状态</th>
-                    </tr>
-                </thead>
-                <tbody id="comp-table-body">
-                    <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- 视图 4: 行业对比评测大屏 (Benchmark View - 用户自选动态评测) -->
-        <div id="tab-benchmark" class="tab-panel-container benchmark-wrapper">
-            <!-- 对比文件自选操作区 -->
-            <div class="benchmark-control-box">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <div>
-                        <b style="color:#ffffff; font-size:13px;">🔬 自定义 SBOM 交叉横向对比与动态监测评测台</b>
-                        <span style="color:var(--text-muted); font-size:11px; margin-left:8px;">支持覆盖率双口径、动态加载监测、漏洞可达性降噪、SPDX 合规与多模块隔离对比</span>
-                    </div>
-                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                        <button class="btn-industrial-default" id="btn-quick-sample-bm" title="载入 Google Cloud Microservices Demo 实测对比样本">
-                            <span>⚡ 样本1: Microservices Demo</span>
-                        </button>
-                        <button class="btn-industrial-default" id="btn-quick-sample-otel" title="载入 CNCF OpenTelemetry Demo 实测对比样本">
-                            <span>⚡ 样本2: OpenTelemetry Demo</span>
-                        </button>
-                        <button class="btn-industrial-default" id="btn-quick-sample-juice" title="载入 OWASP Juice Shop 实测对比样本">
-                            <span>⚡ 样本3: OWASP Juice Shop</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="benchmark-file-inputs">
-                    <!-- 文件 A -->
-                    <div class="input-group-compact">
-                        <span class="input-label-tag">SBOM 文件 A (待测)</span>
-                        <input type="text" id="bm-file-a-path" class="input-compact" placeholder="点击右侧选取本平台或待测的 SBOM JSON..." />
-                        <button type="button" class="btn-input-browse" id="btn-browse-bm-a">
-                            <span>📂 选取文件 A</span>
-                        </button>
-                        <input type="file" id="file-bm-a-fallback" accept=".json" style="display:none;" />
-                    </div>
-                    <!-- 文件 B -->
-                    <div class="input-group-compact">
-                        <span class="input-label-tag">SBOM 文件 B (参照)</span>
-                        <input type="text" id="bm-file-b-path" class="input-compact" placeholder="点击右侧选取对比工具 (如 Trivy/Syft) 生成的 SBOM JSON..." />
-                        <button type="button" class="btn-input-browse" id="btn-browse-bm-b">
-                            <span>📂 选取文件 B</span>
-                        </button>
-                        <input type="file" id="file-bm-b-fallback" accept=".json" style="display:none;" />
-                    </div>
-                </div>
-
-                <div class="benchmark-actions">
-                    <button class="btn-industrial-primary" id="btn-run-benchmark">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        <span>🚀 执行动态横向对比评测</span>
-                    </button>
-                    <span id="bm-status-hint" style="color:var(--text-muted); font-size:11px;">未载入对比文件，可点击右上方载入默认样本</span>
-                </div>
+            <div id="graph-empty-state" class="graph-empty-state">
+                <div class="empty-visual" aria-hidden="true"><span class="empty-orbit orbit-one"></span><span class="empty-orbit orbit-two"></span><span class="empty-core">S</span><span class="empty-node node-one"></span><span class="empty-node node-two"></span><span class="empty-node node-three"></span></div>
+                <span class="eyebrow">DEPENDENCY MAP</span>
+                <h2>看清项目的每一层依赖</h2>
+                <p>选择项目目录开始分析，或导入已有的 CycloneDX JSON，探索组件关系与安全风险。</p>
+                <div class="empty-actions"><button id="btn-empty-browse" class="btn-industrial-primary">选择项目目录</button><button id="btn-empty-import" class="btn-industrial-default">导入 SBOM</button></div>
+                <div class="empty-ecos"><span>Python</span><span>JavaScript</span><span>Java</span><span>Go</span><span>Rust</span></div>
             </div>
+        </div>
 
-            <!-- 动态对比评测结果呈现区 -->
-            <div id="benchmark-results-container">
-                <div style="text-align:center; padding:60px 20px; color:var(--text-muted); background:var(--bg-panel); border:1px solid var(--border-subtle); border-radius:6px;">
-                    <div style="font-size:32px; margin-bottom:12px;">📊</div>
-                    <div style="font-size:14px; color:var(--text-main); font-weight:600; margin-bottom:6px;">尚未执行对比评测</div>
-                    <div style="font-size:12px;">请在上方选取两个 CycloneDX SBOM JSON 文件（或点击「载入默认测试样本」），点击「执行动态横向对比评测」查看完整学术量化数据</div>
+        <!-- 视图 2: 漏洞列表 (支持分页与定位，非激活时严格隐藏) -->
+        <div id="tab-vulns" class="tab-panel-container">
+            <div class="table-scroll-area">
+                <table class="industrial-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 140px;">漏洞编号</th>
+                            <th style="width: 90px;">严重等级</th>
+                            <th style="width: 70px;">CVSS</th>
+                            <th style="width: 240px;">波及组件实例 (bom-ref)</th>
+                            <th style="width: 130px;">运行时可达性</th>
+                            <th>漏洞机理与影响范围</th>
+                            <th style="width: 180px;">修复版本建议</th>
+                            <th style="width: 70px; text-align: center;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vuln-table-body">
+                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- 漏洞分页导航栏 -->
+            <div class="pagination-bar" id="vuln-pagination-bar" style="display: none;">
+                <div class="pagination-info">
+                    <span>显示第 <b id="vuln-page-start">0</b> - <b id="vuln-page-end">0</b> 项，共 <b id="vuln-page-total">0</b> 项漏洞告警</span>
+                    <label style="display: flex; align-items: center; gap: 6px;">
+                        <span>每页:</span>
+                        <select id="vuln-page-size-select" class="select-filter-sm" style="height: 24px; padding: 0 4px; background: #0c1726; color: #fff; border: 1px solid var(--border-subtle); border-radius: 4px;">
+                            <option value="15">15 条</option>
+                            <option value="30" selected>30 条</option>
+                            <option value="50">50 条</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="pagination-pages">
+                    <button class="page-btn" id="btn-vuln-page-first">«</button>
+                    <button class="page-btn" id="btn-vuln-page-prev">‹</button>
+                    <div id="vuln-page-numbers" style="display: flex; gap: 3px;"></div>
+                    <button class="page-btn" id="btn-vuln-page-next">›</button>
+                    <button class="page-btn" id="btn-vuln-page-last">»</button>
                 </div>
             </div>
         </div>
 
-        <!-- 视图 5: JSON 原文 -->
-        <div id="tab-json" class="tab-panel-container" style="background: #090d13;">
+        <!-- 视图 3: 组件全量清单 (支持分页与快速跳转，非激活时严格隐藏) -->
+        <div id="tab-components" class="tab-panel-container">
+            <div class="table-scroll-area">
+                <table class="industrial-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 200px;">组件名称</th>
+                            <th style="width: 100px;">版本</th>
+                            <th style="width: 100px;">语言生态</th>
+                            <th style="width: 120px;">运行时状态</th>
+                            <th style="width: 140px;">开源许可证 (SPDX)</th>
+                            <th>标准 PURL 坐标</th>
+                            <th>清单物理路径 (syft:location:0:path)</th>
+                            <th style="width: 80px; text-align: center;">漏洞状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comp-table-body">
+                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 40px;">暂无数据，请先载入项目分析</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <!-- 组件分页导航栏 -->
+            <div class="pagination-bar" id="comp-pagination-bar" style="display: none;">
+                <div class="pagination-info">
+                    <span>显示第 <b id="comp-page-start">0</b> - <b id="comp-page-end">0</b> 项，共 <b id="comp-page-total">0</b> 项组件</span>
+                    <label style="display: flex; align-items: center; gap: 6px;">
+                        <span>每页:</span>
+                        <select id="comp-page-size-select" class="select-filter-sm" style="height: 24px; padding: 0 4px; background: #0c1726; color: #fff; border: 1px solid var(--border-subtle); border-radius: 4px;">
+                            <option value="20">20 条</option>
+                            <option value="50" selected>50 条</option>
+                            <option value="100">100 条</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="pagination-pages">
+                    <button class="page-btn" id="btn-comp-page-first">«</button>
+                    <button class="page-btn" id="btn-comp-page-prev">‹</button>
+                    <div id="comp-page-numbers" style="display: flex; gap: 3px;"></div>
+                    <button class="page-btn" id="btn-comp-page-next">›</button>
+                    <button class="page-btn" id="btn-comp-page-last">»</button>
+                </div>
+                <div class="page-jump-box">
+                    <span>跳至:</span>
+                    <input type="number" id="comp-page-jump-input" class="page-jump-input" min="1" value="1" />
+                    <span>页</span>
+                    <button class="btn-industrial-default" id="btn-comp-page-jump" style="height: 24px; padding: 0 6px;">跳转</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图 4: JSON 原文 (非激活时严格隐藏) -->
+        <div id="tab-json" class="tab-panel-container" style="background: #070d19;">
             <div style="background: var(--bg-panel); border-bottom: 1px solid var(--border-subtle); padding: 6px 16px; display: flex; justify-content: flex-end; gap: 8px;">
                 <button class="tool-btn-sm" id="btn-copy-json">📋 复制全部 JSON</button>
                 <button class="tool-btn-sm" id="btn-download-json">💾 下载 SBOM 文件</button>
             </div>
-            <pre id="raw-json-block" class="json-code-view">// 尚未生成 SBOM 数据...</pre>
+            <pre id="raw-json-block" class="json-code-view" style="flex:1; margin:0; padding:16px; overflow:auto;">// 尚未生成 SBOM 数据...</pre>
         </div>
 
         <!-- 侧边节点详情抽屉 -->
@@ -1062,1757 +1072,6 @@
     <!-- 轻量提示 -->
     <div id="toast" class="toast-notify">操作成功</div>
 
-    <script>
-        const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
-        async function tauriInvoke(cmd, args) {
-            if (tauriCore && tauriCore.invoke) {
-                return await tauriCore.invoke(cmd, args);
-            }
-            throw new Error("当前处于浏览器预览环境，Tauri 后端未连接。");
-        }
-
-        let currentSbomData = null;
-        let currentGraphData = null;
-
-        const chartDom = document.getElementById('chart-container');
-        const myChart = echarts.init(chartDom, null, { renderer: 'canvas' });
-        let bmChart = null;
-        let bmDiffNodes = [];
-        let bmCurrentDiffFilter = 'onlyA';
-
-        // 高对比度分类色标
-        const CATEGORIES = [
-            { name: '📦 项目根节点', itemStyle: { color: '#38bdf8' } },
-            { name: '🚨 漏洞告警 (CVE/GHSA)', itemStyle: { color: '#f85149' } },
-            { name: 'Rust (Cargo)', itemStyle: { color: '#fb923c' } },
-            { name: 'Go (Golang)', itemStyle: { color: '#22d3ee' } },
-            { name: 'Node.js (NPM)', itemStyle: { color: '#eab308' } },
-            { name: 'Java/Kotlin (Maven/Gradle)', itemStyle: { color: '#f43f5e' } },
-            { name: 'Python (PyPI)', itemStyle: { color: '#60a5fa' } },
-            { name: '其他语言生态', itemStyle: { color: '#94a3b8' } }
-        ];
-
-        function detectCategoryIndex(purl) {
-            if (!purl) return 7;
-            if (purl.startsWith('pkg:cargo/')) return 2;
-            if (purl.startsWith('pkg:golang/')) return 3;
-            if (purl.startsWith('pkg:npm/')) return 4;
-            if (purl.startsWith('pkg:maven/')) return 5;
-            if (purl.startsWith('pkg:pypi/')) return 6;
-            return 7;
-        }
-
-        function showToast(msg, isErr = false) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.style.borderColor = isErr ? 'var(--danger-border)' : 'var(--border-strong)';
-            toast.style.color = isErr ? '#ff7b72' : 'var(--text-main)';
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2600);
-        }
-
-        // 1. 文件夹与文件路径选择器绑定
-        document.getElementById('btn-browse-dir').addEventListener('click', async () => {
-            try {
-                const dir = await tauriInvoke('pick_directory');
-                if (dir) {
-                    document.getElementById('input-dir').value = dir;
-                    const curSave = document.getElementById('input-save').value.trim();
-                    if (!curSave) {
-                        const sep = dir.includes('/') ? '/' : '\\';
-                        document.getElementById('input-save').value = `${dir.replace(/[\\/]$/, '')}${sep}sbom_result.json`;
-                    }
-                    showToast(`已选择目录: ${dir}`);
-                }
-            } catch (e) {
-                showToast("打开文件夹失败: " + e, true);
-            }
-        });
-
-        document.getElementById('btn-browse-save').addEventListener('click', async () => {
-            try {
-                const dir = document.getElementById('input-dir').value.trim();
-                let defaultName = "sbom_result.json";
-                if (dir) {
-                    const parts = dir.replace(/[\\/]$/, '').split(/[\\/]/);
-                    const last = parts[parts.length - 1];
-                    if (last) defaultName = `${last}_sbom.json`;
-                }
-                const file = await tauriInvoke('pick_save_file', { defaultName });
-                if (file) {
-                    document.getElementById('input-save').value = file;
-                    showToast(`已指定输出: ${file}`);
-                }
-            } catch (e) {
-                showToast("指定输出失败: " + e, true);
-            }
-        });
-
-        document.getElementById('btn-open-explorer').addEventListener('click', async () => {
-            const path = document.getElementById('input-save').value.trim() || document.getElementById('input-dir').value.trim();
-            if (!path) {
-                showToast("请先指定工程目录或输出文件", true);
-                return;
-            }
-            try {
-                await tauriInvoke('open_in_explorer', { path });
-                showToast(`已在 Windows 资源管理器中打开`);
-            } catch (e) {
-                showToast("打开失败: " + e, true);
-            }
-        });
-
-        // 2. 导入已有本地 SBOM JSON
-        document.getElementById('btn-import-sbom').addEventListener('click', async () => {
-            try {
-                if (tauriCore) {
-                    const path = await tauriInvoke('pick_open_file');
-                    if (path) {
-                        const content = await tauriInvoke('read_file_content', { path });
-                        const json = JSON.parse(content);
-                        loadSbomData(json, path);
-                        showToast(`成功导入: ${path.split(/[\\/]/).pop()}`);
-                    }
-                } else {
-                    document.getElementById('file-import-fallback').click();
-                }
-            } catch (e) {
-                showToast("导入失败: " + e, true);
-            }
-        });
-
-        document.getElementById('file-import-fallback').addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const json = JSON.parse(evt.target.result);
-                    loadSbomData(json, file.name);
-                    showToast(`成功导入文件: ${file.name}`);
-                } catch (err) {
-                    showToast("解析 JSON 失败: " + err, true);
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        // 3. 标签页切换
-        document.querySelectorAll('.view-tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.view-tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-panel-container').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                const targetId = btn.getAttribute('data-tab');
-                const target = document.getElementById(targetId);
-                if (target) target.classList.add('active');
-                if (targetId === 'tab-graph') {
-                    setTimeout(() => myChart && myChart.resize(), 50);
-                }
-                if (targetId === 'tab-benchmark') {
-                    setTimeout(() => bmChart && bmChart.resize(), 50);
-                }
-            });
-        });
-
-        // 4. 数据转换：CycloneDX 1.6 -> ECharts 图谱模型
-        function convertCycloneDXToGraph(sbom, filterVulnOnly = false, filterLoadedOnly = false) {
-            if (!sbom || !Array.isArray(sbom.components)) {
-                return { nodes: [], links: [], vulnerableNodeCount: 0, totalCves: 0, loadedCount: 0, dormantCount: 0, ecosystemsCount: 0 };
-            }
-
-            const vulnMap = new HashMapList();
-            const allVulns = [];
-            if (Array.isArray(sbom.vulnerabilities)) {
-                sbom.vulnerabilities.forEach(v => {
-                    const rating = (v.ratings && v.ratings[0]) || {};
-                    const sev = (rating.severity || 'HIGH').toUpperCase();
-                    const score = rating.score !== undefined ? Number(rating.score).toFixed(1) : '';
-                    allVulns.push({
-                        id: v.id,
-                        severity: sev,
-                        score: score,
-                        description: v.description || '无详细描述',
-                        recommendation: v.recommendation || '关注官方安全通报',
-                        affects: (v.affects || []).map(a => a.ref)
-                    });
-                    (v.affects || []).forEach(a => {
-                        if (a.ref) {
-                            vulnMap.add(a.ref, {
-                                id: v.id,
-                                severity: sev,
-                                score: score,
-                                description: v.description || '无详细描述',
-                                recommendation: v.recommendation || '关注官方安全通报'
-                            });
-                        }
-                    });
-                });
-            }
-
-            const nodes = [];
-            const links = [];
-            const dependedCountMap = new Map();
-            const childToParentsMap = new Map();
-            const parentToChildrenMap = new Map();
-
-            (sbom.dependencies || []).forEach(dep => {
-                const parentRef = dep.ref;
-                if (dep.dependsOn) {
-                    parentToChildrenMap.set(parentRef, dep.dependsOn);
-                    dep.dependsOn.forEach(childRef => {
-                        dependedCountMap.set(childRef, (dependedCountMap.get(childRef) || 0) + 1);
-                        if (!childToParentsMap.has(childRef)) childToParentsMap.set(childRef, []);
-                        childToParentsMap.get(childRef).push(parentRef);
-
-                        const isTargetVuln = vulnMap.has(childRef);
-                        links.push({
-                            source: parentRef,
-                            target: childRef,
-                            lineStyle: isTargetVuln
-                                ? { curveness: 0.15, width: 2.2, opacity: 0.95, color: '#f85149' }
-                                : { curveness: 0.15, width: 1.5, opacity: 0.4, color: '#64748b' }
-                        });
-                    });
-                }
-            });
-
-            const componentRefs = new Set();
-            const ecosystemsFound = new Set();
-            let vulnerableNodeCount = 0;
-            let loadedCount = 0;
-            let dormantCount = 0;
-
-            sbom.components.forEach(c => {
-                const ref = c['bom-ref'];
-                componentRefs.add(ref);
-                const count = dependedCountMap.get(ref) || 0;
-                const vulns = vulnMap.get(ref) || [];
-                const isVulnerable = vulns.length > 0;
-                if (isVulnerable) vulnerableNodeCount++;
-
-                let locationPath = 'runtime/manifest';
-                let runtimeStatus = 'untraced';
-                if (Array.isArray(c.properties)) {
-                    const loc = c.properties.find(p => p.name === 'syft:location:0:path');
-                    if (loc) locationPath = loc.value;
-                    const rStatus = c.properties.find(p => p.name === 'sbom:runtime:status');
-                    if (rStatus) runtimeStatus = rStatus.value;
-                }
-
-                if (runtimeStatus === 'loaded') loadedCount++;
-                else if (runtimeStatus === 'dormant') dormantCount++;
-
-                let license = 'UNKNOWN';
-                if (Array.isArray(c.licenses) && c.licenses[0] && c.licenses[0].license) {
-                    license = c.licenses[0].license.id || c.licenses[0].license.name || 'UNKNOWN';
-                }
-
-                const ecoIdx = detectCategoryIndex(c.purl);
-                if (ecoIdx >= 2 && ecoIdx <= 6) {
-                    ecosystemsFound.add(CATEGORIES[ecoIdx].name);
-                }
-
-                if (filterVulnOnly && !isVulnerable) return;
-                if (filterLoadedOnly && runtimeStatus !== 'loaded') return;
-
-                const baseSize = Math.min(26 + count * 4, 68);
-                const nodeSize = isVulnerable ? Math.max(baseSize + 10, 42) : baseSize;
-                const verLabel = c.version ? (c.version.startsWith('v') ? c.version : `v${c.version}`) : '';
-
-                let prefix = '';
-                if (isVulnerable) prefix = '🚨 ';
-                else if (runtimeStatus === 'loaded') prefix = '🟢 ';
-
-                nodes.push({
-                    id: ref,
-                    rawComponent: c,
-                    name: `${prefix}${c.name}\n${verLabel}`,
-                    cleanName: c.name,
-                    version: c.version || '',
-                    license,
-                    purl: c.purl || '',
-                    locationPath,
-                    runtimeStatus,
-                    ecoName: CATEGORIES[ecoIdx]?.name || '其他组件',
-                    category: isVulnerable ? 1 : ecoIdx,
-                    symbolSize: nodeSize,
-                    value: count,
-                    vulns: vulns,
-                    callers: childToParentsMap.get(ref) || [],
-                    dependencies: parentToChildrenMap.get(ref) || [],
-                    label: {
-                        show: isVulnerable || runtimeStatus === 'loaded' || count >= 2,
-                        position: 'bottom',
-                        color: isVulnerable ? '#ff7b72' : (runtimeStatus === 'loaded' ? '#3fb950' : '#e6edf3'),
-                        fontSize: 12,
-                        fontWeight: (isVulnerable || runtimeStatus === 'loaded') ? 'bold' : 'normal',
-                        backgroundColor: 'rgba(22, 27, 34, 0.92)',
-                        borderColor: isVulnerable ? '#f85149' : (runtimeStatus === 'loaded' ? '#2ea043' : '#30363d'),
-                        borderWidth: 1,
-                        borderRadius: 3,
-                        padding: [3, 6]
-                    },
-                    itemStyle: isVulnerable ? {
-                        color: '#da3633',
-                        borderColor: '#ffeb3b',
-                        borderWidth: 3,
-                        shadowBlur: 20,
-                        shadowColor: 'rgba(248, 81, 73, 0.8)'
-                    } : (runtimeStatus === 'loaded' ? {
-                        borderColor: '#2ea043',
-                        borderWidth: 2.8,
-                        shadowBlur: 14,
-                        shadowColor: 'rgba(46, 160, 67, 0.7)'
-                    } : {
-                        borderColor: '#30363d',
-                        borderWidth: 1.5,
-                        shadowBlur: count > 3 ? 10 : 3,
-                        shadowColor: 'rgba(0, 0, 0, 0.5)'
-                    })
-                });
-            });
-
-            // 虚拟项目根节点
-            const VIRTUAL_ROOT_ID = '__VIRTUAL_PROJECT_ROOT__';
-            if (!filterVulnOnly && !filterLoadedOnly) {
-                nodes.push({
-                    id: VIRTUAL_ROOT_ID,
-                    name: '📦 项目根节点\n(Root)',
-                    cleanName: '项目根节点',
-                    category: 0,
-                    symbolSize: 85,
-                    vulns: [],
-                    label: {
-                        show: true,
-                        position: 'inside',
-                        color: '#ffffff',
-                        fontSize: 13,
-                        fontWeight: 'bold'
-                    },
-                    itemStyle: {
-                        color: '#1f6feb',
-                        borderColor: '#58a6ff',
-                        borderWidth: 3,
-                        shadowBlur: 25,
-                        shadowColor: 'rgba(31, 111, 235, 0.5)'
-                    }
-                });
-
-                componentRefs.forEach(ref => {
-                    if (!dependedCountMap.has(ref)) {
-                        const isTargetVuln = vulnMap.has(ref);
-                        links.push({
-                            source: VIRTUAL_ROOT_ID,
-                            target: ref,
-                            lineStyle: {
-                                curveness: 0.1,
-                                width: isTargetVuln ? 2.5 : 1.8,
-                                type: 'dashed',
-                                opacity: 0.8,
-                                color: isTargetVuln ? '#f85149' : '#38bdf8'
-                            }
-                        });
-                    }
-                });
-            }
-
-            return {
-                nodes,
-                links,
-                vulnerableNodeCount,
-                totalCves: Array.isArray(sbom.vulnerabilities) ? sbom.vulnerabilities.length : 0,
-                loadedCount,
-                dormantCount,
-                ecosystemsCount: ecosystemsFound.size,
-                ecosystemsList: Array.from(ecosystemsFound),
-                allVulns
-            };
-        }
-
-        class HashMapList {
-            constructor() { this.map = new Map(); }
-            add(key, val) {
-                if (!this.map.has(key)) this.map.set(key, []);
-                this.map.get(key).push(val);
-            }
-            get(key) { return this.map.get(key) || []; }
-            has(key) { return this.map.has(key); }
-        }
-
-        // 5. 渲染力导向网络图
-        function renderGraph(graphData) {
-            myChart.setOption({
-                backgroundColor: '#0d1117',
-                legend: [{
-                    data: CATEGORIES.map(a => a.name),
-                    top: 10,
-                    textStyle: { color: '#8b949e', fontSize: 12 },
-                    itemGap: 16,
-                    icon: 'roundRect'
-                }],
-                tooltip: {
-                    trigger: 'item',
-                    backgroundColor: '#161b22',
-                    borderColor: '#30363d',
-                    borderWidth: 1,
-                    textStyle: { color: '#f0f6fc', fontSize: 12 },
-                    extraCssText: 'box-shadow: 0 8px 24px rgba(0,0,0,0.7); border-radius: 4px; max-width: 460px; white-space: normal;',
-                    formatter: function (params) {
-                        if (params.dataType === 'node') {
-                            if (params.data.id === '__VIRTUAL_PROJECT_ROOT__') {
-                                return `<b>📦 项目根节点</b><br/><span style="color:#8b949e;">统一统辖各个多语言模块的直接顶层依赖</span>`;
-                            }
-                            const vulns = params.data.vulns || [];
-                            let vulnSection = '';
-                            if (vulns.length > 0) {
-                                vulnSection = `<div style="margin-top:8px; border-top:1px solid #30363d; padding-top:6px;">
-                                                <div style="color:#f85149; font-weight:bold; font-size:12px;">🚨 命中 ${vulns.length} 项 OSV 漏洞告警:</div>
-                                                ${vulns.map(v => `
-                                                    <div style="margin-top:4px; padding:4px 6px; background:rgba(248,81,73,0.1); border-left:3px solid #f85149;">
-                                                        <div style="font-weight:bold; color:#ff7b72; font-size:11px;">[${v.severity} ${v.score || ''}] ${v.id}</div>
-                                                        <div style="color:#c9d1d9; font-size:11px;">${v.description}</div>
-                                                        <div style="color:#3fb950; font-size:11px;">修复建议: ${v.recommendation}</div>
-                                                    </div>
-                                                `).join('')}
-                                               </div>`;
-                            }
-                            const statusStr = params.data.runtimeStatus === 'loaded' 
-                                ? '<span style="color:#3fb950;font-weight:bold;">🟢 活跃运行 (LOADED)</span>' 
-                                : (params.data.runtimeStatus === 'dormant' ? '<span style="color:#8b949e;">⚪ 静态休眠 (DORMANT)</span>' : '<span style="color:#58a6ff;">🔘 静态责任链</span>');
-
-                            return `<div style="padding:2px;">
-                                        <b style="font-size:14px; color:#58a6ff;">${params.data.cleanName}</b> 
-                                        <span style="color:#8b949e; font-size:12px;">(${params.data.version || '未知'})</span><br/>
-                                        <span style="color:#8b949e; font-size:11px;">生态: ${params.data.ecoName} | 状态: ${statusStr} | 许可证: <b style="color:#3fb950;">${params.data.license || 'UNKNOWN'}</b></span><br/>
-                                        <span style="color:#6e7681; font-size:10px; font-family:var(--font-mono); word-break:break-all;">${params.data.purl}</span>
-                                        <div style="margin-top:4px; color:#c9d1d9; font-size:11px;">被下游依赖: <strong style="color:#f0883e;">${params.data.value}</strong> 次</div>
-                                        ${vulnSection}
-                                    </div>`;
-                        }
-                        return `<b>依赖链路调用</b><br/>${params.data.source.split('?')[0]}<br/>⬇<br/>${params.data.target.split('?')[0]}`;
-                    }
-                },
-                series: [
-                    {
-                        type: 'graph',
-                        layout: 'force',
-                        data: graphData.nodes,
-                        links: graphData.links,
-                        categories: CATEGORIES,
-                        roam: true,
-                        draggable: true,
-                        edgeSymbol: ['none', 'arrow'],
-                        edgeSymbolSize: [0, 9],
-                        force: {
-                            repulsion: 520,
-                            edgeLength: 130,
-                            gravity: 0.08
-                        },
-                        emphasis: {
-                            focus: 'adjacency',
-                            lineStyle: { width: 3.5, opacity: 1 },
-                            label: {
-                                show: true,
-                                fontSize: 13,
-                                fontWeight: 'bold',
-                                color: '#ffffff',
-                                backgroundColor: '#161b22',
-                                borderColor: '#58a6ff',
-                                borderWidth: 1,
-                                padding: [4, 8]
-                            }
-                        }
-                    }
-                ]
-            });
-        }
-
-        // 6. 渲染表格数据
-        function renderVulnTable(sbom) {
-            const tbody = document.getElementById('vuln-table-body');
-            const vulns = sbom.vulnerabilities || [];
-            if (vulns.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#3fb950; padding:40px; font-weight:600;">
-                                    ✅ 安全审计通过：当前项目全部组件未发现已知 CVE / GHSA 漏洞！
-                                   </td></tr>`;
-                return;
-            }
-
-            // 检查每个组件的动态加载状态
-            const compStatusMap = new Map();
-            (sbom.components || []).forEach(c => {
-                let status = 'untraced';
-                if (Array.isArray(c.properties)) {
-                    const st = c.properties.find(p => p.name === 'sbom:runtime:status');
-                    if (st) status = st.value;
-                }
-                compStatusMap.set(c['bom-ref'], status);
-            });
-
-            let html = '';
-            vulns.forEach(v => {
-                const rating = (v.ratings && v.ratings[0]) || {};
-                const sev = (rating.severity || 'HIGH').toUpperCase();
-                const score = rating.score !== undefined ? Number(rating.score).toFixed(1) : '-';
-                const sevClass = sev === 'CRITICAL' ? 'critical' : (sev === 'HIGH' ? 'high' : (sev === 'MEDIUM' ? 'medium' : 'low'));
-                const affectedRefs = (v.affects || []).map(a => a.ref.split('?')[0]).join(', ');
-
-                // 评估可达性风险
-                let hasLoaded = false;
-                (v.affects || []).forEach(a => {
-                    if (compStatusMap.get(a.ref) === 'loaded') hasLoaded = true;
-                });
-
-                const reachabilityTag = hasLoaded
-                    ? `<span class="badge-sev critical">🚨 已观测到加载(高危)</span>`
-                    : `<span class="badge-sev" style="background:#30363d;color:#8b949e;">⚪ 未观测到加载（不代表不可达）</span>`;
-
-                html += `<tr>
-                            <td><b style="color:#ffffff; font-family:var(--font-mono);">${v.id}</b></td>
-                            <td><span class="badge-sev ${sevClass}">${sev}</span></td>
-                            <td><b style="font-family:var(--font-mono); color:#ff7b72;">${score}</b></td>
-                            <td style="font-family:var(--font-mono); color:#79c0ff; word-break:break-all;">${affectedRefs}</td>
-                            <td>${reachabilityTag}</td>
-                            <td>${v.description || '无详细描述'}</td>
-                            <td style="color:#3fb950;">${v.recommendation || '关注官方安全通报'}</td>
-                            <td style="text-align:center;">
-                                <button class="tool-btn-sm" onclick="locateNode('${affectedRefs}')">定位</button>
-                            </td>
-                         </tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-
-        function renderComponentTable(sbom) {
-            const tbody = document.getElementById('comp-table-body');
-            const components = sbom.components || [];
-            if (components.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:40px;">暂无数据</td></tr>`;
-                return;
-            }
-
-            const vulnRefs = new Set();
-            if (Array.isArray(sbom.vulnerabilities)) {
-                sbom.vulnerabilities.forEach(v => {
-                    (v.affects || []).forEach(a => { if (a.ref) vulnRefs.add(a.ref); });
-                });
-            }
-
-            let html = '';
-            components.forEach(c => {
-                const isVuln = vulnRefs.has(c['bom-ref']);
-                let locPath = 'runtime/manifest';
-                let runtimeStatus = 'untraced';
-                if (Array.isArray(c.properties)) {
-                    const p = c.properties.find(x => x.name === 'syft:location:0:path');
-                    if (p) locPath = p.value;
-                    const st = c.properties.find(x => x.name === 'sbom:runtime:status');
-                    if (st) runtimeStatus = st.value;
-                }
-                const ecoIdx = detectCategoryIndex(c.purl);
-                const ecoName = CATEGORIES[ecoIdx]?.name || '其他';
-                let license = 'UNKNOWN';
-                if (Array.isArray(c.licenses) && c.licenses[0] && c.licenses[0].license) {
-                    license = c.licenses[0].license.id || c.licenses[0].license.name || 'UNKNOWN';
-                }
-
-                const statusTag = runtimeStatus === 'loaded'
-                    ? '<span class="status-badge-loaded">🟢 活跃运行</span>'
-                    : (runtimeStatus === 'dormant' ? '<span class="status-badge-dormant">⚪ 静态休眠</span>' : '<span class="status-badge-untraced">🔘 静态责任链</span>');
-
-                html += `<tr>
-                            <td><b style="color:#ffffff;">${c.name}</b></td>
-                            <td style="font-family:var(--font-mono); color:#79c0ff;">${c.version || '-'}</td>
-                            <td><span class="badge-eco-tag">${ecoName}</span></td>
-                            <td>${statusTag}</td>
-                            <td><span class="badge-eco-tag" style="color:#3fb950;">${license}</span></td>
-                            <td style="font-family:var(--font-mono); color:#8b949e; font-size:11px; word-break:break-all;">${c.purl || '-'}</td>
-                            <td style="font-family:var(--font-mono); color:#6e7681; font-size:11px;">${locPath}</td>
-                            <td style="text-align:center;">
-                                ${isVuln ? '<span style="color:#f85149; font-weight:bold;">🚨 风险</span>' : '<span style="color:#3fb950;">正常</span>'}
-                            </td>
-                         </tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-
-        // 定位并高亮节点
-        window.locateNode = function(refOrName) {
-            document.querySelector('[data-tab="tab-graph"]').click();
-            document.getElementById('node-search').value = refOrName;
-            filterAndFocus(refOrName);
-        };
-
-        function filterAndFocus(keyword) {
-            if (!keyword || !currentGraphData) return;
-            const term = keyword.toLowerCase().trim();
-            const matched = currentGraphData.nodes.find(n => 
-                (n.cleanName && n.cleanName.toLowerCase().includes(term)) ||
-                (n.purl && n.purl.toLowerCase().includes(term)) ||
-                (n.id && n.id.toLowerCase().includes(term))
-            );
-
-            if (matched) {
-                myChart.dispatchAction({
-                    type: 'focusNodeAdjacency',
-                    dataIndex: currentGraphData.nodes.indexOf(matched)
-                });
-                openDrawer(matched);
-                showToast(`已定位: ${matched.cleanName}`);
-            } else {
-                showToast("未找到匹配节点", true);
-            }
-        }
-
-        document.getElementById('node-search').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') filterAndFocus(e.target.value);
-        });
-
-        // 仅看活跃 / 仅看漏洞过滤联动
-        function applyGraphFilters() {
-            if (!currentSbomData) return;
-            const isVulnOnly = document.getElementById('filter-vuln-only').checked;
-            const isLoadedOnly = document.getElementById('filter-loaded-only').checked;
-            const filtered = convertCycloneDXToGraph(currentSbomData, isVulnOnly, isLoadedOnly);
-            renderGraph(filtered);
-        }
-
-        document.getElementById('filter-vuln-only').addEventListener('change', () => {
-            applyGraphFilters();
-            showToast("已切换拓扑视图");
-        });
-
-        document.getElementById('filter-loaded-only').addEventListener('change', () => {
-            applyGraphFilters();
-            showToast("已切换活跃依赖过滤");
-        });
-
-        // 抽屉详情
-        myChart.on('click', function(params) {
-            if (params.dataType === 'node' && params.data.id !== '__VIRTUAL_PROJECT_ROOT__') {
-                openDrawer(params.data);
-            }
-        });
-
-        function openDrawer(nodeData) {
-            const drawer = document.getElementById('node-drawer');
-            const drawerBody = document.getElementById('drawer-body');
-            document.getElementById('drawer-node-name').innerText = nodeData.cleanName;
-            document.getElementById('drawer-eco-tag').innerText = nodeData.ecoName;
-
-            const vulns = nodeData.vulns || [];
-            let vulnBox = '';
-            if (vulns.length > 0) {
-                vulnBox = `
-                    <div class="detail-vuln-box">
-                        <b style="color:#f85149; font-size:12px;">🚨 命中 ${vulns.length} 项 OSV 漏洞告警</b>
-                        ${vulns.map(v => `
-                            <div style="margin-top:6px; border-top:1px solid rgba(248,81,73,0.3); padding-top:4px;">
-                                <div style="display:flex; justify-content:space-between;">
-                                    <b style="color:#ff7b72;">${v.id}</b>
-                                    <span class="badge-sev ${v.severity.toLowerCase()}">${v.severity} ${v.score || ''}</span>
-                                </div>
-                                <div style="color:#f0f6fc; margin-top:2px;">${v.description}</div>
-                                <div style="color:#3fb950; margin-top:2px; font-weight:600;">修复建议: ${v.recommendation}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }
-
-            drawerBody.innerHTML = `
-                ${vulnBox}
-                <div class="detail-block">
-                    <div class="detail-title">版本号</div>
-                    <div class="detail-val" style="color:#79c0ff;">${nodeData.version || '未知'}</div>
-                </div>
-                <div class="detail-block">
-                    <div class="detail-title">开源许可证 (SPDX License)</div>
-                    <div class="detail-val" style="color:#3fb950;">${nodeData.license || 'UNKNOWN'}</div>
-                </div>
-                <div class="detail-block">
-                    <div class="detail-title">唯一实例身份证 (instance_id)</div>
-                    <div class="detail-val">${nodeData.id}</div>
-                </div>
-                <div class="detail-block">
-                    <div class="detail-title">标准 PURL 坐标</div>
-                    <div class="detail-val" style="color:#8b949e;">${nodeData.purl}</div>
-                </div>
-                <div class="detail-block">
-                    <div class="detail-title">运行时加载状态</div>
-                    <div class="detail-val">
-                        ${nodeData.runtimeStatus === 'loaded' ? '<span style="color:#2ea043;font-weight:700;">🟢 已观测到加载/引用 (LOADED)</span>' : (nodeData.runtimeStatus === 'dormant' ? '<span style="color:#8b949e;font-weight:700;">⚪ 未观测到加载（不代表不可达）</span>' : '<span style="color:#58a6ff;">🔘 静态责任链解析 (UNTRACED)</span>')}
-                    </div>
-                </div>
-                <div class="detail-block">
-                    <div class="detail-title">清单物理位置 (syft:location:0:path)</div>
-                    <div class="detail-val">${nodeData.locationPath}</div>
-                </div>
-                <div class="detail-block">
-                    <div class="detail-title">上游调用者 (被依赖 ${nodeData.callers ? nodeData.callers.length : 0} 次)</div>
-                    <div class="detail-val" style="color:#8b949e;">
-                        ${(nodeData.callers && nodeData.callers.length > 0) ? nodeData.callers.map(c => `<div>• ${c.split('?')[0]}</div>`).join('') : '顶级直接依赖项'}
-                    </div>
-                </div>
-            `;
-            drawer.classList.add('open');
-        }
-
-        document.getElementById('btn-close-drawer').addEventListener('click', () => {
-            document.getElementById('node-drawer').classList.remove('open');
-        });
-
-        // 画布缩放工具
-        document.getElementById('btn-zoom-in').addEventListener('click', () => {
-            const opt = myChart.getOption();
-            const curZoom = (opt.series[0].zoom || 1) * 1.3;
-            myChart.setOption({ series: [{ zoom: curZoom }] });
-        });
-
-        document.getElementById('btn-zoom-out').addEventListener('click', () => {
-            const opt = myChart.getOption();
-            const curZoom = Math.max((opt.series[0].zoom || 1) * 0.7, 0.2);
-            myChart.setOption({ series: [{ zoom: curZoom }] });
-        });
-
-        document.getElementById('btn-reset-view').addEventListener('click', () => {
-            myChart.dispatchAction({ type: 'restore' });
-            showToast("已重置图谱比例");
-        });
-
-        document.getElementById('btn-export-png').addEventListener('click', () => {
-            const url = myChart.getDataURL({ pixelRatio: 2, backgroundColor: '#0d1117' });
-            const a = document.createElement('a');
-            a.download = `sbom-network-${Date.now()}.png`;
-            a.href = url;
-            a.click();
-            showToast("已导出高清 PNG 图片");
-        });
-
-        // 7. 统一数据装载入口 (无论是扫描产出还是直接文件导入)
-        function loadSbomData(rawSbom, sourceTitle = '') {
-            currentSbomData = rawSbom;
-            const graphData = convertCycloneDXToGraph(rawSbom);
-            currentGraphData = graphData;
-            renderGraph(graphData);
-
-            const comps = Array.isArray(rawSbom.components) ? rawSbom.components : [];
-            const loadedRefs = new Set();
-            let licensedCount = 0;
-            comps.forEach(c => {
-                if (Array.isArray(c.properties)) {
-                    const st = c.properties.find(p => p.name === 'sbom:runtime:status');
-                    if (st && st.value === 'loaded' && c['bom-ref']) {
-                        loadedRefs.add(c['bom-ref']);
-                    }
-                }
-                if (Array.isArray(c.licenses) && c.licenses.length > 0) {
-                    licensedCount++;
-                }
-            });
-
-            let activeVulnsCount = 0;
-            (rawSbom.vulnerabilities || []).forEach(v => {
-                if ((v.affects || []).some(a => loadedRefs.has(a.ref))) {
-                    activeVulnsCount++;
-                }
-            });
-
-            const licRate = comps.length > 0 ? (licensedCount / comps.length * 100).toFixed(1) + '%' : '0%';
-
-            document.getElementById('metric-components').innerText = comps.length;
-            const uniquePurlCount = new Set(comps.map(c => normalizeBenchmarkPurl(c.purl)).filter(Boolean)).size;
-            if (document.getElementById('metric-unique')) {
-                document.getElementById('metric-unique').innerText = uniquePurlCount;
-            }
-            document.getElementById('metric-vulns').innerText = graphData.totalCves;
-
-            if (graphData.totalCves > 0) {
-                document.getElementById('metric-vulns').classList.add('alert');
-                document.getElementById('tab-vuln-badge').style.display = 'inline-block';
-                document.getElementById('tab-vuln-badge').innerText = graphData.totalCves;
-            } else {
-                document.getElementById('metric-vulns').classList.remove('alert');
-                document.getElementById('tab-vuln-badge').style.display = 'none';
-            }
-
-            document.getElementById('metric-ecos').innerText = graphData.ecosystemsCount;
-
-            renderVulnTable(rawSbom);
-            renderComponentTable(rawSbom);
-            document.getElementById('raw-json-block').textContent = JSON.stringify(rawSbom, null, 2);
-
-            const statusDot = document.getElementById('status-dot');
-            const statusText = document.getElementById('status-text');
-            if (graphData.totalCves > 0) {
-                statusDot.className = 'status-dot-sm danger';
-                statusText.innerText = `${sourceTitle ? sourceTitle + ': ' : ''}完成！识别 ${comps.length} 个依赖 (🟢 ${graphData.loadedCount || 0} 活跃)，检出 ${graphData.totalCves} 项漏洞 (🚨 ${activeVulnsCount} 项命中活跃组件)`;
-            } else {
-                statusDot.className = 'status-dot-sm';
-                statusText.innerText = `${sourceTitle ? sourceTitle + ': ' : ''}完成！识别 ${comps.length} 个依赖 (🟢 ${graphData.loadedCount || 0} 活跃)，未发现已知漏洞`;
-            }
-        }
-
-        // 8. 核心分析调用入口
-        document.getElementById('analyze-btn').addEventListener('click', async function() {
-            let directory = document.getElementById('input-dir').value.trim();
-            let outputPath = document.getElementById('input-save').value.trim();
-            const isDynamic = document.getElementById('toggle-dynamic')?.checked ?? true;
-            const isAllowExec = document.getElementById('toggle-allow-exec')?.checked ?? false;
-
-            if (directory.startsWith('"') && directory.endsWith('"')) directory = directory.slice(1, -1);
-            if (outputPath.startsWith('"') && outputPath.endsWith('"')) outputPath = outputPath.slice(1, -1);
-
-            if (!directory) {
-                alert("请先点击「打开文件夹」选取需要分析的项目代码根目录！");
-                return;
-            }
-            if (!outputPath) {
-                const sep = directory.includes('/') ? '/' : '\\';
-                outputPath = `${directory.replace(/[\\/]$/, '')}${sep}sbom_result.json`;
-                document.getElementById('input-save').value = outputPath;
-            }
-
-            const btn = document.getElementById('analyze-btn');
-            const statusDot = document.getElementById('status-dot');
-            const statusText = document.getElementById('status-text');
-
-            try {
-                btn.disabled = true;
-                btn.innerHTML = `<span>⏳ 正在分析构建...</span>`;
-                statusDot.className = 'status-dot-sm busy';
-                statusText.innerText = '正在执行跨语言依赖拓扑解析、动态加载监测与 OSV 匹配...';
-                myChart.showLoading({
-                    text: '正在构建高密度依赖拓扑星系...',
-                    textColor: '#fff',
-                    maskColor: 'rgba(13, 17, 23, 0.85)',
-                    color: '#38bdf8'
-                });
-
-                const jsonString = await tauriInvoke('run_sbom_analyze', {
-                    directory,
-                    outputPath,
-                    dynamic: isDynamic,
-                    allowExec: isAllowExec
-                });
-
-                const rawSbom = JSON.parse(jsonString);
-                myChart.hideLoading();
-                btn.disabled = false;
-                btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>重新分析</span>`;
-
-                loadSbomData(rawSbom, '扫描完成');
-                showToast("依赖拓扑分析与动态加载监测完成！");
-
-            } catch (err) {
-                myChart.hideLoading();
-                btn.disabled = false;
-                btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>重新分析</span>`;
-                statusDot.className = 'status-dot-sm danger';
-                statusText.innerText = '分析失败';
-                showToast("分析发生异常: " + err, true);
-                alert("构建失败: " + err);
-            }
-        });
-
-        // 9. 动态对比评测器逻辑 (用户自选文件对比)
-        let bmSbomA = null;
-        let bmSbomB = null;
-        let bmLabelA = "文件 A";
-        let bmLabelB = "文件 B";
-        let currentBenchmarkMarkdown = "";
-
-        function updateBmStatusHint() {
-            const hint = document.getElementById('bm-status-hint');
-            if (bmSbomA && bmSbomB) {
-                hint.innerText = `已就绪: A (${bmLabelA}) 与 B (${bmLabelB})，可点击开始对比`;
-                hint.style.color = '#3fb950';
-            } else if (bmSbomA) {
-                hint.innerText = `已就绪文件 A，请继续选择文件 B`;
-                hint.style.color = '#58a6ff';
-            } else if (bmSbomB) {
-                hint.innerText = `已就绪文件 B，请继续选择文件 A`;
-                hint.style.color = '#58a6ff';
-            } else {
-                hint.innerText = `未载入对比文件，可点击右上方载入默认样本`;
-                hint.style.color = 'var(--text-muted)';
-            }
-        }
-
-        document.getElementById('btn-browse-bm-a').addEventListener('click', async () => {
-            try {
-                if (tauriCore) {
-                    const path = await tauriInvoke('pick_open_file');
-                    if (path) {
-                        const content = await tauriInvoke('read_file_content', { path });
-                        bmSbomA = JSON.parse(content);
-                        bmLabelA = path.split(/[\\/]/).pop();
-                        document.getElementById('bm-file-a-path').value = path;
-                        updateBmStatusHint();
-                        showToast(`已选择文件 A: ${bmLabelA}`);
-                    }
-                } else {
-                    document.getElementById('file-bm-a-fallback').click();
-                }
-            } catch (e) {
-                showToast("选取文件 A 失败: " + e, true);
-            }
-        });
-
-        document.getElementById('file-bm-a-fallback').addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                try {
-                    bmSbomA = JSON.parse(evt.target.result);
-                    bmLabelA = file.name;
-                    document.getElementById('bm-file-a-path').value = file.name;
-                    updateBmStatusHint();
-                    showToast(`已载入文件 A: ${file.name}`);
-                } catch (err) { showToast("解析文件 A 失败: " + err, true); }
-            };
-            reader.readAsText(file);
-        });
-
-        document.getElementById('btn-browse-bm-b').addEventListener('click', async () => {
-            try {
-                if (tauriCore) {
-                    const path = await tauriInvoke('pick_open_file');
-                    if (path) {
-                        const content = await tauriInvoke('read_file_content', { path });
-                        bmSbomB = JSON.parse(content);
-                        bmLabelB = path.split(/[\\/]/).pop();
-                        document.getElementById('bm-file-b-path').value = path;
-                        updateBmStatusHint();
-                        showToast(`已选择文件 B: ${bmLabelB}`);
-                    }
-                } else {
-                    document.getElementById('file-bm-b-fallback').click();
-                }
-            } catch (e) {
-                showToast("选取文件 B 失败: " + e, true);
-            }
-        });
-
-        document.getElementById('file-bm-b-fallback').addEventListener('change', (e) => {
-            const file = e.target.files && e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                try {
-                    bmSbomB = JSON.parse(evt.target.result);
-                    bmLabelB = file.name;
-                    document.getElementById('bm-file-b-path').value = file.name;
-                    updateBmStatusHint();
-                    showToast(`已载入文件 B: ${file.name}`);
-                } catch (err) { showToast("解析文件 B 失败: " + err, true); }
-            };
-            reader.readAsText(file);
-        });
-
-        async function loadPresetBenchmarkSample(pathA, labelA, pathB, labelB, toastMsg) {
-            try {
-                let contentA = null;
-                let contentB = null;
-                if (tauriCore) {
-                    contentA = await tauriInvoke('read_file_content', { path: pathA });
-                    contentB = await tauriInvoke('read_file_content', { path: pathB });
-                } else {
-                    try {
-                        const resA = await fetch(pathA);
-                        const resB = await fetch(pathB);
-                        if (resA.ok && resB.ok) {
-                            contentA = await resA.text();
-                            contentB = await resB.text();
-                        }
-                    } catch (_) {}
-                }
-
-                if (contentA && contentB) {
-                    bmSbomA = JSON.parse(contentA);
-                    bmLabelA = labelA;
-                    document.getElementById('bm-file-a-path').value = pathA;
-
-                    bmSbomB = JSON.parse(contentB);
-                    bmLabelB = labelB;
-                    document.getElementById('bm-file-b-path').value = pathB;
-
-                    updateBmStatusHint();
-                    runDynamicBenchmark();
-                    showToast(toastMsg);
-                } else {
-                    showToast("当前处于纯网页环境，请使用「选取文件」按钮选择本地 JSON", true);
-                }
-            } catch (e) {
-                showToast("载入测试样本失败: " + e, true);
-            }
-        }
-
-        document.getElementById('btn-quick-sample-bm')?.addEventListener('click', () => {
-            loadPresetBenchmarkSample(
-                "test/mircoservices/microservices-demo_sbom.json",
-                "microservices-demo_sbom.json",
-                "test/mircoservices/sbom-cyclonedx.json",
-                "sbom-cyclonedx.json (Trivy)",
-                "已载入 Google Microservices Demo 实测对比样本！"
-            );
-        });
-
-        document.getElementById('btn-quick-sample-otel')?.addEventListener('click', () => {
-            loadPresetBenchmarkSample(
-                "test/opentelemetry/opentelemetry-demo_sbom.json",
-                "opentelemetry-demo_sbom.json",
-                "test/opentelemetry/opentelemetry-trivy.json",
-                "opentelemetry-trivy.json (Trivy)",
-                "已载入 CNCF OpenTelemetry Demo 实测对比样本！"
-            );
-        });
-
-        document.getElementById('btn-quick-sample-juice')?.addEventListener('click', () => {
-            loadPresetBenchmarkSample(
-                "test/juice-shop/juice-shop_sbom.json",
-                "juice-shop_sbom.json",
-                "test/juice-shop/juice-shop-trivy.json",
-                "juice-shop-trivy.json (Trivy)",
-                "已载入 OWASP Juice Shop 实测对比样本！"
-            );
-        });
-
-        document.getElementById('btn-run-benchmark').addEventListener('click', () => {
-            if (!bmSbomA || !bmSbomB) {
-                alert("请先选取待对比的文件 A 与文件 B（或点击右上方「样本1/样本2/样本3」）！");
-                return;
-            }
-            runDynamicBenchmark();
-            showToast("动态对比评测计算完成！");
-        });
-
-        function extractEcoName(purl) {
-            if (!purl || typeof purl !== 'string') return 'other';
-            const m = purl.match(/^pkg:([^/]+)/);
-            return m ? m[1].toLowerCase() : 'other';
-        }
-
-        function extractToolLabel(sbom, defaultLabel) {
-            if (!sbom || !sbom.metadata) return defaultLabel;
-            if (Array.isArray(sbom.metadata.tools)) {
-                const first = sbom.metadata.tools[0];
-                if (first && first.name) return `${first.name} ${first.version || ''}`.trim();
-            } else if (sbom.metadata.tools && Array.isArray(sbom.metadata.tools.components)) {
-                const first = sbom.metadata.tools.components[0];
-                if (first && first.name) return `${first.name} ${first.version ? 'v' + first.version : ''}`.trim();
-            }
-            return defaultLabel;
-        }
-
-        function isValidThirdPartyLib(c) {
-            if (!c || !c.purl || typeof c.purl !== 'string' || !c.purl.trim()) return false;
-            if (c.type === 'application') return false;
-            const ver = (c.version || '').trim();
-            if (!ver || ver === '0.0.0' || c.purl.trim().endsWith('@0.0.0')) return false;
-            return true;
-        }
-
-        function normalizeBenchmarkPurl(rawPurl) {
-            if (!rawPurl) return '';
-            let s = rawPurl.trim().split('?')[0].split('#')[0];
-            s = s.replace(/%2B/gi, '+').replace(/%40/gi, '@').toLowerCase();
-            if (s.startsWith('pkg:pypi/')) {
-                const atIdx = s.indexOf('@');
-                if (atIdx > 9) {
-                    const pkgName = s.substring(9, atIdx).replace(/_/g, '-');
-                    s = 'pkg:pypi/' + pkgName + s.substring(atIdx);
-                }
-            }
-            return s;
-        }
-
-        function isSupportedTargetEco(eco) {
-            return ['cargo', 'golang', 'maven', 'npm', 'pypi'].includes(eco);
-        }
-
-        function extractCompMeta(c) {
-            let status = 'untraced';
-            let location = '-';
-            if (Array.isArray(c?.properties)) {
-                const st = c.properties.find(p => p.name === 'sbom:runtime:status');
-                if (st && st.value) status = st.value;
-                const loc = c.properties.find(p => p.name === 'syft:location:0:path' || (p.name && p.name.includes('location')));
-                if (loc && loc.value) location = loc.value;
-            }
-            let license = 'UNKNOWN';
-            if (Array.isArray(c?.licenses) && c.licenses[0]?.license) {
-                license = c.licenses[0].license.id || c.licenses[0].license.name || 'UNKNOWN';
-            }
-            return { status, location, license };
-        }
-
-        function runDynamicBenchmark() {
-            if (!bmSbomA || !bmSbomB) return;
-            const toolA = extractToolLabel(bmSbomA, bmLabelA);
-            const toolB = extractToolLabel(bmSbomB, bmLabelB);
-
-            const rawCompsA = Array.isArray(bmSbomA.components) ? bmSbomA.components : [];
-            const rawCompsB = Array.isArray(bmSbomB.components) ? bmSbomB.components : [];
-
-            const compsA = rawCompsA.filter(isValidThirdPartyLib);
-            const compsB = rawCompsB.filter(isValidThirdPartyLib);
-
-            const totalA = compsA.length;
-            const totalB = compsB.length;
-
-            // 建立基于规范化 PURL 的依赖字典（若某 PURL 在多实例中有一个为 loaded，则优先记录 loaded 状态）
-            const mapA = new Map();
-            const statusMapA = new Map();
-            const loadedRefsA = new Set();
-            let loadedA = 0;
-            let dormantA = 0;
-            let licensedA = 0;
-            const uniqueLocationsA = new Set();
-            const ecoLoadedA = {};
-            const ecoDormantA = {};
-
-            compsA.forEach(c => {
-                const p = normalizeBenchmarkPurl(c.purl);
-                const e = extractEcoName(p);
-                const meta = extractCompMeta(c);
-                if (meta.status === 'loaded') {
-                    loadedA++;
-                    ecoLoadedA[e] = (ecoLoadedA[e] || 0) + 1;
-                    statusMapA.set(p, 'loaded');
-                    if (c['bom-ref']) loadedRefsA.add(c['bom-ref']);
-                } else if (meta.status === 'dormant') {
-                    dormantA++;
-                    ecoDormantA[e] = (ecoDormantA[e] || 0) + 1;
-                    if (statusMapA.get(p) !== 'loaded') statusMapA.set(p, 'dormant');
-                } else {
-                    if (!statusMapA.has(p)) statusMapA.set(p, 'untraced');
-                }
-                if (meta.license !== 'UNKNOWN') licensedA++;
-                if (meta.location && meta.location !== '-') uniqueLocationsA.add(meta.location);
-                if (p && (!mapA.has(p) || meta.status === 'loaded')) mapA.set(p, c);
-            });
-
-            const mapB = new Map();
-            let loadedB = 0;
-            let dormantB = 0;
-            let licensedB = 0;
-            const uniqueLocationsB = new Set();
-
-            compsB.forEach(c => {
-                const p = normalizeBenchmarkPurl(c.purl);
-                const meta = extractCompMeta(c);
-                if (meta.status === 'loaded') loadedB++;
-                else if (meta.status === 'dormant') dormantB++;
-                if (meta.license !== 'UNKNOWN') licensedB++;
-                if (meta.location && meta.location !== '-') uniqueLocationsB.add(meta.location);
-                if (p && !mapB.has(p)) mapB.set(p, c);
-            });
-
-            const vulnsListA = Array.isArray(bmSbomA.vulnerabilities) ? bmSbomA.vulnerabilities : [];
-            const vulnsListB = Array.isArray(bmSbomB.vulnerabilities) ? bmSbomB.vulnerabilities : [];
-            const vulnsA = vulnsListA.length;
-            const vulnsB = vulnsListB.length;
-            let activeVulnsA = 0;
-            vulnsListA.forEach(v => {
-                if ((v.affects || []).some(a => loadedRefsA.has(a.ref))) activeVulnsA++;
-            });
-
-            const licenseRateA = totalA > 0 ? (licensedA / totalA * 100).toFixed(1) : '0.0';
-            const licenseRateB = totalB > 0 ? (licensedB / totalB * 100).toFixed(1) : '0.0';
-
-            const purlsA = new Set(mapA.keys());
-            const purlsB = new Set(mapB.keys());
-
-            let commonCount = 0;
-            const commonPurls = new Set();
-            purlsA.forEach(p => {
-                if (purlsB.has(p)) {
-                    commonCount++;
-                    commonPurls.add(p);
-                }
-            });
-
-            const onlyPurlsA = new Set();
-            purlsA.forEach(p => { if (!commonPurls.has(p)) onlyPurlsA.add(p); });
-
-            const onlyPurlsB = new Set();
-            purlsB.forEach(p => { if (!commonPurls.has(p)) onlyPurlsB.add(p); });
-
-            const onlyInA = onlyPurlsA.size;
-            const onlyInB = onlyPurlsB.size;
-
-            // 计算目标生态 (Top 5) 下的基准覆盖率
-            let supportedBCount = 0;
-            let supportedCommonCount = 0;
-            purlsB.forEach(p => {
-                if (isSupportedTargetEco(extractEcoName(p))) supportedBCount++;
-            });
-            commonPurls.forEach(p => {
-                if (isSupportedTargetEco(extractEcoName(p))) supportedCommonCount++;
-            });
-
-            const recallTotalB = purlsB.size > 0 ? (commonCount / purlsB.size * 100) : 100;
-            const recallB = supportedBCount > 0
-                ? (supportedCommonCount / supportedBCount * 100)
-                : recallTotalB;
-            const unionCount = purlsA.size + supportedBCount - supportedCommonCount;
-            const jaccard = unionCount > 0 ? (supportedCommonCount / unionCount * 100) : 100;
-
-            // 各生态分布与重合统计
-            const ecosA = {};
-            compsA.forEach(c => {
-                const e = extractEcoName(normalizeBenchmarkPurl(c.purl));
-                ecosA[e] = (ecosA[e] || 0) + 1;
-            });
-
-            const ecosB = {};
-            compsB.forEach(c => {
-                const e = extractEcoName(normalizeBenchmarkPurl(c.purl));
-                ecosB[e] = (ecosB[e] || 0) + 1;
-            });
-
-            const ecosPurlsA = {};
-            purlsA.forEach(p => {
-                const e = extractEcoName(p);
-                ecosPurlsA[e] = (ecosPurlsA[e] || 0) + 1;
-            });
-
-            const ecosPurlsB = {};
-            purlsB.forEach(p => {
-                const e = extractEcoName(p);
-                ecosPurlsB[e] = (ecosPurlsB[e] || 0) + 1;
-            });
-
-            const allEcos = Array.from(new Set([...Object.keys(ecosA), ...Object.keys(ecosB)])).sort();
-
-            const ecoCommon = {};
-            commonPurls.forEach(p => {
-                const e = extractEcoName(p);
-                ecoCommon[e] = (ecoCommon[e] || 0) + 1;
-            });
-
-            // 构造差异列表数据集（附带动态监测状态、SPDX 与清单路径）
-            bmDiffNodes = [];
-            onlyPurlsA.forEach(p => {
-                const c = mapA.get(p);
-                const meta = extractCompMeta(c);
-                const st = statusMapA.get(p) || meta.status;
-                const eco = extractEcoName(p);
-                let reason = '多模块嵌套扫描所得扩展依赖';
-                if (eco === 'maven') reason = '无锁清单 (build.gradle/.kts 或 pom.xml) Tree-sitter AST 静态穿透补盲';
-                else if (eco === 'npm') reason = '全生命周期依赖覆盖策略 (含 devDependencies 开发测试期依赖与深层子包)';
-                else if (eco === 'golang') reason = 'Go 多微服务独立上下文与构建校验集扩展覆盖';
-                bmDiffNodes.push({
-                    type: 'onlyA',
-                    name: c?.name || p.split('/')[1]?.split('@')[0] || p,
-                    version: c?.version || '-',
-                    eco,
-                    purl: p,
-                    runtimeStatus: st,
-                    license: meta.license,
-                    location: meta.location,
-                    desc: reason
-                });
-            });
-
-            onlyPurlsB.forEach(p => {
-                const c = mapB.get(p);
-                const meta = extractCompMeta(c);
-                const eco = extractEcoName(p);
-                const reason = !isSupportedTargetEco(eco)
-                    ? '非本课题设计边界语言生态 (Ruby/Erlang/.NET 归入 Future Work)'
-                    : '参照基准工具检出的特定版本或别名依赖';
-                bmDiffNodes.push({
-                    type: 'onlyB',
-                    name: c?.name || p.split('/')[1]?.split('@')[0] || p,
-                    version: c?.version || '-',
-                    eco,
-                    purl: p,
-                    runtimeStatus: 'untraced',
-                    license: meta.license,
-                    location: meta.location,
-                    desc: reason
-                });
-            });
-
-            commonPurls.forEach(p => {
-                const cA = mapA.get(p);
-                const cB = mapB.get(p);
-                const c = cA || cB;
-                const meta = extractCompMeta(cA || cB);
-                const st = statusMapA.get(p) || meta.status;
-                bmDiffNodes.push({
-                    type: 'common',
-                    name: c?.name || p.split('/')[1]?.split('@')[0] || p,
-                    version: c?.version || '-',
-                    eco: extractEcoName(p),
-                    purl: p,
-                    runtimeStatus: st,
-                    license: meta.license,
-                    location: meta.location,
-                    desc: '两款工具在相同工程下完全一致识别的核心第三方依赖'
-                });
-            });
-
-            // 构建学术论文第 5 章实验规范 Markdown 报告
-            currentBenchmarkMarkdown = `# 软件物料清单 (SBOM) 交叉横向对比评测实验报告\n\n> 待测工具 A: ${toolA} (${bmLabelA})\n> 参照工具 B: ${toolB} (${bmLabelB})\n> 方法学说明: 已剔除 \`type == "application"\` 本地工程虚拟根节点，并对 PURL 执行标准归一化。\n\n## 1. 核心依赖覆盖度量化评估\n\n| 评估指标 | 工具 A (${toolA}) | 工具 B (${toolB}) | 覆盖与差异机制分析 |\n| :--- | :--- | :--- | :--- |\n| 第三方库物理实例数 | **${totalA} 个** | ${totalB} 个 | 相差 ${totalA - totalB >= 0 ? '+' : ''}${totalA - totalB} 个，大仓多子模块物理实例隔离差异 |\n| 去重唯一依赖包数 (PURLs) | **${purlsA.size} 个** | ${purlsB.size} 个 (核心生态 ${supportedBCount} 个) | 扩展增量: +${onlyInA} 个 |\n| 全仓库总体覆盖率 (Total Repo Coverage) | **${recallTotalB.toFixed(2)}%** | 基准对照 (100%) | 含非目标生态全部唯一包: ${commonCount}/${purlsB.size} 个 |\n| 目标生态基准覆盖率 (Target Eco Coverage) | **${recallB.toFixed(2)}%** | 基准对照 (100%) | 共同识别核心生态唯一包: ${supportedCommonCount}/${supportedBCount} 个 |\n| 扩展依赖发现数 (Extended Discovery) | **+${onlyInA} 个** | - | 含无锁构建清单 AST 补盲与全生命周期 devDependencies 覆盖 |\n\n## 2. 各语言生态细分覆盖度对比\n\n| 生态类别 | 工具 A 实例 (唯一包) | 工具 B 实例 (唯一包) | 共同唯一包 | 增量差值 | 参照基准覆盖率 |\n| :--- | :--- | :--- | :--- | :--- | :--- |\n${allEcos.map(e => {
-                const cA = ecosA[e] || 0;
-                const cB = ecosB[e] || 0;
-                const uA = ecosPurlsA[e] || 0;
-                const uB = ecosPurlsB[e] || 0;
-                const cCom = ecoCommon[e] || 0;
-                const delta = cA - cB;
-                const cov = !isSupportedTargetEco(e)
-                    ? '非设计边界 (Out of Scope)'
-                    : (uB > 0 ? (cCom / uB * 100).toFixed(1) + '%' : '100.0% (基准漏检)');
-                return `| ${e.toUpperCase()} | ${cA} (${uA}) | ${cB} (${uB}) | ${cCom} | ${delta >= 0 ? '+' + delta : delta} | ${cov} |`;
-            }).join('\n')}\n\n## 3. 评测结论\n- 本工具在目标核心语言生态（Cargo/Go/Maven/NPM/PyPI）中，对主流权威工具 (${toolB}) 的唯一依赖基准覆盖率达到 **${recallB.toFixed(2)}%**（全仓库含非目标生态总体覆盖率为 **${recallTotalB.toFixed(2)}%**）。`;
-
-            // 渲染动态 HTML
-            const container = document.getElementById('benchmark-results-container');
-            container.innerHTML = `
-                <div class="benchmark-banner">
-                    <div>
-                        <h3 style="font-size: 15px; color: #fff; margin-bottom: 4px;">对比评测结果: ${toolA} vs ${toolB}</h3>
-                        <p style="font-size: 12px; color: var(--text-muted);">已执行双口径覆盖率、物理实例数与去重唯一包基准比对</p>
-                    </div>
-                    <button class="btn-industrial-primary" onclick="copyCurrentBenchmarkReport()">
-                        📋 复制论文 Markdown 实验报告
-                    </button>
-                </div>
-
-                <!-- 4 项聚焦依赖覆盖的核心卡片 -->
-                <div class="benchmark-grid">
-                    <div class="benchmark-card">
-                        <span class="benchmark-card-title">目标生态基准覆盖率</span>
-                        <div class="benchmark-num-row">
-                            <span class="benchmark-val-main" style="color: #3fb950;">${recallB.toFixed(2)}%</span>
-                            <span class="benchmark-val-comp">${supportedCommonCount} / ${supportedBCount} 唯一包</span>
-                        </div>
-                        <div class="benchmark-card-desc">目标核心语言生态（Cargo/Go/Maven/NPM/PyPI）覆盖率达 ${recallB.toFixed(2)}%。</div>
-                    </div>
-
-                    <div class="benchmark-card">
-                        <span class="benchmark-card-title">全仓库跨生态总体覆盖率</span>
-                        <div class="benchmark-num-row">
-                            <span class="benchmark-val-main" style="color: #2ea043;">${recallTotalB.toFixed(2)}%</span>
-                            <span class="benchmark-val-comp">${commonCount} / ${purlsB.size} 唯一包</span>
-                        </div>
-                        <div class="benchmark-card-desc">计入非设计边界未适配语言后的全仓库总依赖覆盖率。</div>
-                    </div>
-
-                    <div class="benchmark-card">
-                        <span class="benchmark-card-title">第三方依赖物理实例数</span>
-                        <div class="benchmark-num-row">
-                            <span class="benchmark-val-main" style="color: #58a6ff;">${totalA} 个</span>
-                            <span class="benchmark-val-comp">参照 B: ${totalB} 个</span>
-                        </div>
-                        <div class="benchmark-card-desc">本工具 ${totalA} 个物理依赖构件实例，参照基准 ${totalB} 个实例（相差 ${totalA - totalB >= 0 ? '+' : ''}${totalA - totalB} 个）。</div>
-                    </div>
-
-                    <div class="benchmark-card">
-                        <span class="benchmark-card-title">去重唯一包与扩展增量</span>
-                        <div class="benchmark-num-row">
-                            <span class="benchmark-val-main" style="color: #38bdf8;">${onlyInA >= 0 ? '+' + onlyInA : onlyInA} 个</span>
-                            <span class="benchmark-val-comp">${purlsA.size} vs ${purlsB.size} 唯一包</span>
-                        </div>
-                        <div class="benchmark-card-desc">工具 A 扩展发现 +${onlyInA} 个唯一包（无锁清单 AST 穿透补盲 + devDependencies 全周期覆盖）。</div>
-                    </div>
-                </div>
-
-                <!-- 依赖图大展示 (Large Dependency Diff Graph) -->
-                <div class="benchmark-table-box">
-                    <div class="benchmark-table-header">
-                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                            <span style="font-weight:700;">🌐 行业对比依赖拓扑全景图 (Large Dependency Diff Graph)</span>
-                            <div style="display:inline-flex; align-items:center; gap:10px; font-size:11px; font-weight:normal;">
-                                <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:50%; background:#2ea043; display:inline-block;"></span>🟢 共同识别 (${commonCount})</span>
-                                <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:50%; background:#38bdf8; display:inline-block;"></span>🔵 工具 A 独有增量 (${onlyInA})</span>
-                                <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:10px; height:10px; border-radius:50%; background:#fb923c; display:inline-block;"></span>🟠 工具 B 独有参照 (${onlyInB})</span>
-                            </div>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <input type="text" id="bm-node-search" placeholder="在对比图谱中搜索组件..." style="font-size:11px; padding:4px 8px; background:#0d1117; border:1px solid var(--border-subtle); color:#fff; border-radius:4px; width:160px;" />
-                            <button class="tool-btn-sm" id="btn-bm-zoom-in" title="放大">➕</button>
-                            <button class="tool-btn-sm" id="btn-bm-zoom-out" title="缩小">➖</button>
-                            <button class="tool-btn-sm" id="btn-bm-reset-view" title="重置图谱">↺</button>
-                        </div>
-                    </div>
-                    <div id="bm-chart-container" style="width: 100%; height: 580px; min-height: 520px; background: #090d13; position: relative;"></div>
-                </div>
-
-                <!-- 多生态细分覆盖度对比表 -->
-                <div class="benchmark-table-box">
-                    <div class="benchmark-table-header">
-                        <span>🌐 动态多语言生态覆盖度细分表 (已剔除本地 application 虚拟根并规范化 PURL)</span>
-                        <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">涵盖 ${allEcos.length} 个语言与包管理生态</span>
-                    </div>
-                    <table class="industrial-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 130px;">生态 / 语言</th>
-                                <th style="width: 180px;">工具 A 实例 (唯一包)</th>
-                                <th style="width: 180px;">工具 B 实例 (唯一包)</th>
-                                <th style="width: 130px;">共同唯一包</th>
-                                <th style="width: 140px;">实例差值 (Delta)</th>
-                                <th>参照工具唯一包覆盖率 (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${allEcos.map(e => {
-                                const cA = ecosA[e] || 0;
-                                const cB = ecosB[e] || 0;
-                                const uA = ecosPurlsA[e] || 0;
-                                const uB = ecosPurlsB[e] || 0;
-                                const cCom = ecoCommon[e] || 0;
-                                const lEco = ecoLoadedA[e] || 0;
-                                const dEco = ecoDormantA[e] || 0;
-                                const diff = cA - cB;
-                                const diffBadge = diff > 0 
-                                    ? `<span style="color:#38bdf8;font-weight:bold;">(+${diff})</span>` 
-                                    : (diff < 0 ? `<span style="color:#fb923c;font-weight:bold;">(${diff})</span>` : `<span style="color:#8b949e;">(持平)</span>`);
-                                const dynBadge = cA > 0
-                                    ? `<span style="color:#3fb950;font-weight:600;">🟢 ${lEco} 活跃</span> <span style="color:#8b949e;font-size:11px;">/ ⚪ ${dEco} 未观测</span>`
-                                    : `<span style="color:#6e7681;">-</span>`;
-                                const isSupported = isSupportedTargetEco(e);
-                                const covPct = uB > 0 ? (cCom / uB * 100).toFixed(1) : (cB === 0 ? '100.0' : '0.0');
-                                const covCell = !isSupported
-                                    ? `<span style="font-size:11px; color:#8b949e;">⚪ 非设计边界 (Out of Scope)</span>`
-                                    : `<div style="display:flex; align-items:center; gap:8px;">
-                                           <div style="flex:1; max-width:120px; height:6px; background:#21262d; border-radius:3px; overflow:hidden;">
-                                               <div style="width:${Math.min(Number(covPct), 100)}%; height:100%; background:#2ea043;"></div>
-                                           </div>
-                                           <span style="font-family:var(--font-mono); font-size:11px; color:#3fb950; font-weight:bold;">${covPct}%${uB === 0 ? ' (基准漏检)' : ''}</span>
-                                       </div>`;
-                                return `
-                                    <tr>
-                                        <td><b style="color: #58a6ff;">${e.toUpperCase()}</b></td>
-                                        <td><strong style="color: #fff;">${cA} 个</strong> <span style="color:var(--text-muted);font-size:11px;">(${uA} 唯一)</span></td>
-                                        <td><strong style="color: var(--text-secondary);">${cB} 个</strong> <span style="color:var(--text-muted);font-size:11px;">(${uB} 唯一)</span></td>
-                                        <td><strong style="color: #2ea043;">${cCom} 个</strong></td>
-                                        <td>${diffBadge}</td>
-                                        <td>${covCell}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- 差异组件明细对照表 -->
-                <div class="benchmark-table-box">
-                    <div class="benchmark-table-header">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <span>🔍 依赖覆盖、动态加载状态与差异明细对照 (Difference Drilldown)</span>
-                            <div style="display:inline-flex; gap:6px; margin-left:12px;">
-                                <button class="diff-tab-btn active" id="btn-diff-only-a" onclick="switchDiffTab('onlyA')">
-                                    🔵 工具 A 独有增量 (${onlyInA})
-                                </button>
-                                <button class="diff-tab-btn" id="btn-diff-only-b" onclick="switchDiffTab('onlyB')">
-                                    🟠 工具 B 独有依赖 (${onlyInB})
-                                </button>
-                                <button class="diff-tab-btn" id="btn-diff-common" onclick="switchDiffTab('common')">
-                                    🟢 共同识别依赖 (${commonCount})
-                                </button>
-                            </div>
-                        </div>
-                        <input type="text" id="diff-filter-input" placeholder="在当前清单中过滤..." oninput="renderDiffTableRows()" style="font-size:11px; padding:4px 8px; background:#0d1117; border:1px solid var(--border-subtle); color:#fff; border-radius:4px; width:160px;" />
-                    </div>
-                    <table class="industrial-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 190px;">组件名称 (Name)</th>
-                                <th style="width: 100px;">版本 (Version)</th>
-                                <th style="width: 80px;">生态</th>
-                                <th style="width: 175px;">⚡ 动态加载监测状态</th>
-                                <th style="width: 130px;">SPDX 许可证</th>
-                                <th>标准 Package URL (PURL) / 归属清单</th>
-                                <th style="width: 280px;">差异归属特征与分析</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bm-diff-tbody">
-                            <!-- 动态注入 -->
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-            // 渲染差异表格首屏数据
-            renderDiffTableRows();
-
-            // 初始化渲染大依赖拓扑图
-            renderBenchmarkGraph(mapA, mapB, commonPurls, onlyPurlsA, onlyPurlsB);
-        }
-
-        function renderBenchmarkGraph(mapA, mapB, commonPurls, onlyPurlsA, onlyPurlsB) {
-            const dom = document.getElementById('bm-chart-container');
-            if (!dom) return;
-            if (bmChart) bmChart.dispose();
-            bmChart = echarts.init(dom, null, { renderer: 'canvas' });
-
-            const nodes = [];
-            const nodeIndexMap = new Map();
-
-            function addNode(purl, type) {
-                if (nodeIndexMap.has(purl)) return;
-                const c = (type === 1 ? mapA.get(purl) : (type === 2 ? mapB.get(purl) : (mapA.get(purl) || mapB.get(purl))));
-                const cleanName = c?.name || purl.split('/')[1]?.split('@')[0] || purl;
-                const version = c?.version || '';
-                const eco = extractEcoName(purl);
-
-                const nodeObj = {
-                    id: purl,
-                    name: `${cleanName}${version ? '@' + version : ''}`,
-                    cleanName: cleanName,
-                    version: version,
-                    purl: purl,
-                    eco: eco,
-                    category: type,
-                    symbolSize: type === 0 ? 15 : (type === 1 ? 16 : 14),
-                    itemStyle: {
-                        color: type === 0 ? '#2ea043' : (type === 1 ? '#38bdf8' : '#fb923c'),
-                        borderColor: type === 0 ? '#1b4720' : (type === 1 ? '#0c4a6e' : '#7c2d12'),
-                        borderWidth: 1.5
-                    }
-                };
-                nodeIndexMap.set(purl, nodes.length);
-                nodes.push(nodeObj);
-            }
-
-            commonPurls.forEach(p => addNode(p, 0));
-            onlyPurlsA.forEach(p => addNode(p, 1));
-            onlyPurlsB.forEach(p => addNode(p, 2));
-
-            // 构建边 (Links)
-            const links = [];
-            const linkSet = new Set();
-
-            function extractEdgesFromSbom(sbom) {
-                const refToNormPurl = new Map();
-                (sbom?.components || []).forEach(c => {
-                    const normP = normalizeBenchmarkPurl(c.purl);
-                    if (normP) {
-                        if (c['bom-ref']) refToNormPurl.set(c['bom-ref'].trim(), normP);
-                        refToNormPurl.set(normP, normP);
-                    }
-                });
-
-                (sbom?.dependencies || []).forEach(dep => {
-                    const rawParent = (dep.ref || '').trim();
-                    const parentPurl = refToNormPurl.get(rawParent) || normalizeBenchmarkPurl(rawParent);
-                    (dep.dependsOn || []).forEach(childRef => {
-                        const rawChild = (childRef || '').trim();
-                        const childPurl = refToNormPurl.get(rawChild) || normalizeBenchmarkPurl(rawChild);
-                        if (nodeIndexMap.has(parentPurl) && nodeIndexMap.has(childPurl) && parentPurl !== childPurl) {
-                            const key = `${parentPurl}->${childPurl}`;
-                            if (!linkSet.has(key)) {
-                                linkSet.add(key);
-                                links.push({
-                                    source: parentPurl,
-                                    target: childPurl,
-                                    lineStyle: {
-                                        color: 'rgba(139, 148, 158, 0.25)',
-                                        width: 1,
-                                        curveness: 0.05
-                                    }
-                                });
-                            }
-                        }
-                    });
-                });
-            }
-
-            extractEdgesFromSbom(bmSbomA);
-            extractEdgesFromSbom(bmSbomB);
-
-            const BM_CATEGORIES = [
-                { name: `🟢 共同识别 (${commonPurls.size})`, itemStyle: { color: '#2ea043' } },
-                { name: `🔵 工具 A 独有增量 (${onlyPurlsA.size})`, itemStyle: { color: '#38bdf8' } },
-                { name: `🟠 工具 B 独有参照 (${onlyPurlsB.size})`, itemStyle: { color: '#fb923c' } }
-            ];
-
-            const option = {
-                backgroundColor: '#090d13',
-                tooltip: {
-                    trigger: 'item',
-                    backgroundColor: '#161b22',
-                    borderColor: '#30363d',
-                    textStyle: { color: '#f0f6fc', fontSize: 12 },
-                    formatter: function(params) {
-                        if (params.dataType === 'node') {
-                            const d = params.data;
-                            const typeBadge = d.category === 0
-                                ? '<span style="color:#2ea043; font-weight:bold;">🟢 双方共同识别 (In Both)</span>'
-                                : (d.category === 1 
-                                    ? '<span style="color:#38bdf8; font-weight:bold;">🔵 工具 A 独有增量 (Only in A)</span>'
-                                    : '<span style="color:#fb923c; font-weight:bold;">🟠 工具 B 独有参照 (Only in B)</span>');
-                            return `
-                                <div style="font-weight:bold; font-size:13px; color:#fff; margin-bottom:4px;">${d.cleanName}</div>
-                                <div style="margin-bottom:4px;">状态: ${typeBadge}</div>
-                                <div>版本: <b style="color:#79c0ff;">${d.version || '-'}</b></div>
-                                <div>生态: <span class="badge-eco-tag">${d.eco.toUpperCase()}</span></div>
-                                <div style="color:#8b949e; font-size:10px; font-family:var(--font-mono); margin-top:4px; word-break:break-all;">${d.purl}</div>
-                            `;
-                        }
-                        return '';
-                    }
-                },
-                legend: {
-                    data: BM_CATEGORIES.map(c => c.name),
-                    top: 12,
-                    left: 16,
-                    textStyle: { color: '#c9d1d9', fontSize: 11 }
-                },
-                series: [{
-                    type: 'graph',
-                    layout: 'force',
-                    data: nodes,
-                    links: links,
-                    categories: BM_CATEGORIES,
-                    roam: true,
-                    draggable: true,
-                    label: {
-                        show: nodes.length < 300,
-                        position: 'right',
-                        formatter: '{b}',
-                        fontSize: 10,
-                        color: '#c9d1d9'
-                    },
-                    force: {
-                        repulsion: 140,
-                        edgeLength: [40, 120],
-                        gravity: 0.12,
-                        friction: 0.6
-                    },
-                    emphasis: {
-                        focus: 'adjacency',
-                        lineStyle: { width: 3, color: '#58a6ff' }
-                    }
-                }]
-            };
-
-            bmChart.setOption(option);
-
-            // 绑定大图操作按钮
-            document.getElementById('btn-bm-zoom-in')?.addEventListener('click', () => {
-                const opt = bmChart.getOption();
-                const curZoom = (opt.series[0].zoom || 1) * 1.3;
-                bmChart.setOption({ series: [{ zoom: curZoom }] });
-            });
-
-            document.getElementById('btn-bm-zoom-out')?.addEventListener('click', () => {
-                const opt = bmChart.getOption();
-                const curZoom = Math.max((opt.series[0].zoom || 1) * 0.7, 0.2);
-                bmChart.setOption({ series: [{ zoom: curZoom }] });
-            });
-
-            document.getElementById('btn-bm-reset-view')?.addEventListener('click', () => {
-                bmChart.dispatchAction({ type: 'restore' });
-                showToast("已重置对比图谱比例");
-            });
-
-            document.getElementById('bm-node-search')?.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const term = e.target.value.toLowerCase().trim();
-                    if (!term) return;
-                    const idx = nodes.findIndex(n => n.cleanName.toLowerCase().includes(term) || n.purl.toLowerCase().includes(term));
-                    if (idx >= 0) {
-                        bmChart.dispatchAction({
-                            type: 'focusNodeAdjacency',
-                            dataIndex: idx
-                        });
-                        showToast(`已在对比图谱中高亮定位: ${nodes[idx].cleanName}`);
-                    } else {
-                        showToast("对比图谱中未找到该组件", true);
-                    }
-                }
-            });
-        }
-
-        function switchDiffTab(type) {
-            bmCurrentDiffFilter = type;
-            document.querySelectorAll('.diff-tab-btn').forEach(btn => btn.classList.remove('active'));
-            if (type === 'onlyA') document.getElementById('btn-diff-only-a')?.classList.add('active');
-            if (type === 'onlyB') document.getElementById('btn-diff-only-b')?.classList.add('active');
-            if (type === 'common') document.getElementById('btn-diff-common')?.classList.add('active');
-            renderDiffTableRows();
-        }
-        window.switchDiffTab = switchDiffTab;
-
-        function renderDiffTableRows() {
-            const tbody = document.getElementById('bm-diff-tbody');
-            if (!tbody) return;
-            const filterInput = document.getElementById('diff-filter-input');
-            const searchKeyword = (filterInput?.value || '').toLowerCase().trim();
-
-            let rows = bmDiffNodes.filter(n => n.type === bmCurrentDiffFilter);
-            if (searchKeyword) {
-                rows = rows.filter(n => n.name.toLowerCase().includes(searchKeyword) || n.purl.toLowerCase().includes(searchKeyword));
-            }
-
-            if (rows.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">当前分类下无匹配组件</td></tr>`;
-                return;
-            }
-
-            let html = '';
-            rows.slice(0, 500).forEach(r => {
-                const badge = r.type === 'onlyA'
-                    ? '<span style="color:#38bdf8; font-weight:bold;">🔵 工具 A 独有</span>'
-                    : (r.type === 'onlyB' ? '<span style="color:#fb923c; font-weight:bold;">🟠 工具 B 独有</span>' : '<span style="color:#2ea043; font-weight:bold;">🟢 双方共同识别</span>');
-                html += `
-                    <tr>
-                        <td><b style="color:#ffffff;">${r.name}</b></td>
-                        <td style="font-family:var(--font-mono); color:#79c0ff;">${r.version}</td>
-                        <td><span class="badge-eco-tag">${r.eco.toUpperCase()}</span></td>
-                        <td style="font-family:var(--font-mono); font-size:11px; color:#8b949e; word-break:break-all;">${r.purl}</td>
-                        <td style="font-size:11px; color:var(--text-secondary);">${badge} - ${r.desc}</td>
-                    </tr>
-                `;
-            });
-            if (rows.length > 500) {
-                html += `<tr><td colspan="5" style="text-align:center; padding:10px; color:var(--text-muted); font-size:11px;">已展示前 500 项，其余项可通过搜索精确定位</td></tr>`;
-            }
-            tbody.innerHTML = html;
-        }
-        window.renderDiffTableRows = renderDiffTableRows;
-
-        function copyCurrentBenchmarkReport() {
-            if (!currentBenchmarkMarkdown) {
-                showToast("暂无可复制的对比报告", true);
-                return;
-            }
-            navigator.clipboard.writeText(currentBenchmarkMarkdown).then(() => {
-                showToast("已成功复制动态生成的论文第 5 章对比报告至剪贴板！");
-            });
-        }
-        window.copyCurrentBenchmarkReport = copyCurrentBenchmarkReport;
-
-        // 10. 复制与下载 JSON
-        document.getElementById('btn-copy-json').addEventListener('click', () => {
-            const code = document.getElementById('raw-json-block').textContent;
-            navigator.clipboard.writeText(code).then(() => showToast("已复制 SBOM JSON 到剪贴板"));
-        });
-
-        document.getElementById('btn-download-json').addEventListener('click', () => {
-            const code = document.getElementById('raw-json-block').textContent;
-            const blob = new Blob([code], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.download = `cyclonedx-sbom-${Date.now()}.json`;
-            a.href = url;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast("已下载 SBOM JSON 文件");
-        });
-
-        window.addEventListener('resize', () => {
-            myChart && myChart.resize();
-            bmChart && bmChart.resize();
-        });
-    </script>
+    <script src="index.js"></script>
 </body>
 </html>

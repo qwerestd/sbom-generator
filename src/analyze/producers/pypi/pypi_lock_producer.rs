@@ -43,9 +43,7 @@ impl SbomProducer for PypiLockProducer {
         let mut all_deps = Vec::new();
 
         for path in paths {
-            let Ok(content) = fs::read_to_string(path) else {
-                continue;
-            };
+            let content = fs::read_to_string(path)?;
             let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
             let file_salt = path.to_string_lossy().replace('\\', "/");
 

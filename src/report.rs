@@ -33,18 +33,11 @@ pub struct VulnerabilitySummary {
 
 /// 从 CycloneDX 组件 JSON 节点提取 SPDX 许可证标识
 fn extract_component_license(comp: &serde_json::Value) -> Option<String> {
-    comp.get("licenses")?
-        .as_array()?
-        .first()?
-        .get("license")?
-        .get("id")
-        .or_else(|| {
-            comp.get("licenses")?
-                .as_array()?
-                .first()?
-                .get("license")?
-                .get("name")
-        })?
+    let choice = comp.get("licenses")?.as_array()?.first()?;
+    choice
+        .get("expression")
+        .or_else(|| choice.get("license")?.get("id"))
+        .or_else(|| choice.get("license")?.get("name"))?
         .as_str()
         .map(|s| s.to_string())
 }

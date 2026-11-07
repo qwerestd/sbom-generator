@@ -40,11 +40,10 @@ impl SbomProducer for PypiProducer {
         let mut result = vec![];
 
         for p in paths {
-            if let Ok(content) = fs::read_to_string(p) {
+            {
+                let content = fs::read_to_string(p)?;
                 let file_salt = p.to_string_lossy().replace('\\', "/");
-                if let Ok(file_deps) = Self::parse_single_requirements(&content, &file_salt, p) {
-                    result.extend(file_deps);
-                }
+                result.extend(Self::parse_single_requirements(&content, &file_salt, p)?);
             }
         }
         Ok(result)

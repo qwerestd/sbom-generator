@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
+use std::sync::OnceLock;
 
 use serde_cyclonedx::cyclonedx::v_1_6::{
     ComponentBuilder, CycloneDxBuilder, DependencyBuilder as CdxDependencyBuilder,
@@ -28,12 +29,38 @@ struct TopOrderedSbom<'a> {
     vulnerabilities: Vec<serde_json::Value>,
 }
 
+fn license_choice(value: &str) -> serde_json::Value {
+    if value.split_whitespace().any(|part| {
+        ["OR", "AND", "WITH"]
+            .iter()
+            .any(|op| part.eq_ignore_ascii_case(op))
+    }) {
+        return serde_json::json!([{ "expression": value }]);
+    }
+
+    static SPDX_IDS: OnceLock<std::collections::HashSet<String>> = OnceLock::new();
+    let ids = SPDX_IDS.get_or_init(|| {
+        let schema: serde_json::Value =
+            serde_json::from_str(include_str!("../../resources/schemas/spdx.schema.json"))
+                .expect("bundled SPDX license schema must be valid JSON");
+        schema["enum"]
+            .as_array()
+            .expect("bundled SPDX license schema must list IDs")
+            .iter()
+            .filter_map(|id| id.as_str().map(str::to_owned))
+            .collect()
+    });
+    if ids.contains(value) {
+        serde_json::json!([{ "license": { "id": value } }])
+    } else {
+        serde_json::json!([{ "license": { "name": value } }])
+    }
+}
+
 pub fn generate_sbom(
     dependencies: Vec<Dependency>,
     configuration: &Configuration,
 ) -> anyhow::Result<()> {
-    let mut file = fs::File::create(configuration.output.as_str()).expect("cannot create file");
-
     let mut components = Vec::new();
     let mut cdx_dependencies = Vec::new();
 
@@ -70,7 +97,11 @@ pub fn generate_sbom(
             component_builder.bom_ref(d.purl.clone());
         }
 
-        components.push(component_builder.build().unwrap());
+        components.push(
+            component_builder
+                .build()
+                .map_err(|e| anyhow::anyhow!("invalid component: {e}"))?,
+        );
 
         let mut dep_node_builder = CdxDependencyBuilder::default();
 
@@ -101,7 +132,9 @@ pub fn generate_sbom(
 
     // --- [动态数据组装] ---
     let mut raw_val = serde_json::to_value(&cyclonedx)?;
-    let raw_obj = raw_val.as_object_mut().unwrap();
+    let raw_obj = raw_val
+        .as_object_mut()
+        .ok_or_else(|| anyhow::anyhow!("CycloneDX serialization did not produce an object"))?;
 
     let real_now = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
@@ -130,16 +163,7 @@ pub fn generate_sbom(
 
                 // 【核心补强 1：开源许可证合规元数据 (License Metadata) 注入】
                 if let Some(spdx_lic) = LicenseResolver::resolve_license(d) {
-                    comp_obj.insert(
-                        "licenses".to_string(),
-                        serde_json::json!([
-                            {
-                                "license": {
-                                    "id": spdx_lic
-                                }
-                            }
-                        ]),
-                    );
+                    comp_obj.insert("licenses".to_string(), license_choice(&spdx_lic));
                 }
 
                 // 【方向二兑现：注入文件物理路径与 OSV 风险标签 (Properties)】
@@ -249,7 +273,26 @@ pub fn generate_sbom(
     };
 
     let value_to_write = serde_json::to_string_pretty(&final_output)?;
+    let mut file = fs::File::create(configuration.output.as_str())?;
     file.write_all(value_to_write.as_bytes())?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::license_choice;
+
+    #[test]
+    fn license_choice_uses_spdx_expression_id_or_name() {
+        assert_eq!(
+            license_choice("MIT OR Apache-2.0")[0]["expression"],
+            "MIT OR Apache-2.0"
+        );
+        assert_eq!(license_choice("MIT")[0]["license"]["id"], "MIT");
+        assert_eq!(
+            license_choice("Custom Proprietary")[0]["license"]["name"],
+            "Custom Proprietary"
+        );
+    }
 }

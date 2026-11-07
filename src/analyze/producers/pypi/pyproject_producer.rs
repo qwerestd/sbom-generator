@@ -38,13 +38,9 @@ impl SbomProducer for PyprojectProducer {
         let mut all_deps = Vec::new();
 
         for path in paths {
-            let Ok(content) = fs::read_to_string(path) else {
-                continue;
-            };
+            let content = fs::read_to_string(path)?;
             let file_salt = path.to_string_lossy().replace('\\', "/");
-            if let Ok(deps) = Self::parse_manifest_toml(&content, &file_salt, path) {
-                all_deps.extend(deps);
-            }
+            all_deps.extend(Self::parse_manifest_toml(&content, &file_salt, path)?);
         }
 
         Ok(all_deps)

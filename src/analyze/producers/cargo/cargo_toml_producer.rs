@@ -35,7 +35,8 @@ impl SbomProducer for CargoTomlProducer {
             }
         }
         for p in paths {
-            if let Ok(content) = fs::read_to_string(p) {
+            {
+                let content = fs::read_to_string(p)?;
                 Self::collect_workspace_context(&content, &mut workspace_ctx);
             }
         }
@@ -43,13 +44,15 @@ impl SbomProducer for CargoTomlProducer {
         // 2. 第二趟：解析各个 Cargo.toml 并结合 workspace_ctx 补全继承版本
         let mut all_deps = Vec::new();
         for p in paths {
-            if let Ok(content) = fs::read_to_string(p) {
+            {
+                let content = fs::read_to_string(p)?;
                 let file_salt = p.to_string_lossy().replace('\\', "/");
-                if let Ok(deps) =
-                    Self::parse_single_cargo_toml(&content, &file_salt, p, &workspace_ctx)
-                {
-                    all_deps.extend(deps);
-                }
+                all_deps.extend(Self::parse_single_cargo_toml(
+                    &content,
+                    &file_salt,
+                    p,
+                    &workspace_ctx,
+                )?);
             }
         }
 

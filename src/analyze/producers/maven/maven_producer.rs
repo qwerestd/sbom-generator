@@ -21,9 +21,8 @@ impl MavenProducer {
 
         // 第一趟：解析所有 pom.xml 构建上下文索引
         for p in paths.iter() {
-            if let Ok(maven_file) = MavenFile::new(p, &maven_context) {
-                maven_context.add_maven_file(&maven_file);
-            }
+            let maven_file = MavenFile::new(p, &maven_context)?;
+            maven_context.add_maven_file(&maven_file);
         }
 
         // 第二趟：解析属性变量、继承关系并提取各模块依赖

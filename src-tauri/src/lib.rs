@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::Path;
-use tauri::command;
+use tauri::{command, Manager};
 
 use sbom_generator::analyze::sbom_generate::analyze;
 use sbom_generator::model::configuration::Configuration;
@@ -137,6 +137,31 @@ async fn run_sbom_analyze(
         .map_err(|_| "分析工作线程发生异常中断".to_string())?
 }
 
+/// 打开或聚焦独立的 SBOM 交叉对比与评测窗口
+#[command]
+async fn open_compare_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("compare") {
+        let _ = win.show();
+        let _ = win.unminimize();
+        let _ = win.set_focus();
+        return Ok(());
+    }
+
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        "compare",
+        tauri::WebviewUrl::App("compare.html".into()),
+    )
+    .title("SBOM Studio - 跨维度 SBOM 深度交叉横向对比与评测台")
+    .inner_size(1440.0, 920.0)
+    .min_inner_size(1080.0, 720.0)
+    .resizable(true)
+    .build()
+    .map_err(|e| format!("创建对比独立窗口失败: {}", e))?;
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -146,7 +171,8 @@ pub fn run() {
             pick_save_file,
             pick_open_file,
             read_file_content,
-            open_in_explorer
+            open_in_explorer,
+            open_compare_window
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {

@@ -120,6 +120,22 @@ impl LicenseResolver {
             return parts.join(" OR ");
         }
 
+        if lower.contains(" and ") {
+            let parts: Vec<String> = lower
+                .split(" and ")
+                .map(|p| Self::normalize_spdx_id(p.trim()))
+                .collect();
+            return parts.join(" AND ");
+        }
+
+        if lower.contains(" with ") {
+            let parts: Vec<String> = lower
+                .split(" with ")
+                .map(|p| Self::normalize_spdx_id(p.trim()))
+                .collect();
+            return parts.join(" WITH ");
+        }
+
         if lower.contains('/') {
             let parts: Vec<String> = lower
                 .split('/')
@@ -348,6 +364,10 @@ mod tests {
         assert_eq!(
             LicenseResolver::normalize_spdx_id("mit or apache-2.0"),
             "MIT OR Apache-2.0"
+        );
+        assert_eq!(
+            LicenseResolver::normalize_spdx_id("mit and apache-2.0"),
+            "MIT AND Apache-2.0"
         );
         assert_eq!(LicenseResolver::normalize_spdx_id("unlicense"), "Unlicense");
     }

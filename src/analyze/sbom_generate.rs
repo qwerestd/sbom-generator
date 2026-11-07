@@ -22,7 +22,7 @@ use crate::analyze::producers::pypi::pyproject_producer::PyprojectProducer;
 
 use crate::model::configuration::Configuration;
 use crate::model::dependency::Dependency;
-use crate::report::{generate_report, print_dependency_tree, print_report};
+use crate::report::{generate_report, print_report};
 use crate::sbom::generate::generate_sbom;
 use crate::utils::file_utils::get_files;
 
@@ -43,117 +43,137 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
     // =====================================================================
     // 工业级编排引擎：支持 [动态探针 -> 按项目父目录聚类 -> 多级静态责任链降级]
     // =====================================================================
-    let mut run_ecosystem_chain =
-        |eco_name: &str,
-         dyn_producer: Option<&dyn DynamicProducer>,
-         static_producers: &[&dyn SbomProducer]| {
-            let mut resolved_dynamically = false;
+    let mut run_ecosystem_chain = |eco_name: &str,
+                                   dyn_producer: Option<&dyn DynamicProducer>,
+                                   static_producers: &[&dyn SbomProducer]|
+     -> anyhow::Result<()> {
+        let project_dirs: std::collections::HashSet<_> = all_files
+            .iter()
+            .filter(|f| {
+                static_producers
+                    .iter()
+                    .any(|p| p.use_file(f, &producer_cfg))
+            })
+            .filter_map(|f| f.parent())
+            .collect();
+        let mut resolved_dynamically = false;
 
-            // --- 轨道一：动态探针 ---
-            if dynamic {
-                if let Some(dp) = dyn_producer {
-                    if dp.is_applicable(configuration) {
-                        if configuration.use_debug {
-                            println!(" -> [{}] 启动动态探针...", eco_name);
+        // --- 轨道一：动态探针 ---
+        // A root probe cannot establish coverage of independent nested projects.
+        // Use the complete static chain for multi-project repositories.
+        if dynamic && project_dirs.len() <= 1 {
+            if let Some(dp) = dyn_producer {
+                if dp.is_applicable(configuration) {
+                    if configuration.use_debug {
+                        println!(" -> [{}] 启动动态探针...", eco_name);
+                    }
+                    match dp.detect_dependencies(configuration) {
+                        Ok(deps) if !deps.is_empty() => {
+                            println!(
+                                " -> [{}] 动态探测成功 (还原 {} 个依赖及完整 DAG 图链路)",
+                                eco_name,
+                                deps.len()
+                            );
+                            raw_collected_deps.extend(deps);
+                            resolved_dynamically = true;
                         }
-                        match dp.detect_dependencies(configuration) {
+                        Ok(_) => {}
+                        Err(e) => {
+                            eprintln!(" -> [{}] 动态探测受挫 ({})，正在降级...", eco_name, e);
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- 轨道二：静态责任链队列 ---
+        if !resolved_dynamically {
+            // 步骤 A：筛选出全仓库内当前生态的所有潜在清单文件
+            let candidate_files: Vec<PathBuf> = all_files
+                .iter()
+                .filter(|f| {
+                    static_producers
+                        .iter()
+                        .any(|p| p.use_file(f, &producer_cfg))
+                })
+                .cloned()
+                .collect();
+
+            if candidate_files.is_empty() {
+                return Ok(());
+            }
+
+            // 若当前生态仅有一个静态解析器（如 Maven 需跨目录构建父子 POM 上下文、Gradle 需跨目录共享属性或 Go 协同 go.work+go.mod+go.sum），
+            // 直接将全部候选文件整体移交，保证多模块继承不丢失上下文。
+            if static_producers.len() == 1 {
+                let deps = static_producers[0]
+                    .find_dependencies_checked(&candidate_files, &producer_cfg)
+                    .map_err(|e| anyhow::anyhow!("{eco_name} static analysis failed: {e:#}"))?;
+                raw_collected_deps.extend(deps);
+                return Ok(());
+            }
+
+            // 步骤 B：当存在多级回退链（如 Lockfile -> Manifest）时，按各自父目录独立竞争
+            let mut project_dirs: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
+            for f in candidate_files {
+                if let Some(parent) = f.parent() {
+                    project_dirs
+                        .entry(parent.to_path_buf())
+                        .or_default()
+                        .push(f);
+                }
+            }
+
+            // 步骤 C：在【单文件夹作用域】内跑责任链
+            for (_proj_dir, files_in_dir) in project_dirs {
+                let mut failures = Vec::new();
+                for producer in static_producers {
+                    let matched: Vec<PathBuf> = files_in_dir
+                        .iter()
+                        .filter(|f| producer.use_file(f, &producer_cfg))
+                        .cloned()
+                        .collect();
+
+                    if !matched.is_empty() {
+                        match producer.find_dependencies_checked(&matched, &producer_cfg) {
                             Ok(deps) if !deps.is_empty() => {
-                                println!(
-                                    " -> [{}] 动态探测成功 (还原 {} 个依赖及完整 DAG 图链路)",
-                                    eco_name,
-                                    deps.len()
-                                );
                                 raw_collected_deps.extend(deps);
-                                resolved_dynamically = true;
+                                for failure in &failures {
+                                    eprintln!("warning: {failure}; used fallback manifest");
+                                }
+                                failures.clear();
+                                // 只截断当前子文件夹的队列，保证其他子项目可独立降级
+                                break;
                             }
                             Ok(_) => {}
-                            Err(e) => {
-                                eprintln!(" -> [{}] 动态探测受挫 ({})，正在降级...", eco_name, e);
-                            }
+                            Err(e) => failures.push(format!("{eco_name}: {matched:?}: {e:#}")),
                         }
                     }
                 }
-            }
-
-            // --- 轨道二：静态责任链队列 ---
-            if !resolved_dynamically {
-                // 步骤 A：筛选出全仓库内当前生态的所有潜在清单文件
-                let candidate_files: Vec<PathBuf> = all_files
-                    .iter()
-                    .filter(|f| {
-                        static_producers
-                            .iter()
-                            .any(|p| p.use_file(f, &producer_cfg))
-                    })
-                    .cloned()
-                    .collect();
-
-                if candidate_files.is_empty() {
-                    return;
-                }
-
-                // 若当前生态仅有一个静态解析器（如 Maven 需跨目录构建父子 POM 上下文、Gradle 需跨目录共享属性或 Go 协同 go.work+go.mod+go.sum），
-                // 直接将全部候选文件整体移交，保证多模块继承不丢失上下文。
-                if static_producers.len() == 1 {
-                    if let Ok(deps) =
-                        static_producers[0].find_dependencies(&candidate_files, &producer_cfg)
-                    {
-                        raw_collected_deps.extend(deps);
-                    }
-                    return;
-                }
-
-                // 步骤 B：当存在多级回退链（如 Lockfile -> Manifest）时，按各自父目录独立竞争
-                let mut project_dirs: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
-                for f in candidate_files {
-                    if let Some(parent) = f.parent() {
-                        project_dirs
-                            .entry(parent.to_path_buf())
-                            .or_default()
-                            .push(f);
-                    }
-                }
-
-                // 步骤 C：在【单文件夹作用域】内跑责任链
-                for (_proj_dir, files_in_dir) in project_dirs {
-                    for producer in static_producers {
-                        let matched: Vec<PathBuf> = files_in_dir
-                            .iter()
-                            .filter(|f| producer.use_file(f, &producer_cfg))
-                            .cloned()
-                            .collect();
-
-                        if !matched.is_empty() {
-                            match producer.find_dependencies(&matched, &producer_cfg) {
-                                Ok(deps) if !deps.is_empty() => {
-                                    raw_collected_deps.extend(deps);
-                                    // 只截断当前子文件夹的队列，保证其他子项目可独立降级
-                                    break;
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
+                if !failures.is_empty() {
+                    anyhow::bail!("Static analysis incomplete: {}", failures.join("; "));
                 }
             }
-        };
+        }
+        Ok(())
+    };
 
     // 1. Cargo (Rust) 生态：动态 metadata -> Cargo.lock -> Cargo.toml (支持 Workspace 继承)
     let cargo_dyn = CargoDynamicProducer::default();
     let cargo_lock = CargoProducer::default();
     let cargo_toml = CargoTomlProducer::default();
-    run_ecosystem_chain("Cargo", Some(&cargo_dyn), &[&cargo_lock, &cargo_toml]);
+    run_ecosystem_chain("Cargo", Some(&cargo_dyn), &[&cargo_lock, &cargo_toml])?;
 
     // 2. NPM (JavaScript/TypeScript) 生态：动态 npm ls -> package-lock.json -> package.json (支持 Catalog 继承)
     let npm_dyn = NpmDynamicProducer::default();
     let npm_lock = NpmLockProducer::default();
     let npm_json = NpmProducer::default();
-    run_ecosystem_chain("NPM", Some(&npm_dyn), &[&npm_lock, &npm_json]);
+    run_ecosystem_chain("NPM", Some(&npm_dyn), &[&npm_lock, &npm_json])?;
 
     // 3. Maven (Java) 生态：动态 dependency:tree -> 静态双趟 pom.xml AST
     let maven_dyn = MavenDynamicProducer::default();
     let maven_static = MavenProducerBuilder::default().build().unwrap();
-    run_ecosystem_chain("Maven", Some(&maven_dyn), &[&maven_static]);
+    run_ecosystem_chain("Maven", Some(&maven_dyn), &[&maven_static])?;
 
     // 4. PyPI (Python) 生态：动态虚拟环境 pip inspect (带根可达剪枝) -> poetry.lock/uv.lock/Pipfile.lock -> requirements.txt -> pyproject.toml/Pipfile
     let pypi_dyn = PypiDynamicProducer::default();
@@ -164,17 +184,17 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
         "PyPI",
         Some(&pypi_dyn),
         &[&pypi_lock, &pypi_req, &pyproject],
-    );
+    )?;
 
     // 5. Gradle (Java/Kotlin) 生态：动态 gradlew dependencies -> 静态构建脚本与 Version Catalog (支持变量插值与 BOM 继承)
     let gradle_dyn = GradleDynamicProducer::default();
     let gradle_static = GradleProducer::default();
-    run_ecosystem_chain("Gradle", Some(&gradle_dyn), &[&gradle_static]);
+    run_ecosystem_chain("Gradle", Some(&gradle_dyn), &[&gradle_static])?;
 
     // 6. Go (Golang) 生态：动态 go mod graph + MVS -> 静态 go.work + go.mod + go.sum
     let go_dyn = GoDynamicProducer::default();
     let go_static = GoProducer::default();
-    run_ecosystem_chain("Go", Some(&go_dyn), &[&go_static]);
+    run_ecosystem_chain("Go", Some(&go_dyn), &[&go_static])?;
 
     // =====================================================================
     // 终极拓扑去重与边融合引擎
@@ -249,7 +269,6 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
     if let Ok(report) = generate_report(configuration.output.as_str()) {
         print_report(&report);
     }
-    let _ = print_dependency_tree(configuration.output.as_str());
     Ok(())
 }
 
@@ -373,6 +392,19 @@ mod tests {
             licensed_count > 0,
             "组件应当包含解析出的 SPDX licenses 元数据"
         );
+        assert!(comps
+            .iter()
+            .any(|c| c["licenses"][0]["expression"] == "MIT OR Apache-2.0"));
+        assert!(comps.iter().all(|c| {
+            c["licenses"].as_array().map_or(true, |licenses| {
+                licenses.iter().all(|entry| {
+                    entry["license"]["id"].as_str().map_or(true, |id| {
+                        !id.split_whitespace()
+                            .any(|part| matches!(part, "OR" | "AND" | "WITH"))
+                    })
+                })
+            })
+        }));
         let _ = fs::remove_file(out_path);
     }
 }

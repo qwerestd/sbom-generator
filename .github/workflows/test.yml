@@ -12,5 +12,9 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         toolchain: stable
+    - name: Run unit and CycloneDX schema tests
+      run: cargo test
+    - name: Run viewer security and comparison regression tests
+      run: node --test tests/ui_regressions.cjs
     - name: run integration tests
       run: ./misc/test.sh

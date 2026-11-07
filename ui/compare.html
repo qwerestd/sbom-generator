@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBOM Studio - 独立对比评测与态势感知中心</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <link rel="stylesheet" href="theme.css">
+    <style>
+        :root {
+            --chart-bg: #090e18;
+            --panel-border: rgba(77, 126, 142, 0.22);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: #080e1c;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: var(--text-main);
+        }
+
+        /* 顶部导航顶栏 */
+        .compare-topbar {
+            height: 64px;
+            padding: 0 24px;
+            background: rgba(11, 20, 34, 0.98);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+        }
+
+        .compare-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #278f84, #184e4f);
+            display: grid;
+            place-items: center;
+            color: #afffed;
+            box-shadow: 0 0 16px rgba(66, 191, 180, 0.25);
+        }
+
+        .brand-meta h1 {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-meta p {
+            margin: 2px 0 0;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .topbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* 主视口容器 */
+        .compare-container {
+            flex: 1;
+            padding: 20px 26px 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1720px;
+            width: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        /* 文件选取与样本控制区 */
+        .compare-file-panel {
+            background: linear-gradient(135deg, rgba(17, 26, 42, 0.96), rgba(12, 21, 36, 0.98));
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .file-select-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 16px;
+            align-items: center;
+        }
+
+        @media (max-width: 1100px) {
+            .file-select-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .file-card-item {
+            background: #0d1727;
+            border: 1px solid var(--border-subtle);
+            border-radius: 9px;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transition: border-color 0.2s;
+        }
+
+        .file-card-item:hover {
+            border-color: var(--industrial-blue);
+        }
+
+        .file-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .file-input-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .file-input-row input {
+            flex: 1;
+            height: 34px;
+            background: #080f1b;
+            border: 1px solid #23344a;
+            border-radius: 6px;
+            padding: 0 10px;
+            font-size: 11px;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        .file-input-row input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .sample-shortcuts {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding-top: 4px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.08);
+        }
+
+        .sample-pill-btn {
+            background: rgba(30, 48, 70, 0.6);
+            border: 1px solid rgba(77, 126, 142, 0.3);
+            color: var(--text-secondary);
+            font-size: 11px;
+            padding: 5px 11px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .sample-pill-btn:hover {
+            background: rgba(66, 191, 180, 0.2);
+            color: #afffed;
+            border-color: var(--industrial-blue);
+        }
+
+        /* 核心指标看板卡片 (KPI Grid: 4 列平铺一行，绝无孤立折行) */
+        .kpi-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        @media (max-width: 1100px) {
+            .kpi-summary-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 650px) {
+            .kpi-summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .kpi-card {
+            background: linear-gradient(145deg, rgba(20, 32, 48, 0.95), rgba(11, 19, 31, 0.95));
+            border: 1px solid #23374d;
+            border-radius: 12px;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+            border-color: #3b5b7e;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--accent-cyan);
+        }
+
+        .kpi-card.green::before { background: linear-gradient(180deg, #34d399, #059669); }
+        .kpi-card.blue::before { background: linear-gradient(180deg, #38bdf8, #0284c7); }
+        .kpi-card.mint::before { background: linear-gradient(180deg, #10b981, #047857); }
+        .kpi-card.amber::before { background: linear-gradient(180deg, #fb923c, #ea580c); }
+
+        .kpi-card-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .kpi-tag-pill {
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 999px;
+            font-family: var(--font-mono, monospace);
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .kpi-tag-pill.green { background: rgba(52, 211, 153, 0.12); color: #34d399; border-color: rgba(52, 211, 153, 0.25); }
+        .kpi-tag-pill.blue { background: rgba(56, 189, 248, 0.12); color: #38bdf8; border-color: rgba(56, 189, 248, 0.25); }
+        .kpi-tag-pill.mint { background: rgba(16, 185, 129, 0.12); color: #10b981; border-color: rgba(16, 185, 129, 0.25); }
+        .kpi-tag-pill.amber { background: rgba(251, 146, 60, 0.12); color: #fb923c; border-color: rgba(251, 146, 60, 0.25); }
+
+        .kpi-val-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .kpi-val-main {
+            font-size: 28px;
+            font-weight: 850;
+            line-height: 1;
+            font-family: var(--font-mono, monospace);
+            letter-spacing: -0.5px;
+        }
+
+        .kpi-sub-pill {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            color: #94a3b8;
+            font-family: var(--font-mono, monospace);
+        }
+        .kpi-sub-pill b { color: #f8fafc; }
+        .kpi-sub-pill.blue { color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); }
+        .kpi-sub-pill.mint { color: #34d399; border-color: rgba(52, 211, 153, 0.3); }
+        .kpi-sub-pill.amber { color: #fb923c; border-color: rgba(251, 146, 60, 0.3); }
+
+        .kpi-danger-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .kpi-val-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .kpi-card-footer {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 6px;
+            margin-top: 2px;
+        }
+
+        /* 核心图表区网格布局 */
+        .charts-dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 16px;
+        }
+
+        .chart-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+            position: relative;
+            min-height: 380px;
+        }
+
+        .chart-box.col-12 { grid-column: span 12; }
+        .chart-box.col-7 { grid-column: span 7; }
+        .chart-box.col-5 { grid-column: span 5; }
+        .chart-box.col-8 { grid-column: span 8; }
+        .chart-box.col-6 { grid-column: span 6; }
+        .chart-box.col-4 { grid-column: span 4; }
+
+        @media (max-width: 1200px) {
+            .chart-box.col-7, .chart-box.col-5, .chart-box.col-8, .chart-box.col-6, .chart-box.col-4 {
+                grid-column: span 12;
+            }
+        }
+
+        .chart-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chart-title-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .chart-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chart-subtitle {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .chart-canvas {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            min-height: 280px;
+        }
+
+        /* 拓扑全景图特定样式 */
+        .topology-chart-box {
+            grid-column: span 12;
+            min-height: 620px;
+        }
+
+        .topo-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .topo-search-input {
+            height: 28px;
+            background: #0a1322;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 0 8px;
+            color: #fff;
+            font-size: 11px;
+            width: 160px;
+        }
+
+        /* 表格与差异清单区域 */
+        .table-section-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .table-section-header {
+            padding: 14px 20px;
+            background: rgba(14, 23, 37, 0.95);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .diff-filter-tabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .diff-filter-btn {
+            background: #142235;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diff-filter-btn:hover {
+            border-color: var(--industrial-blue);
+            color: var(--text-main);
+        }
+
+        .diff-filter-btn.active {
+            background: rgba(66, 191, 180, 0.16);
+            border-color: var(--accent-cyan);
+            color: #a5f4e8;
+        }
+
+        .table-filter-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .select-filter-sm {
+            height: 30px;
+            background: #0d1727;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 0 8px;
+            color: var(--text-main);
+            font-size: 11px;
+            outline: none;
+        }
+
+        /* 分页器组件样式 (Pagination Component) */
+        .pagination-bar {
+            padding: 12px 20px;
+            background: #0e1828;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .pagination-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pagination-pages {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .page-btn {
+            min-width: 28px;
+            height: 28px;
+            padding: 0 6px;
+            background: #142438;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-main);
+            font-size: 11px;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: all 0.18s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--industrial-blue);
+            background: #1e3650;
+            color: #afffed;
+        }
+
+        .page-btn.active {
+            background: linear-gradient(135deg, #278f84, #195856);
+            border-color: var(--accent-cyan);
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .page-jump-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .page-jump-input {
+            width: 44px;
+            height: 26px;
+            background: #080f1b;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            color: #fff;
+            text-align: center;
+            font-size: 11px;
+        }
+
+        /* 标签徽标 */
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            font-family: var(--font-mono, monospace);
+        }
+
+        .badge-active { background: rgba(63, 185, 80, 0.15); color: #3fb950; border: 1px solid rgba(63, 185, 80, 0.3); }
+        .badge-dormant { background: rgba(139, 148, 158, 0.15); color: #8b949e; border: 1px solid rgba(139, 148, 158, 0.3); }
+        .badge-only-a { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .badge-only-b { background: rgba(251, 146, 60, 0.15); color: #fb923c; border: 1px solid rgba(251, 146, 60, 0.3); }
+        .badge-common { background: rgba(46, 160, 67, 0.15); color: #2ea043; border: 1px solid rgba(46, 160, 67, 0.3); }
+        .badge-drift { background: rgba(238, 185, 105, 0.15); color: #eeb969; border: 1px solid rgba(238, 185, 105, 0.3); }
+
+        /* 提示框 */
+        .toast-notify {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #111e30;
+            border: 1px solid var(--border-strong);
+            color: var(--text-main);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(12px);
+            transition: all 0.25s ease;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .toast-notify.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部状态导航栏 -->
+    <header class="compare-topbar">
+        <div class="compare-brand">
+            <div class="brand-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="18" rx="2"/><path d="M12 3v18M2 12h20"/>
+                </svg>
+            </div>
+            <div class="brand-meta">
+                <h1>SBOM 交叉对比与评测中心 <span class="badge-pill badge-active">独立全景窗口</span></h1>
+                <p id="top-meta-desc">多维度深度对比待测 SBOM 与参照工具基准（相对重合率 / 动态监测 / 漏洞可达性 / 许可证合规）</p>
+            </div>
+        </div>
+
+        <div class="topbar-actions">
+            <button class="btn-industrial-default" id="btn-sync-active" title="从主窗口自动同步当前正在分析的 SBOM">
+                <span>🔄 同步主窗口 SBOM</span>
+            </button>
+            <button class="btn-industrial-default" id="btn-export-markdown" title="生成并复制学术论文与安全审计 Markdown 实验报告">
+                <span>📋 复制评测报告 (MD)</span>
+            </button>
+            <button class="btn-industrial-default" id="btn-export-json" title="导出对比差异 JSON 数据文件">
+                <span>💾 导出对比 JSON</span>
+            </button>
+            <button class="btn-industrial-primary" id="btn-re-run">
+                <span>🚀 执行对比计算</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="compare-container">
+
+        <!-- 1. 文件选择与对照样本快速载入区 -->
+        <section class="compare-file-panel">
+            <div class="file-select-grid">
+                <!-- 文件 A: 待测 SBOM -->
+                <div class="file-card-item">
+                    <div class="file-card-header">
+                        <span style="color: #38bdf8;">🔵 SBOM 文件 A (待测系统 / 本项目)</span>
+                        <span id="file-a-stat" style="color: var(--text-muted);">未载入</span>
+                    </div>
+                    <div class="file-input-row">
+                        <input type="text" id="input-file-a" placeholder="点击右侧选择或粘贴待测 CycloneDX JSON 路径..." />
+                        <button class="btn-industrial-default" id="btn-browse-a" style="height: 34px;">📂 浏览</button>
+                        <input type="file" id="fallback-file-a" accept=".json" style="display:none;" />
+                    </div>
+                </div>
+
+                <!-- 文件 B: 参照基准 SBOM -->
+                <div class="file-card-item">
+                    <div class="file-card-header">
+                        <span style="color: #fb923c;">🟠 SBOM 文件 B (参照基准 / Trivy / Syft)</span>
+                        <span id="file-b-stat" style="color: var(--text-muted);">未载入</span>
+                    </div>
+                    <div class="file-input-row">
+                        <input type="text" id="input-file-b" placeholder="点击右侧选择或粘贴参照工具 CycloneDX JSON 路径..." />
+                        <button class="btn-industrial-default" id="btn-browse-b" style="height: 34px;">📂 浏览</button>
+                        <input type="file" id="fallback-file-b" accept=".json" style="display:none;" />
+                    </div>
+                </div>
+
+                <!-- 触发计算与状态提示 -->
+                <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end;">
+                    <button class="btn-industrial-primary" id="btn-trigger-compare" style="height: 48px; padding: 0 24px; font-size: 13px;">
+                        <span>🔬 深度交叉对比</span>
+                    </button>
+                    <span id="calc-status-hint" style="font-size: 11px; color: var(--text-muted);">就绪，支持原生选择或点击下方快速样本</span>
+                </div>
+            </div>
+
+            <!-- 内置真实 Benchmark 样本一键载入 -->
+            <div class="sample-shortcuts">
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">⚡ 快速载入学术/工业实测样本:</span>
+                <button class="sample-pill-btn" id="sample-btn-microservices">
+                    Google Microservices Demo (多语言微服务大仓)
+                </button>
+                <button class="sample-pill-btn" id="sample-btn-opentelemetry">
+                    CNCF OpenTelemetry Demo (云原生复杂调用链)
+                </button>
+                <button class="sample-pill-btn" id="sample-btn-juice">
+                    OWASP Juice Shop (标准安全测试基准)
+                </button>
+            </div>
+        </section>
+
+        <!-- 2. 核心量化指标看板卡片 (4 大高光指标，整洁 1 行平铺) -->
+        <section class="kpi-summary-grid">
+            <!-- 卡片 1: 目标核心生态相对重合率 & Jaccard -->
+            <div class="kpi-card green">
+                <div class="kpi-card-title">
+                    <span>🎯 目标核心生态相对重合率 & Jaccard</span>
+                    <span class="kpi-tag-pill green">Target & Jaccard</span>
+                </div>
+                <div class="kpi-val-row">
+                    <span class="kpi-val-main" id="kpi-target-coverage" style="color: #34d399;">--%</span>
+                    <div class="kpi-sub-pill">Jaccard <b id="kpi-jaccard" style="color: #6ee7b7;">--%</b></div>
+                </div>
+                <div class="kpi-val-sub">
+                    <span>核心重合: <strong id="kpi-target-coverage-sub" style="color: #f1f5f9;">0 / 0</strong> 唯一包</span>
+                    <span style="color: var(--text-muted); margin-left: 8px;">(全仓总体: <span id="kpi-total-coverage" style="color: #38bdf8;">--%</span>, 共 <span id="kpi-total-coverage-sub">0/0</span>)</span>
+                </div>
+                <div class="kpi-card-footer" id="kpi-target-desc">覆盖 Cargo / Go / Maven / NPM / PyPI 核心依赖重合率与集合相似度</div>
+            </div>
+
+            <!-- 卡片 2: 唯一包发现与扩展增量 -->
+            <div class="kpi-card blue">
+                <div class="kpi-card-title">
+                    <span>🚀 唯一包发现与扩展增量</span>
+                    <span class="kpi-tag-pill blue">AST Discovery</span>
+                </div>
+                <div class="kpi-val-row">
+                    <span class="kpi-val-main" id="kpi-unique-diff" style="color: #38bdf8;">+0</span>
+                    <div class="kpi-sub-pill blue"><span id="kpi-unique-stats">A:0 vs B:0</span></div>
+                </div>
+                <div class="kpi-val-sub">
+                    <span>组件记录数: <strong id="kpi-instances-a" style="color: #7dd3fc;">0</strong> <span id="kpi-instances-b">vs 0 个</span></span>
+                    <span id="kpi-instances-diff" style="color: var(--text-muted); margin-left: 6px;">组件记录差值: 0 个</span>
+                </div>
+                <div class="kpi-card-footer">仅一侧出现的组件需核对清单、锁文件、版本与作用域</div>
+            </div>
+
+            <!-- 卡片 3: 动态运行时活跃依赖 -->
+            <div class="kpi-card mint">
+                <div class="kpi-card-title">
+                    <span>⚡ 动态运行时活跃依赖</span>
+                    <span class="kpi-tag-pill mint">Runtime Active</span>
+                </div>
+                <div class="kpi-val-row">
+                    <span class="kpi-val-main" id="kpi-runtime-loaded" style="color: #10b981;">0</span>
+                    <div class="kpi-sub-pill mint"><span id="kpi-runtime-ratio">(0.0%) 活跃</span></div>
+                </div>
+                <div class="kpi-val-sub">
+                    <span>真实执行状态: <strong style="color: #34d399;">LOADED</strong> 真实加载运行</span>
+                </div>
+                <div class="kpi-card-footer">展示文件中记录的加载状态；未观测到加载不代表不可达</div>
+            </div>
+
+            <!-- 卡片 4: 参照基准 (Trivy) 与安全态势 -->
+            <div class="kpi-card amber">
+                <div class="kpi-card-title">
+                    <span>🛡️ 参照基准 (Trivy) 与安全态势</span>
+                    <span class="kpi-tag-pill amber">Trivy & Security</span>
+                </div>
+                <div class="kpi-val-row">
+                    <span class="kpi-val-main" id="kpi-tool-b-label" style="color: #fb923c; font-size: 20px;">Trivy</span>
+                    <div class="kpi-sub-pill amber"><span id="kpi-trivy-inst-val">0</span> 构件</div>
+                </div>
+                <div class="kpi-val-sub">
+                    <span>OSV 漏洞挖掘: <strong id="kpi-vuln-stats" style="color: #f87171;">0 vs 0</strong></span>
+                    <span id="kpi-vuln-active" class="kpi-danger-pill" style="margin-left: 6px;">可达活跃: 0</span>
+                </div>
+                <div class="kpi-card-footer">工业级容器与系统软件包扫描标杆，内置 Aqua 漏洞库比对</div>
+            </div>
+        </section>
+
+        <!-- 3. 核心精选可视化图表看板 (高饱和美化呈现) -->
+        <section class="charts-dashboard-grid">
+
+            <!-- 核心图表 1: 依赖集合交并重合度与占比环形图 -->
+            <div class="chart-box col-6">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <span class="chart-title">📊 依赖集合交并全景重合度</span>
+                        <span class="chart-subtitle">双方共有依赖 (Common) vs 本项目独有增量 vs 参照基准独有</span>
+                    </div>
+                </div>
+                <div id="chart-overlap-pie" class="chart-canvas" style="height: 380px;"></div>
+            </div>
+
+            <!-- 核心图表 2: 各语言生态覆盖度双向比对柱状图 -->
+            <div class="chart-box col-6">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <span class="chart-title">🌐 跨语言多生态覆盖度双向比对 (Instances & Unique)</span>
+                        <span class="chart-subtitle">Cargo (Rust) / Go (Golang) / Maven (Java) / NPM (JS) / PyPI (Python) / 其他生态</span>
+                    </div>
+                </div>
+                <div id="chart-eco-bar" class="chart-canvas" style="height: 380px;"></div>
+            </div>
+
+            <!-- 核心图表 3: 交互式超大依赖差异拓扑网络全景图 (真实依赖链路构建) -->
+            <div class="chart-box topology-chart-box">
+                <div class="chart-header">
+                    <div class="chart-title-group">
+                        <span class="chart-title">🌐 行业对比依赖拓扑全景图 (Large Dependency Diff Graph)</span>
+                        <div style="display:inline-flex; align-items:center; gap:14px; margin-top:3px; font-size:11px; font-weight:normal;">
+                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981; display:inline-block;"></span>🟢 双方共有依赖 (<span id="legend-common-count">0</span>)</span>
+                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#38bdf8; box-shadow:0 0 8px #38bdf8; display:inline-block;"></span>🔵 工具 A 独有增量 (<span id="legend-only-a-count">0</span>)</span>
+                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#fb923c; box-shadow:0 0 8px #fb923c; display:inline-block;"></span>🟠 工具 B 独有参照 (<span id="legend-only-b-count">0</span>)</span>
+                        </div>
+                    </div>
+                    <div class="topo-toolbar">
+                        <select id="select-topo-layout" class="select-filter-sm" style="height:28px; padding:0 6px; font-size:11px; background:#0c1726; color:#fff; border:1px solid var(--border-subtle); border-radius:6px;" title="切换拓扑排布算法">
+                            <option value="force" selected>🌀 空间力导向</option>
+                            <option value="circular">⭕ 环形无重叠</option>
+                        </select>
+                        <div style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--text-secondary);" title="拖动滑块拉大节点物理间距，消除部件挤压">
+                            <span>间距:</span>
+                            <input type="range" id="slider-topo-repulsion" min="1" max="3.5" step="0.2" value="1.8" style="width:75px; accent-color:var(--accent-cyan); cursor:pointer;" />
+                        </div>
+                        <input type="text" id="topo-search-input" class="topo-search-input" placeholder="在网络图谱中搜索包名..." />
+                        <button class="tool-btn-sm" id="btn-topo-zoom-in" title="放大">➕</button>
+                        <button class="tool-btn-sm" id="btn-topo-zoom-out" title="缩小">➖</button>
+                        <button class="tool-btn-sm" id="btn-topo-reset" title="重置视角">↺ 居中</button>
+                        <button class="tool-btn-sm" id="btn-topo-fullscreen" title="全屏最大化展开拓扑图，获得最大展示空间">⛶ 全屏</button>
+                    </div>
+                </div>
+                <div id="chart-topo-graph" class="chart-canvas" style="min-height: 700px; height: 740px; background: #070c17; border-radius: 8px;"></div>
+            </div>
+
+        </section>
+
+        <!-- 4. 跨维度依赖差异对照全量清单 (附带完整分页器与多重过滤) -->
+        <section class="table-section-box">
+            <div class="table-section-header">
+                <!-- 过滤 Tab 切换 -->
+                <div class="diff-filter-tabs">
+                    <button class="diff-filter-btn active" data-type="onlyA">
+                        <span>🔵 工具 A 独有增量</span>
+                        <span id="tab-cnt-only-a" class="badge-pill badge-only-a">0</span>
+                    </button>
+                    <button class="diff-filter-btn" data-type="onlyB">
+                        <span>🟠 工具 B 独有依赖</span>
+                        <span id="tab-cnt-only-b" class="badge-pill badge-only-b">0</span>
+                    </button>
+                    <button class="diff-filter-btn" data-type="common">
+                        <span>🟢 共同识别依赖</span>
+                        <span id="tab-cnt-common" class="badge-pill badge-common">0</span>
+                    </button>
+                    <button class="diff-filter-btn" data-type="all">
+                        <span>📋 全部集合对比</span>
+                        <span id="tab-cnt-all" class="badge-pill">0</span>
+                    </button>
+                </div>
+
+                <!-- 复合过滤工具 -->
+                <div class="table-filter-tools">
+                    <select id="filter-eco-select" class="select-filter-sm">
+                        <option value="all">🌐 全部语言生态</option>
+                        <option value="cargo">Rust (Cargo)</option>
+                        <option value="golang">Go (Golang)</option>
+                        <option value="npm">Node.js (NPM)</option>
+                        <option value="maven">Java (Maven)</option>
+                        <option value="pypi">Python (PyPI)</option>
+                    </select>
+
+                    <select id="filter-runtime-select" class="select-filter-sm">
+                        <option value="all">⚡ 全部监测状态</option>
+                        <option value="loaded">🟢 仅看活跃加载 (Loaded)</option>
+                        <option value="dormant">⚪ 仅看静态休眠 (Dormant)</option>
+                    </select>
+
+                    <input type="text" id="diff-search-input" placeholder="搜索包名 / PURL / 路径..." style="height: 30px; background: #0c1626; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0 10px; color: #fff; font-size: 11px; width: 180px;" />
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <div style="overflow-x: auto; min-height: 380px;">
+                <table class="industrial-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 220px;">组件名称 (Name)</th>
+                            <th style="width: 100px;">检出版本</th>
+                            <th style="width: 90px;">生态类别</th>
+                            <th style="width: 140px;">⚡ 动态运行时状态</th>
+                            <th style="width: 130px;">SPDX 开源许可</th>
+                            <th>标准 Package URL (PURL) / 清单文件路径</th>
+                            <th style="width: 280px;">差异机制与 AST 穿透归因分析</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paginated-diff-tbody">
+                        <tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 40px;">请先载入 SBOM 执行对比评测</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页导航栏 (Pagination Controls) -->
+            <div class="pagination-bar">
+                <div class="pagination-info">
+                    <span>显示第 <b id="page-item-start">0</b> - <b id="page-item-end">0</b> 项，共 <b id="page-item-total">0</b> 项</span>
+                    <label style="display: flex; align-items: center; gap: 6px;">
+                        <span>每页:</span>
+                        <select id="page-size-select" class="select-filter-sm" style="height: 26px; padding: 0 4px;">
+                            <option value="15">15 条</option>
+                            <option value="30" selected>30 条</option>
+                            <option value="50">50 条</option>
+                            <option value="100">100 条</option>
+                        </select>
+                    </label>
+                </div>
+
+                <div class="pagination-pages" id="pagination-pages-group">
+                    <button class="page-btn" id="btn-page-first" title="首页">«</button>
+                    <button class="page-btn" id="btn-page-prev" title="上一页">‹</button>
+                    <div id="page-number-buttons" style="display: flex; gap: 4px;"></div>
+                    <button class="page-btn" id="btn-page-next" title="下一页">›</button>
+                    <button class="page-btn" id="btn-page-last" title="尾页">»</button>
+                </div>
+
+                <div class="page-jump-box">
+                    <span>跳至:</span>
+                    <input type="number" id="page-jump-input" class="page-jump-input" min="1" value="1" />
+                    <span>页</span>
+                    <button class="btn-industrial-default" id="btn-page-jump" style="height: 26px; padding: 0 8px;">跳转</button>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- 轻量提示 -->
+    <div id="toast" class="toast-notify">操作成功</div>
+
+    <script src="compare.js"></script>
+</body>
+</html>

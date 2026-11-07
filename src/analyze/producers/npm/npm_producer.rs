@@ -51,24 +51,24 @@ impl SbomProducer for NpmProducer {
         }
 
         for p in paths {
-            if let Ok(content) = fs::read_to_string(p) {
+            {
+                let content = fs::read_to_string(p)?;
                 let clean_content = content.trim_start_matches('\u{FEFF}').trim();
                 let file_salt = p.to_string_lossy().replace('\\', "/");
 
                 match serde_json::from_str::<serde_json::Value>(clean_content) {
                     Ok(json) => {
-                        if let Ok(file_deps) = Self::parse_single_package_json(
+                        let file_deps = Self::parse_single_package_json(
                             &json,
                             clean_content,
                             &file_salt,
                             p,
                             &root_ctx,
-                        ) {
-                            result.extend(file_deps);
-                        }
+                        )?;
+                        result.extend(file_deps);
                     }
                     Err(e) => {
-                        eprintln!("❌ [Debug] 无法解析 JSON 文件 {:?}，错误原因: {}", p, e);
+                        anyhow::bail!("invalid package.json {}: {e}", p.display());
                     }
                 }
             }
