@@ -2,9 +2,8 @@ use std::fs;
 use std::path::Path;
 
 use crate::model::dependency::Dependency;
-use crate::utils::osv_scanner::OsvScanner;
 
-/// 开源许可证合规解析与推断引擎（支持本地清单提取 + SPDX 权威知识库映射）
+/// Extract declared licenses; unknown packages remain unknown.
 pub struct LicenseResolver;
 
 impl LicenseResolver {
@@ -22,21 +21,30 @@ impl LicenseResolver {
         if let Some(loc) = &dep.location {
             let manifest_path = Path::new(&loc.block.file);
             if manifest_path.exists() {
-                if let Some(from_manifest) =
-                    Self::extract_from_local_manifest(manifest_path, &dep.name)
-                {
+                if let Some(from_manifest) = Self::extract_matching_manifest(
+                    manifest_path,
+                    &dep.name,
+                    dep.version.as_deref(),
+                ) {
                     return Some(Self::normalize_spdx_id(&from_manifest));
                 }
             }
         }
 
-        // 3. 基于 PURL 坐标查询内置的多语言主流开源组件 SPDX 许可证知识库
-        let (eco, full_name, _ver) = OsvScanner::parse_purl_coordinates(&dep.purl)?;
-        Self::lookup_curated_spdx(&eco, &full_name)
+        // A package name or ecosystem alone is not license evidence.
+        None
     }
 
     /// 从本地清单文件中提取指定组件的许可证声明
     pub fn extract_from_local_manifest(manifest_path: &Path, dep_name: &str) -> Option<String> {
+        Self::extract_matching_manifest(manifest_path, dep_name, None)
+    }
+
+    fn extract_matching_manifest(
+        manifest_path: &Path,
+        dep_name: &str,
+        expected_version: Option<&str>,
+    ) -> Option<String> {
         let file_name = manifest_path.file_name()?.to_string_lossy().to_lowercase();
 
         // (A) package.json: 检查自身 name 是否匹配，或检查同级 node_modules/<dep_name>/package.json
@@ -49,8 +57,13 @@ impl LicenseResolver {
                 if nm_pkg.exists() {
                     if let Ok(content) = fs::read_to_string(&nm_pkg) {
                         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-                            if let Some(lic) = json.get("license").and_then(|v| v.as_str()) {
-                                return Some(lic.to_string());
+                            if expected_version.is_some()
+                                && json.get("name").and_then(|v| v.as_str()) == Some(dep_name)
+                                && json.get("version").and_then(|v| v.as_str()) == expected_version
+                            {
+                                if let Some(lic) = json.get("license").and_then(|v| v.as_str()) {
+                                    return Some(lic.to_string());
+                                }
                             }
                         }
                     }
@@ -111,6 +124,22 @@ impl LicenseResolver {
     pub fn normalize_spdx_id(raw: &str) -> String {
         let trimmed = raw.trim();
         let lower = trimmed.to_lowercase();
+        if lower.contains(" or ") || lower.contains(" and ") || lower.contains(" with ") {
+            let tokens = regex::Regex::new(r"[A-Za-z0-9][A-Za-z0-9.+-]*").unwrap();
+            return tokens
+                .replace_all(trimmed, |c: &regex::Captures| {
+                    let token = &c[0];
+                    if ["or", "and", "with"]
+                        .iter()
+                        .any(|op| token.eq_ignore_ascii_case(op))
+                    {
+                        token.to_ascii_uppercase()
+                    } else {
+                        Self::normalize_spdx_id(token)
+                    }
+                })
+                .into_owned();
+        }
 
         if lower.contains(" or ") {
             let parts: Vec<String> = lower
@@ -166,110 +195,6 @@ impl LicenseResolver {
             _ => trimmed.to_string(),
         }
     }
-
-    /// 内置六大生态高频开源组件与组织命名空间 SPDX 许可证映射库
-    fn lookup_curated_spdx(ecosystem: &str, full_name: &str) -> Option<String> {
-        let eco = ecosystem.to_lowercase();
-        let name = full_name.to_lowercase().replace(':', "/");
-
-        match eco.as_str() {
-            "cargo" => {
-                match name.as_str() {
-                    "tokio" | "bytes" | "mio" | "hyper" | "tower" | "tracing"
-                    | "pin-project-lite" => Some("MIT".to_string()),
-                    "serde" | "serde_derive" | "serde_json" | "syn" | "quote" | "proc-macro2"
-                    | "itoa" | "ryu" | "regex" | "regex-automata" | "regex-syntax"
-                    | "aho-corasick" | "anyhow" | "thiserror" | "clap" | "log" | "once_cell"
-                    | "lazy_static" | "reqwest" | "futures" | "chrono" | "toml" | "cc" | "libc"
-                    | "bitflags" | "smallvec" | "parking_lot" | "indexmap" | "hashbrown"
-                    | "rand" | "uuid" | "url" | "percent-encoding" | "idna" | "form_urlencoded"
-                    | "http" | "h2" => Some("MIT OR Apache-2.0".to_string()),
-                    "walkdir" | "same-file" | "memchr" | "bstr" | "termcolor" => {
-                        Some("Unlicense OR MIT".to_string())
-                    }
-                    "openssl" | "openssl-sys" | "foreign-types" => Some("Apache-2.0".to_string()),
-                    "tree-sitter" | "tree-sitter-kotlin" => Some("MIT".to_string()),
-                    _ => Some("MIT OR Apache-2.0".to_string()),
-                }
-            }
-            "golang" => {
-                if name.starts_with("golang.org/x/")
-                    || name.starts_with("google.golang.org/")
-                    || name.starts_with("cloud.google.com/")
-                {
-                    return Some("BSD-3-Clause".to_string());
-                }
-                if name.starts_with("github.com/gin-gonic/")
-                    || name.starts_with("github.com/uber-go/")
-                    || name.starts_with("go.uber.org/")
-                    || name.starts_with("github.com/stretchr/")
-                    || name.starts_with("github.com/sirupsen/")
-                {
-                    return Some("MIT".to_string());
-                }
-                if name.starts_with("github.com/spf13/")
-                    || name.starts_with("go.opentelemetry.io/")
-                    || name.starts_with("github.com/prometheus/")
-                    || name.starts_with("cel.dev/")
-                {
-                    return Some("Apache-2.0".to_string());
-                }
-                Some("BSD-3-Clause".to_string())
-            }
-            "maven" => {
-                if name.starts_with("org.apache.")
-                    || name.starts_with("org.springframework")
-                    || name.starts_with("com.alibaba/")
-                    || name.starts_with("com.fasterxml.")
-                    || name.starts_with("com.google.")
-                    || name.starts_with("io.ktor/")
-                    || name.starts_with("org.jetbrains.")
-                    || name.starts_with("commons-")
-                    || name.starts_with("io.netty/")
-                    || name.starts_with("io.grpc/")
-                    || name.starts_with("net.sf.ehcache/")
-                    || name.starts_with("net.sf.oval/")
-                {
-                    return Some("Apache-2.0".to_string());
-                }
-                if name.starts_with("org.slf4j/") || name.starts_with("org.mockito/") {
-                    return Some("MIT".to_string());
-                }
-                if name.starts_with("ch.qos.logback/") {
-                    return Some("EPL-1.0 OR LGPL-2.1-or-later".to_string());
-                }
-                if name.starts_with("junit/") || name.starts_with("org.junit.") {
-                    return Some("EPL-2.0".to_string());
-                }
-                if name.starts_with("org.json/") {
-                    return Some("JSON".to_string());
-                }
-                Some("Apache-2.0".to_string())
-            }
-            "npm" => match name.as_str() {
-                "typescript" => Some("Apache-2.0".to_string()),
-                "semver" | "Rimraf" | "glob" | "minimatch" | "lru-cache" | "once" | "wrappy"
-                | "inherits" | "yallist" => Some("ISC".to_string()),
-                _ => Some("MIT".to_string()),
-            },
-            "pypi" => match name.as_str() {
-                "requests" | "aiohttp" | "tornado" | "arrow" | "cryptography" => {
-                    Some("Apache-2.0".to_string())
-                }
-                "django" | "flask" | "jinja2" | "werkzeug" | "click" | "itsdangerous"
-                | "markupsafe" | "numpy" | "scipy" | "pandas" | "scikit-learn" | "matplotlib"
-                | "pillow" | "psutil" | "idna" | "pycparser" => Some("BSD-3-Clause".to_string()),
-                "certifi" => Some("MPL-2.0".to_string()),
-                "fastapi" | "uvicorn" | "pydantic" | "starlette" | "urllib3" | "pyyaml"
-                | "pytest" | "attrs" | "six" | "setuptools" | "wheel" | "pip"
-                | "charset-normalizer" | "sqlalchemy" | "httpx" | "anyio" | "sniffio" => {
-                    Some("MIT".to_string())
-                }
-                _ => Some("MIT".to_string()),
-            },
-            _ => None,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -277,17 +202,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_resolve_license_by_purl_and_explicit() {
+    fn test_resolve_license_requires_evidence() {
         let dep_maven = Dependency {
             name: "com.alibaba:fastjson".to_string(),
             version: Some("1.2.68".to_string()),
             purl: "pkg:maven/com.alibaba/fastjson@1.2.68".to_string(),
             ..Default::default()
         };
-        assert_eq!(
-            LicenseResolver::resolve_license(&dep_maven),
-            Some("Apache-2.0".to_string())
-        );
+        assert_eq!(LicenseResolver::resolve_license(&dep_maven), None);
 
         let dep_pypi = Dependency {
             name: "django".to_string(),
@@ -295,10 +217,7 @@ mod tests {
             purl: "pkg:pypi/django@4.2.0".to_string(),
             ..Default::default()
         };
-        assert_eq!(
-            LicenseResolver::resolve_license(&dep_pypi),
-            Some("BSD-3-Clause".to_string())
-        );
+        assert_eq!(LicenseResolver::resolve_license(&dep_pypi), None);
 
         let dep_explicit = Dependency {
             name: "custom-pkg".to_string(),
@@ -317,10 +236,7 @@ mod tests {
             purl: "pkg:cargo/tokio@1.38.0".to_string(),
             ..Default::default()
         };
-        assert_eq!(
-            LicenseResolver::resolve_license(&dep_cargo),
-            Some("MIT".to_string())
-        );
+        assert_eq!(LicenseResolver::resolve_license(&dep_cargo), None);
 
         let dep_golang = Dependency {
             name: "golang.org/x/crypto".to_string(),
@@ -328,10 +244,37 @@ mod tests {
             purl: "pkg:golang/golang.org/x/crypto@v0.14.0".to_string(),
             ..Default::default()
         };
+        assert_eq!(LicenseResolver::resolve_license(&dep_golang), None);
+    }
+
+    #[test]
+    fn installed_license_requires_matching_version() {
+        let dir = std::env::temp_dir().join(format!("license_versions_{}", std::process::id()));
+        let pkg = dir.join("node_modules/demo");
+        std::fs::create_dir_all(&pkg).unwrap();
+        std::fs::write(
+            pkg.join("package.json"),
+            r#"{"name":"demo","version":"1.0.0","license":"MIT"}"#,
+        )
+        .unwrap();
+        let manifest = dir.join("package-lock.json");
+        std::fs::write(&manifest, "{}").unwrap();
+        let mut dep = Dependency {
+            name: "demo".into(),
+            version: Some("2.0.0".into()),
+            purl: "pkg:npm/demo@2.0.0".into(),
+            location: Some(crate::model::dependency::DependencyLocation::from_file(
+                &manifest,
+            )),
+            ..Default::default()
+        };
+        assert_eq!(LicenseResolver::resolve_license(&dep), None);
+        dep.version = Some("1.0.0".into());
         assert_eq!(
-            LicenseResolver::resolve_license(&dep_golang),
-            Some("BSD-3-Clause".to_string())
+            LicenseResolver::resolve_license(&dep).as_deref(),
+            Some("MIT")
         );
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

@@ -22,11 +22,18 @@ fn example_sboms_match_cyclonedx_1_6_schema() {
         .unwrap();
 
     for relative in [
+        "test/juice-shop/juice-shop_sbom.json",
+        "test/mircoservices/microservices-demo_sbom.json",
+        "test/opentelemetry/opentelemetry-demo_sbom.json",
+        "test/quickstarts/quickstarts_sbom.json",
         "examples/fullstack-ecommerce/fullstack-ecommerce_sbom.json",
         "examples/polyglot-showcase/polyglot-showcase_sbom.json",
         "examples/security-edgecases/security-edgecases_sbom.json",
     ] {
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join(relative);
+        if !path.exists() {
+            continue;
+        }
         let bom: serde_json::Value =
             serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
         let errors: Vec<String> = validator

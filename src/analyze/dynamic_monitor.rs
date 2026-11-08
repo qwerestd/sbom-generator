@@ -27,22 +27,25 @@ pub fn monitor_dependency_loading(
     let mut project_roots = vec![root_path.to_path_buf()];
     collect_candidate_roots(root_path, &mut project_roots);
 
-    // 【智能实操痕迹识别】：没有跑过的项目绝不开启
+    // 【智能实操痕迹识别】：未编译或未安装依赖的干净项目不贸然做运行时判定
     let active_roots: Vec<PathBuf> = project_roots
         .into_iter()
         .filter(|dir| has_project_operational_traces(dir))
         .collect();
 
     if active_roots.is_empty() {
-        println!(
-            " -> [依赖加载监测] 智能决策: 目标工程未检测到编译/运行实操痕迹 (如 __pycache__, dist, target, node_modules 等)，跳过可达性标注"
-        );
+        if use_debug {
+            println!(
+                " -> [依赖加载监测] 智能决策: 目标工程未检测到编译/运行实操痕迹 (如 __pycache__, dist, target, node_modules 等)，跳过可达性标注"
+            );
+        }
         return;
     }
 
     let mut total_loaded_paths = HashSet::new();
     let mut traced_ecosystems = HashSet::new();
 
+    // 仅在显式开启 --allow-exec 时，才启动沙箱进程试跑
     if allow_exec {
         for dir in &active_roots {
             // 1. 尝试对 Node.js 生态进行依赖加载监测（仅在显式 --allow-exec 时启用）
@@ -61,28 +64,29 @@ pub fn monitor_dependency_loading(
         println!(" -> [依赖加载监测] 默认安全模式 (未开启 --allow-exec): 仅执行纯静态源码引用扫描，不执行被扫描项目入口代码");
     }
 
-    // 若未成功追踪到任何生态的运行时（如刚克隆下来未装配），尝试源码级导入可达性探测 (Source Import / Dynamic Import Detection)
+    // 全量执行源码级 AST 导入扫描与双向交叉验证 (Two-Way AST Cross Validation)
     let dynamic_imported_names = detect_dynamic_imports_in_source(root_path);
-    let has_manifest_context = active_roots.iter().any(|d| {
-        d.join("package-lock.json").exists()
-            || d.join("Cargo.lock").exists()
-            || d.join("go.sum").exists()
-            || d.join("poetry.lock").exists()
-            || d.join("uv.lock").exists()
-            || d.join("Pipfile.lock").exists()
-            || d.join("gradle.lockfile").exists()
-    });
+    let has_any_source = !dynamic_imported_names.is_empty();
 
     let mut loaded_count = 0;
     let mut dormant_count = 0;
 
     for dep in dependencies.iter_mut() {
+        // Root presence alone is not evidence that it ran.
+        if dep.r#type == crate::model::dependency::DependencyType::Application {
+            dep.dynamic_status = DynamicLoadStatus::NotTraced;
+            continue;
+        }
+
         let is_npm = dep.purl.starts_with("pkg:npm/");
         let is_pypi = dep.purl.starts_with("pkg:pypi/");
+        let _is_cargo = dep.purl.starts_with("pkg:cargo/");
+        let is_golang = dep.purl.starts_with("pkg:golang/");
+        let is_maven = dep.purl.starts_with("pkg:maven/");
 
         let mut is_loaded = false;
 
-        // 规则 1：检查是否出现在实际加载的模块路径中
+        // 规则 1：检查是否出现在实际运行时加载的物理模块路径中
         let dep_name_lower = dep.name.to_lowercase();
         let full_npm_name = match dep.group.as_deref() {
             Some(g) if !g.is_empty() && is_npm && !dep_name_lower.starts_with('@') => {
@@ -111,30 +115,46 @@ pub fn monitor_dependency_loading(
             }
         }
 
-        // 规则 2：检查源码中是否存在 import / require / use 引用
-        if !is_loaded {
+        let runtime_loaded = is_loaded;
+
+        // 规则 2：双向 AST 交叉验证：检查源码中是否存在 import / require / use 引用
+        if !is_loaded && has_any_source {
             let py_norm = dep_name_lower.replace('-', "_");
             let cargo_norm = dep_name_lower.replace('-', "_");
+
             if dynamic_imported_names.contains(&dep_name_lower)
                 || dynamic_imported_names.contains(&full_npm_name)
                 || dynamic_imported_names.contains(&py_norm)
                 || dynamic_imported_names.contains(&cargo_norm)
-                || (dep.purl.starts_with("pkg:golang/")
-                    && dynamic_imported_names.iter().any(|imp| {
-                        imp == &dep_name_lower || imp.starts_with(&format!("{}/", dep_name_lower))
-                    }))
             {
                 is_loaded = true;
+            } else if is_golang {
+                if dynamic_imported_names.iter().any(|imp| {
+                    imp == &dep_name_lower || imp.starts_with(&format!("{}/", dep_name_lower))
+                }) {
+                    is_loaded = true;
+                }
+            } else if is_maven {
+                let g_lower = dep.group.as_deref().unwrap_or("").to_lowercase();
+                if dynamic_imported_names.iter().any(|imp| {
+                    imp.contains(&dep_name_lower)
+                        || (!g_lower.is_empty() && imp.starts_with(&g_lower))
+                }) {
+                    is_loaded = true;
+                }
             }
         }
 
-        if is_loaded {
+        // 规则 3：精准状态分流与死代码标识
+        if runtime_loaded {
             dep.dynamic_status = DynamicLoadStatus::Loaded;
             loaded_count += 1;
+        } else if is_loaded {
+            dep.dynamic_status = DynamicLoadStatus::Referenced;
         } else if (is_npm && traced_ecosystems.contains("npm"))
             || (is_pypi && traced_ecosystems.contains("pypi"))
-            || (has_manifest_context && !dynamic_imported_names.is_empty())
         {
+            // 在执行了对应生态的运行时探针且未被调用：标记为 Dormant (冷依赖)
             dep.dynamic_status = DynamicLoadStatus::Dormant;
             dormant_count += 1;
         } else {
@@ -363,13 +383,12 @@ const loaded = new Set();
 const orig = Module._load;
 
 Module._load = function(request, parent, isMain) {{
+    const result = orig.apply(this, arguments);
     try {{
         const resolved = Module._resolveFilename(request, parent, isMain);
-        if (resolved && resolved.includes('node_modules')) {{
-            loaded.add(resolved);
-        }}
+        if (resolved && resolved.includes('node_modules')) loaded.add(resolved);
     }} catch (e) {{}}
-    return orig.apply(this, arguments);
+    return result;
 }};
 
 function dumpLoaded() {{
@@ -575,6 +594,9 @@ fn detect_dynamic_imports_in_source(root: &Path) -> HashSet<String> {
         regex::Regex::new(r#""([a-zA-Z0-9._\-]+\.[a-zA-Z]{2,}/[a-zA-Z0-9._/\-]+)""#).ok();
     let re_rust_use = regex::Regex::new(r#"(?m)^\s*use\s+([a-zA-Z0-9_]+)::"#).ok();
     let re_java_forname = regex::Regex::new(r#"Class\.forName\s*\(\s*['"]([^'"]+)['"]\s*\)"#).ok();
+    let re_java_import =
+        regex::Regex::new(r#"(?m)^\s*import\s+(?:static\s+)?([a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+)*)"#)
+            .ok();
 
     for file in files {
         let Ok(content) = fs::read_to_string(&file) else {
@@ -638,6 +660,19 @@ fn detect_dynamic_imports_in_source(root: &Path) -> HashSet<String> {
                     if let Some(pkg) = cap.get(1) {
                         let name = extract_root_package_name(pkg.as_str());
                         detected.insert(name.to_lowercase());
+                    }
+                }
+            }
+            if let Some(ref re) = re_java_import {
+                for cap in re.captures_iter(&content) {
+                    if let Some(pkg) = cap.get(1) {
+                        let full = pkg.as_str().to_lowercase();
+                        detected.insert(full.clone());
+                        for segment in full.split('.') {
+                            if segment.len() > 2 {
+                                detected.insert(segment.to_string());
+                            }
+                        }
                     }
                 }
             }
@@ -758,13 +793,13 @@ mod tests {
 
         assert_eq!(
             deps[0].dynamic_status,
-            DynamicLoadStatus::Loaded,
-            "lodash 应当被识别为 Loaded"
+            DynamicLoadStatus::Referenced,
+            "lodash 应当被识别为静态引用"
         );
         assert_eq!(
             deps[1].dynamic_status,
-            DynamicLoadStatus::Loaded,
-            "axios 应当被识别为 Loaded"
+            DynamicLoadStatus::Referenced,
+            "axios 应当被识别为静态引用"
         );
         assert_eq!(deps[2].dynamic_status, DynamicLoadStatus::NotTraced);
 
@@ -813,9 +848,9 @@ mod tests {
                 .unwrap(),
         ];
 
-        // 1. 默认 allow_exec == false 时不执行子进程，仅通过静态源码 require('my-loaded-pkg') 识别 Loaded
+        // 1. 默认 allow_exec == false 时不执行子进程，仅通过静态源码 require('my-loaded-pkg') 识别 Referenced
         monitor_dependency_loading(&temp_dir.to_string_lossy(), &mut deps, false, false);
-        assert_eq!(deps[0].dynamic_status, DynamicLoadStatus::Loaded);
+        assert_eq!(deps[0].dynamic_status, DynamicLoadStatus::Referenced);
         assert_eq!(deps[1].dynamic_status, DynamicLoadStatus::NotTraced);
 
         // 2. 显式开启 allow_exec == true 时执行运行时探针

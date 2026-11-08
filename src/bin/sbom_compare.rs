@@ -59,12 +59,60 @@ fn normalize_purl(raw: &str) -> String {
             let ver_part = &rest[at_pos..];
             s = format!("pkg:pypi/{}{}", pkg_name, ver_part);
         }
+    } else if let Some(rest) = s.strip_prefix("pkg:golang/") {
+        if let Some(at_pos) = rest.find('@') {
+            let mod_path = &rest[..at_pos];
+            let raw_ver = &rest[at_pos + 1..];
+            let clean_ver = if !raw_ver.starts_with('v')
+                && raw_ver.chars().next().is_some_and(|c| c.is_ascii_digit())
+            {
+                format!("v{}", raw_ver)
+            } else {
+                raw_ver.to_string()
+            };
+            s = format!("pkg:golang/{}@{}", mod_path, clean_ver);
+        }
     }
     s
 }
 
 fn is_supported_ecosystem(eco: &str) -> bool {
     matches!(eco, "cargo" | "golang" | "maven" | "npm" | "pypi")
+}
+
+fn explain_diff_reason(purl: &str, side: &str, is_target_eco: bool) -> &'static str {
+    if side == "B" {
+        if !is_target_eco {
+            "非本工程扫描语言生态（已从目标重合率中剔除）"
+        } else if purl.ends_with("@0")
+            || purl.ends_with("@0.0.1-SNAPSHOT")
+            || purl.contains("/com.service/")
+            || purl.starts_with("pkg:npm/client@")
+            || purl.starts_with("pkg:npm/react-")
+        {
+            "疑似本地工程模块：需核对来源清单后确认"
+        } else {
+            "参照工具独有项（需核对锁文件或动态运行环境）"
+        }
+    } else if purl.contains("@types/")
+        || [
+            "typescript",
+            "eslint",
+            "nodemon",
+            "ts-node",
+            "testcontainers",
+            "rest-assured",
+            "lombok",
+            "webpack",
+            "babel",
+        ]
+        .iter()
+        .any(|k| purl.contains(k))
+    {
+        "疑似开发/构建/测试依赖：需核对双方扫描参数"
+    } else {
+        "仅本工具出现：需核对清单、锁文件及扫描范围"
+    }
 }
 
 fn ratio_text(numerator: usize, denominator: usize) -> String {
@@ -237,15 +285,18 @@ pub fn main() -> anyhow::Result<()> {
     let only_in_a: HashSet<_> = purls_a.difference(purls_b).cloned().collect();
     let only_in_b: HashSet<_> = purls_b.difference(purls_a).cloned().collect();
 
-    // 计算目标核心生态（Top 5: Cargo/Go/Maven/NPM/PyPI）在参照工具 B 中的唯一包集合
+    // Include every supported ecosystem, even when A misses it entirely.
+    let is_target_eco = is_supported_ecosystem;
+
+    // 计算本工程目标核心生态在参照工具 B 中的唯一包集合与共有交集
     let supported_purls_b: HashSet<_> = purls_b
         .iter()
-        .filter(|p| is_supported_ecosystem(&extract_eco(p)))
+        .filter(|p| is_target_eco(&extract_eco(p)))
         .cloned()
         .collect();
     let supported_common: HashSet<_> = common_purls
         .iter()
-        .filter(|p| is_supported_ecosystem(&extract_eco(p)))
+        .filter(|p| is_target_eco(&extract_eco(p)))
         .cloned()
         .collect();
 
@@ -253,7 +304,7 @@ pub fn main() -> anyhow::Result<()> {
     let overlap_total = ratio_text(common_purls.len(), purls_b.len());
     let supported_purls_a: HashSet<_> = purls_a
         .iter()
-        .filter(|p| is_supported_ecosystem(&extract_eco(p)))
+        .filter(|p| is_target_eco(&extract_eco(p)))
         .collect();
     let union_len = supported_purls_a.len() + supported_purls_b.len() - supported_common.len();
     let jaccard = ratio_text(supported_common.len(), union_len);
@@ -287,7 +338,7 @@ pub fn main() -> anyhow::Result<()> {
         "去重唯一依赖包数 (Unique PURLs)",
         format!("{} 个", summary_a.unique_purls.len()),
         format!(
-            "{} 个 (核心生态 {} 个)",
+            "{} 个 (本工程目标生态 {} 个)",
             summary_b.unique_purls.len(),
             supported_purls_b.len()
         )
@@ -308,8 +359,9 @@ pub fn main() -> anyhow::Result<()> {
     );
 
     println!("{:-<92}", "");
-    println!("🌐 各语言生态第三方组件记录对比:");
-    let mut all_ecos: Vec<_> = summary_a
+    println!("🌐 双方全部语言生态第三方组件记录对比:");
+
+    let mut project_ecos: Vec<_> = summary_a
         .ecosystems
         .keys()
         .chain(summary_b.ecosystems.keys())
@@ -317,9 +369,16 @@ pub fn main() -> anyhow::Result<()> {
         .collect::<HashSet<_>>()
         .into_iter()
         .collect();
-    all_ecos.sort();
+    project_ecos.sort();
 
-    for eco in &all_ecos {
+    let excluded_ecos: Vec<_> = summary_b
+        .ecosystems
+        .keys()
+        .filter(|e| !is_target_eco(e))
+        .cloned()
+        .collect();
+
+    for eco in &project_ecos {
         let inst_a = summary_a.ecosystems.get(eco).copied().unwrap_or(0);
         let inst_b = summary_b.ecosystems.get(eco).copied().unwrap_or(0);
         let uniq_a = summary_a
@@ -336,9 +395,7 @@ pub fn main() -> anyhow::Result<()> {
             .iter()
             .filter(|p| &extract_eco(p) == eco)
             .count();
-        let cov_str = if !is_supported_ecosystem(eco) {
-            "非目标生态".to_string()
-        } else if uniq_b > 0 {
+        let cov_str = if uniq_b > 0 {
             format!(
                 "{:.1}% ({}/{})",
                 (com_cnt as f64 / uniq_b as f64) * 100.0,
@@ -346,7 +403,7 @@ pub fn main() -> anyhow::Result<()> {
                 uniq_b
             )
         } else {
-            "N/A (参照集合为空)".to_string()
+            "N/A".to_string()
         };
 
         println!(
@@ -359,13 +416,33 @@ pub fn main() -> anyhow::Result<()> {
             cov_str
         );
     }
+
+    if !excluded_ecos.is_empty() {
+        let ex_desc = excluded_ecos
+            .iter()
+            .map(|e| {
+                format!(
+                    "{} ({} 记录 / {} 唯一)",
+                    e.to_uppercase(),
+                    summary_b.ecosystems.get(e).unwrap_or(&0),
+                    summary_b
+                        .ecosystem_unique_purls
+                        .get(e)
+                        .map(|s| s.len())
+                        .unwrap_or(0)
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        println!("  ℹ️  [已过滤非本工程扫描语言]: {}", ex_desc);
+    }
     println!("{:=^92}", "");
 
     // 生成适用于毕业论文的严谨 Markdown 报告
     let inst_diff = summary_a.total_components as i64 - summary_b.total_components as i64;
 
     let mut eco_rows_md = String::new();
-    for eco in &all_ecos {
+    for eco in &project_ecos {
         let inst_a = summary_a.ecosystems.get(eco).copied().unwrap_or(0);
         let inst_b = summary_b.ecosystems.get(eco).copied().unwrap_or(0);
         let uniq_a = summary_a
@@ -382,9 +459,7 @@ pub fn main() -> anyhow::Result<()> {
             .iter()
             .filter(|p| &extract_eco(p) == eco)
             .count();
-        let cov_str = if !is_supported_ecosystem(eco) {
-            "非目标生态".to_string()
-        } else if uniq_b > 0 {
+        let cov_str = if uniq_b > 0 {
             format!(
                 "**{:.1}%** ({}/{})",
                 (com_cnt as f64 / uniq_b as f64) * 100.0,
@@ -392,9 +467,13 @@ pub fn main() -> anyhow::Result<()> {
                 uniq_b
             )
         } else {
-            "N/A (参照集合为空)".to_string()
+            "N/A".to_string()
         };
-        let note = "差异需核对清单、锁文件、依赖作用域和版本";
+        let note = if is_target_eco(eco) {
+            "差异需核对清单、锁文件、版本及扫描参数"
+        } else {
+            "非目标生态，不计入目标指标"
+        };
         eco_rows_md.push_str(&format!(
             "| **{}** | **{}** ({}) | {} ({}) | {} | {} | {} |\n",
             eco.to_uppercase(),
@@ -414,25 +493,31 @@ pub fn main() -> anyhow::Result<()> {
     only_b_list.sort();
     let only_a_rows = only_a_list
         .iter()
-        .map(|p| format!("- `{p}`\n"))
+        .map(|p| {
+            let reason = explain_diff_reason(p, "A", is_target_eco(&extract_eco(p)));
+            format!("- `{p}` — **{reason}**\n")
+        })
         .collect::<String>();
     let only_b_rows = only_b_list
         .iter()
-        .map(|p| format!("- `{p}`\n"))
+        .map(|p| {
+            let reason = explain_diff_reason(p, "B", is_target_eco(&extract_eco(p)));
+            format!("- `{p}` — **{reason}**\n")
+        })
         .collect::<String>();
 
     let markdown_content = format!(
         r#"# SBOM 组件集合对比报告
 
-本报告比较两份 CycloneDX SBOM 的组件集合。参照 SBOM 不是独立真值；相对重合率不等于准确率或召回率，独有项不自动代表漏检。
+参照 SBOM 不是独立真值；相对重合率不等于准确率或召回率。独有项不自动代表误报或漏检。
 
-- 本工具：`{our_file}`
-- 参照文件：`{comp_file}`
+- 本工具：{our_file}
+- 参照文件：{comp_file}
 - 参照工具版本：{reference_version}
 
 ## 统计规则
 
-排除 `type=application`、`0.0.0` 及明显误作版本的 `runtime`；未解析版本组件计入记录总数并单独统计，不参与精确版本 PURL 集合比较；其余按 PURL 去重。PURL 比较去除 qualifier/subpath，并仅统一已知编码及 PyPI 包名写法。实例数是过滤后的组件记录数，未核实物理部署路径。过滤可能误排合法的 `0.0.0` 组件。
+目标生态固定为 Cargo、Go、Maven、npm、PyPI，即使本工具未检出某生态，也保留该生态的参照包。排除 type=application、0.0.0 及 runtime；未解析版本计入记录数并单列，不参与精确版本集合比较。PURL 去除 qualifier/subpath，并统一已知编码、PyPI 名称及 Go 版本前缀。该过滤可能误排合法的 0.0.0 组件；记录数不代表已核实的物理部署实例。
 
 ## 汇总
 
@@ -456,15 +541,17 @@ pub fn main() -> anyhow::Result<()> {
 {eco_rows}
 ## 待核验的差异 PURL
 
-### 仅本工具出现
+以下原因仅为排查线索，未逐项回查源码，不能作为已验证结论。
+
+### 仅本工具出现 ({only_a_count} 项)
 
 {only_a_rows}
-### 仅参照工具出现
+### 仅参照工具出现 ({only_b_count} 项)
 
 {only_b_rows}
 ## 解读限制
 
-双方扫描模式、锁文件、依赖作用域和版本解析可能不同。对独有项需回查项目清单、锁文件和原始 SBOM，不能直接认定为真实依赖、误报或漏检。
+本报告仅衡量这两份文件的组件集合关系。差异应回查相同源码提交、清单和锁文件，核对开发/测试依赖范围、扫描参数及解析方式。许可证、依赖边及运行时加载证据需独立评估；不能仅凭重合率认定整体准确度或工具优劣。
 "#,
         our_file = our_path,
         comp_file = comp_path,

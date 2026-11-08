@@ -1,6 +1,7 @@
 use crate::analyze::producers::dynamic_producer::DynamicProducer;
 use crate::model::configuration::Configuration;
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
+use crate::utils::cli_driver::CliLocator;
 use crate::utils::file_utils::make_instance_id;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
@@ -24,7 +25,7 @@ impl DynamicProducer for CargoDynamicProducer {
         cmd.args(["metadata", "--format-version=1", "--all-features"])
             .current_dir(&configuration.directory);
 
-        let output = cmd.output()?;
+        let output = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(15))?;
 
         if !output.status.success() {
             let stderr_str = String::from_utf8_lossy(&output.stderr);

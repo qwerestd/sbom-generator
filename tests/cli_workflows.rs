@@ -47,7 +47,7 @@ fn generator_cli_handles_multilanguage_project_and_errors() {
         .unwrap();
     assert!(tree.status.success());
     assert!(String::from_utf8_lossy(&tree.stdout).contains("Dependency Tree Summary"));
-    assert!(String::from_utf8_lossy(&tree.stdout).contains("MIT OR Apache-2.0"));
+    assert!(String::from_utf8_lossy(&tree.stdout).contains("UNKNOWN"));
 
     for args in [
         vec!["--unknown"],
@@ -119,4 +119,40 @@ fn comparison_reports_unresolved_components_without_counting_them_as_matches() {
     assert!(md.contains("| 组件记录数 | 1 | 1 |"), "{md}");
     assert!(md.contains("| 版本未解析记录数 | 1 | 0 |"), "{md}");
     assert!(md.contains("0.00% (0/1)"), "{md}");
+}
+
+#[test]
+fn comparison_keeps_supported_ecosystems_missing_from_our_output() {
+    let dir = workspace().join("target/test_outputs/accuracy_comparison");
+    fs::create_dir_all(&dir).unwrap();
+    let a = dir.join("a.json");
+    let b = dir.join("b.json");
+    let report = dir.join("report.md");
+    let npm = serde_json::json!({"type":"library", "name":"a", "version":"1.0.0", "purl":"pkg:npm/a@1.0.0"});
+    let python = serde_json::json!({"type":"library", "name":"b", "version":"1.0.0", "purl":"pkg:pypi/b@1.0.0"});
+    fs::write(
+        &a,
+        serde_json::json!({"bomFormat":"CycloneDX", "components":[npm.clone()]}).to_string(),
+    )
+    .unwrap();
+    fs::write(
+        &b,
+        serde_json::json!({"bomFormat":"CycloneDX", "components":[npm, python]}).to_string(),
+    )
+    .unwrap();
+    let result = Command::new(env!("CARGO_BIN_EXE_sbom_compare"))
+        .arg("--our-sbom")
+        .arg(a)
+        .arg("--competitor-sbom")
+        .arg(b)
+        .arg("--output")
+        .arg(&report)
+        .output()
+        .unwrap();
+    assert!(result.status.success());
+    let md = fs::read_to_string(report).unwrap();
+    assert!(md.contains("50.00% (1/2)"), "{md}");
+    assert!(md.contains("**PYPI**"), "{md}");
+    assert!(!md.contains("接近 100%"), "{md}");
+    assert!(md.contains("不是独立真值"), "{md}");
 }

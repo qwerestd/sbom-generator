@@ -36,9 +36,8 @@ impl MavenCliDriver {
         ])
         .current_dir(project_dir);
 
-        let output = cmd
-            .output()
-            .map_err(|e| format!("无法启动 mvn 进程: {}", e))?;
+        let output = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(30))
+            .map_err(|e| format!("Maven dependency:tree 执行失败或超时: {}", e))?;
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);

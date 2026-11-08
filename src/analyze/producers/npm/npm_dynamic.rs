@@ -1,6 +1,7 @@
 use crate::analyze::producers::dynamic_producer::DynamicProducer;
 use crate::model::configuration::Configuration;
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyType};
+use crate::utils::cli_driver::CliLocator;
 use crate::utils::file_utils::make_instance_id;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -26,10 +27,11 @@ impl DynamicProducer for NpmDynamicProducer {
             "npm"
         };
 
-        let output = Command::new(npm_cmd)
-            .args(["ls", "--json", "--all"])
-            .current_dir(&config.directory)
-            .output()?;
+        let mut cmd = Command::new(npm_cmd);
+        cmd.args(["ls", "--json", "--all"])
+            .current_dir(&config.directory);
+
+        let output = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(15))?;
 
         let stdout_str = String::from_utf8_lossy(&output.stdout);
         let json: serde_json::Value = serde_json::from_str(&stdout_str)?;

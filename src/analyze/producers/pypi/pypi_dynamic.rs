@@ -41,10 +41,10 @@ impl DynamicProducer for PypiDynamicProducer {
         let py_bin = CliLocator::resolve_python_for_dir(&work_dir)
             .ok_or_else(|| anyhow::anyhow!("当前宿主机未找到 python / python3 解释器"))?;
 
-        let output = Command::new(py_bin)
-            .args(["-m", "pip", "inspect"])
-            .current_dir(&work_dir)
-            .output()?;
+        let mut cmd = Command::new(py_bin);
+        cmd.args(["-m", "pip", "inspect"]).current_dir(&work_dir);
+
+        let output = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(15))?;
 
         if !output.status.success() {
             let err_msg = String::from_utf8_lossy(&output.stderr);
@@ -138,18 +138,27 @@ impl PypiDynamicProducer {
             return Ok(vec![]);
         }
 
-        // 若项目声明的根依赖在当前 Python 环境中存在，则构建应用根节点并仅保留从根可达的子图！
-        // 若当前环境未安装该项目依赖（例如在空虚拟环境中跑测试），则返回空以触发静态降级轨！
+        // 严禁接受“部分匹配”：
+        // 假设项目声明了 A 和 B，当前环境只装了 A，绝不能只返回 A 的依赖图（否则 B 会从整份 SBOM 中蒸发，CLI 仍虚假显示动态成功）。
+        // 必须要求 declared_roots 全部在当前环境中已安装；若有任何缺失，必须报错回退到静态责任链！
         if !declared_roots.is_empty() {
-            let matched_roots: Vec<(String, Option<String>)> = declared_roots
+            let missing_roots: Vec<String> = declared_roots
                 .iter()
-                .filter(|r| installed_norm_names.contains(*r))
-                .map(|r| (r.clone(), None))
+                .filter(|r| !installed_norm_names.contains(*r))
+                .cloned()
                 .collect();
 
-            if matched_roots.is_empty() {
-                return Ok(vec![]);
+            if !missing_roots.is_empty() {
+                anyhow::bail!(
+                    "Python 动态环境不完整：项目声明了 {} 个依赖，但环境中缺少 {} 个依赖 ({:?})。拒绝部分匹配，正在触发静态责任链降级以确保完整覆盖！",
+                    declared_roots.len(),
+                    missing_roots.len(),
+                    missing_roots
+                );
             }
+
+            let matched_roots: Vec<(String, Option<String>)> =
+                declared_roots.iter().map(|r| (r.clone(), None)).collect();
 
             let norm_app = pep503_normalize(app_name);
             let root_purl = format!("pkg:pypi/{}@0.0.0", norm_app);
@@ -229,5 +238,38 @@ mod tests {
         assert!(deps.iter().any(|d| d.name == "urllib3"));
         assert!(!deps.iter().any(|d| d.name == "unrelated-global-pkg"));
         assert!(!deps.iter().any(|d| d.name == "PySocks"));
+    }
+
+    #[test]
+    fn test_pip_inspect_rejects_partial_match() {
+        let mock_inspect = serde_json::json!({
+            "installed": [
+                {
+                    "metadata": {
+                        "name": "package-a",
+                        "version": "1.0.0"
+                    }
+                }
+            ]
+        });
+
+        let mut declared = HashSet::new();
+        declared.insert("package-a".to_string());
+        declared.insert("package-b".to_string()); // package-b 缺失
+
+        let res = PypiDynamicProducer::parse_pip_inspect_graph(
+            &mock_inspect,
+            "my-py-service",
+            &declared,
+            "test/py",
+        );
+
+        assert!(
+            res.is_err(),
+            "must reject partial match when package-b is missing"
+        );
+        let err_str = res.unwrap_err().to_string();
+        assert!(err_str.contains("拒绝部分匹配"));
+        assert!(err_str.contains("package-b"));
     }
 }

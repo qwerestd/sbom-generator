@@ -295,6 +295,74 @@ impl CliLocator {
 
         None
     }
+
+    /// 跨平台执行外部子进程，带有毫秒级精准超时控制与管道缓冲区死锁防护。
+    /// 当包管理器或编译工具陷入网络拉取卡死、外部输入等待或死锁时，主动强杀子进程并快速回退到静态分析。
+    pub fn run_with_timeout(
+        mut cmd: Command,
+        timeout: std::time::Duration,
+    ) -> anyhow::Result<std::process::Output> {
+        use std::io::Read;
+
+        cmd.stdout(std::process::Stdio::piped());
+        cmd.stderr(std::process::Stdio::piped());
+
+        let mut child = cmd
+            .spawn()
+            .map_err(|e| anyhow::anyhow!("启动外部进程失败: {e}"))?;
+        let stdout = child.stdout.take();
+        let stderr = child.stderr.take();
+
+        let (stdout_tx, stdout_rx) = std::sync::mpsc::channel();
+        let (stderr_tx, stderr_rx) = std::sync::mpsc::channel();
+
+        if let Some(mut out) = stdout {
+            std::thread::spawn(move || {
+                let mut buf = Vec::new();
+                let _ = out.read_to_end(&mut buf);
+                let _ = stdout_tx.send(buf);
+            });
+        } else {
+            let _ = stdout_tx.send(Vec::new());
+        }
+
+        if let Some(mut err) = stderr {
+            std::thread::spawn(move || {
+                let mut buf = Vec::new();
+                let _ = err.read_to_end(&mut buf);
+                let _ = stderr_tx.send(buf);
+            });
+        } else {
+            let _ = stderr_tx.send(Vec::new());
+        }
+
+        let start = std::time::Instant::now();
+        let status = loop {
+            match child.try_wait()? {
+                Some(status) => break status,
+                None => {
+                    if start.elapsed() >= timeout {
+                        let _ = child.kill();
+                        let _ = child.wait();
+                        anyhow::bail!(
+                            "外部进程执行超时 (超过 {:?})，已强制终止以触发静态降级",
+                            timeout
+                        );
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+            }
+        };
+
+        let stdout_bytes = stdout_rx.recv().unwrap_or_default();
+        let stderr_bytes = stderr_rx.recv().unwrap_or_default();
+
+        Ok(std::process::Output {
+            status,
+            stdout: stdout_bytes,
+            stderr: stderr_bytes,
+        })
+    }
 }
 
 #[cfg(test)]
@@ -370,5 +438,40 @@ mod tests {
             );
         }
         let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_run_with_timeout_success() {
+        let cmd = if cfg!(target_os = "windows") {
+            let mut c = Command::new("cmd");
+            c.args(["/C", "echo hello_timeout"]);
+            c
+        } else {
+            let mut c = Command::new("echo");
+            c.arg("hello_timeout");
+            c
+        };
+
+        let output = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(5))
+            .expect("should execute successfully within timeout");
+        assert!(output.status.success());
+        assert!(String::from_utf8_lossy(&output.stdout).contains("hello_timeout"));
+    }
+
+    #[test]
+    fn test_run_with_timeout_triggered() {
+        let cmd = if cfg!(target_os = "windows") {
+            let mut c = Command::new("powershell");
+            c.args(["-Command", "Start-Sleep -Seconds 5"]);
+            c
+        } else {
+            let mut c = Command::new("sleep");
+            c.arg("5");
+            c
+        };
+
+        let res = CliLocator::run_with_timeout(cmd, std::time::Duration::from_millis(200));
+        assert!(res.is_err(), "should time out");
+        assert!(res.unwrap_err().to_string().contains("超时"));
     }
 }

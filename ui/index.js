@@ -23,6 +23,14 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
             if (s.startsWith('pkg:pypi/')) {
                 const at = s.indexOf('@', 9);
                 if (at > 9) s = 'pkg:pypi/' + s.slice(9, at).toLowerCase().replace(/[-_.]+/g, '-') + s.slice(at);
+            } else if (s.startsWith('pkg:golang/')) {
+                const at = s.indexOf('@', 11);
+                if (at > 11) {
+                    const modPath = s.slice(11, at);
+                    let ver = s.slice(at + 1);
+                    if (!ver.startsWith('v') && /^\d/.test(ver)) ver = 'v' + ver;
+                    s = 'pkg:golang/' + modPath + '@' + ver;
+                }
             }
             return s;
         }
@@ -437,8 +445,8 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                                                </div>`;
                             }
                             const statusStr = params.data.runtimeStatus === 'loaded'
-                                ? '<span style="color:#3fb950;font-weight:bold;">🟢 活跃运行 (LOADED)</span>'
-                                : (params.data.runtimeStatus === 'dormant' ? '<span style="color:#8b949e;">⚪ 静态休眠 (DORMANT)</span>' : '<span style="color:#58a6ff;">🔘 静态责任链</span>');
+                                ? '<span style="color:#3fb950;font-weight:bold;">🟢 已观测到运行时加载 (LOADED)</span>'
+                                : (params.data.runtimeStatus === 'dormant' ? '<span style="color:#8b949e;">⚪ 本次未观测到加载 (DORMANT)</span>' : '<span style="color:#58a6ff;">🔘 静态责任链</span>');
 
                             return `<div style="padding:2px;">
                                         <b style="font-size:14px; color:#58a6ff;">${escapeHtml(params.data.cleanName)}</b>
@@ -695,8 +703,8 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                 }
 
                 const statusTag = runtimeStatus === 'loaded'
-                    ? '<span class="status-badge-loaded">🟢 活跃运行</span>'
-                    : (runtimeStatus === 'dormant' ? '<span class="status-badge-dormant">⚪ 静态休眠</span>' : '<span class="status-badge-untraced">🔘 静态责任链</span>');
+                    ? '<span class="status-badge-loaded">🟢 已观测到加载</span>'
+                    : (runtimeStatus === 'dormant' ? '<span class="status-badge-dormant">⚪ 本次未观测到加载</span>' : '<span class="status-badge-untraced">🔘 静态责任链</span>');
 
                 html += `<tr>
                             <td><b style="color:#ffffff;">${escapeHtml(c.name)}</b></td>
@@ -865,7 +873,7 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                 <div class="detail-block">
                     <div class="detail-title">运行时加载状态</div>
                     <div class="detail-val">
-                        ${nodeData.runtimeStatus === 'loaded' ? '<span style="color:#2ea043;font-weight:700;">🟢 已观测到加载/引用 (LOADED)</span>' : (nodeData.runtimeStatus === 'dormant' ? '<span style="color:#8b949e;font-weight:700;">⚪ 未观测到加载（不代表不可达）</span>' : '<span style="color:#58a6ff;">🔘 静态责任链解析 (UNTRACED)</span>')}
+                        ${nodeData.runtimeStatus === 'loaded' ? '<span style="color:#2ea043;font-weight:700;">🟢 已观测到运行时加载 (LOADED)</span>' : (nodeData.runtimeStatus === 'dormant' ? '<span style="color:#8b949e;font-weight:700;">⚪ 未观测到加载（不代表不可达）</span>' : '<span style="color:#58a6ff;">🔘 静态责任链解析 (UNTRACED)</span>')}
                     </div>
                 </div>
                 <div class="detail-block">

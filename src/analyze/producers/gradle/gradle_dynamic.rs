@@ -41,12 +41,14 @@ impl GradleDynamicProducer {
         let cmd = CliLocator::resolve_gradle_for_dir(work_dir)
             .ok_or_else(|| anyhow::anyhow!("未检测到可用的 Gradle / gradlew 可执行文件"))?;
 
-        let output = Command::new(cmd)
+        let mut process_cmd = Command::new(cmd);
+        process_cmd
             .current_dir(work_dir)
             .arg("dependencies")
             .arg("--configuration")
-            .arg("runtimeClasspath")
-            .output()?;
+            .arg("runtimeClasspath");
+
+        let output = CliLocator::run_with_timeout(process_cmd, std::time::Duration::from_secs(30))?;
 
         if !output.status.success() {
             let err_msg = String::from_utf8_lossy(&output.stderr);

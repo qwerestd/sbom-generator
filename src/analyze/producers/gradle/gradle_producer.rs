@@ -33,13 +33,9 @@ lazy_static! {
 
     /// 匹配 Groovy DSL 依赖声明（支持 3 段 group:name:ver 与 2 段 BOM 受管 group:name，支持 $var / ${var} 插值）
     static ref GROOVY_DEP_RE: Regex = Regex::new(
-        r#"(?x)
-        (?:api|implementation|compileOnly|runtimeOnly|testImplementation|testCompile)
-        \s*\(?\s*
-        ['"]([^'"]+:[^'"]+)['"]
-        \s*\)?
-        "#
+        r#"(?x)\b(?:api|implementation|compileOnly|runtimeOnly|testImplementation|testCompile)\s*(?:\(\s*)?(?:platform\s*\(\s*)?['\"][^'\"]+:[^'\"]+['\"]\s*\)?(?:\s*,\s*['\"][^'\"]+:[^'\"]+['\"])*"#
     ).unwrap();
+    static ref GROOVY_COORD_RE: Regex = Regex::new(r#"['"]([^'"]+:[^'"]+)['"]"#).unwrap();
 }
 
 impl SbomProducer for GradleProducer {
@@ -209,7 +205,7 @@ impl GradleProducer {
                 let group = parts[0].trim();
                 let name = parts[1].trim();
                 let pkg_key = format!("{}:{}", group, name);
-                let version = ctx.resolve_version(&pkg_key, None)?;
+                let version = ctx.resolve_version(&pkg_key, None).unwrap_or_default();
                 Some(ExtractedDep {
                     group: group.to_string(),
                     name: name.to_string(),
@@ -307,19 +303,23 @@ impl GradleProducer {
     ) -> anyhow::Result<Vec<ExtractedDep>> {
         let mut deps = Vec::new();
 
-        for cap in GROOVY_DEP_RE.captures_iter(content) {
-            if let (Some(full_m), Some(coord_m)) = (cap.get(0), cap.get(1)) {
-                let loc = build_location_from_offsets(
-                    file_path,
-                    content,
-                    (full_m.start(), full_m.end()),
-                    Some((coord_m.start(), coord_m.end())),
-                    None,
-                );
-                if let Some(resolved) =
-                    Self::resolve_coord_with_context(coord_m.as_str(), ctx, Some(loc))
-                {
-                    deps.push(resolved);
+        for statement in GROOVY_DEP_RE.find_iter(content) {
+            for cap in GROOVY_COORD_RE.captures_iter(statement.as_str()) {
+                if let Some(coord) = cap.get(1) {
+                    let start = statement.start() + coord.start();
+                    let end = statement.start() + coord.end();
+                    let loc = build_location_from_offsets(
+                        file_path,
+                        content,
+                        (start, end),
+                        Some((start, end)),
+                        None,
+                    );
+                    if let Some(resolved) =
+                        Self::resolve_coord_with_context(coord.as_str(), ctx, Some(loc))
+                    {
+                        deps.push(resolved);
+                    }
                 }
             }
         }
@@ -579,6 +579,32 @@ empty=testCompileClasspath
         assert_eq!(deps[0].version, "3.2.0");
         assert_eq!(deps[1].name, "jackson-databind");
         assert_eq!(deps[1].version, "2.15.2");
+    }
+
+    #[test]
+    fn groovy_preserves_unresolved_managed_dependency() {
+        let deps = GradleProducer::parse_groovy_dependencies(
+            "implementation \"io.example:managed\"",
+            Path::new("build.gradle"),
+            &HierarchicalContext::new(),
+        )
+        .unwrap();
+        assert_eq!(deps.len(), 1);
+        assert_eq!(deps[0].name, "managed");
+        assert!(deps[0].version.is_empty());
+    }
+
+    #[test]
+    fn parses_groovy_multiple_arguments_and_platform() {
+        let content = "implementation platform(\"io.demo:bill:1.0.0\")\nimplementation \"io.demo:first:1.0.0\",\n  \"io.demo:second:2.0.0\"\nruntimeOnly 'io.demo:third:3.0.0', 'io.demo:fourth:4.0.0'";
+        let deps = GradleProducer::parse_groovy_dependencies(
+            content,
+            Path::new("build.gradle"),
+            &HierarchicalContext::new(),
+        )
+        .unwrap();
+        let names: Vec<_> = deps.iter().map(|d| d.name.as_str()).collect();
+        assert_eq!(names, ["bill", "first", "second", "third", "fourth"]);
     }
 
     #[test]

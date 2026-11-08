@@ -387,18 +387,13 @@ mod tests {
         let comps = json["components"]
             .as_array()
             .expect("应当包含 components 数组");
-        let licensed_count = comps.iter().filter(|c| c.get("licenses").is_some()).count();
-        assert!(
-            licensed_count > 0,
-            "组件应当包含解析出的 SPDX licenses 元数据"
-        );
-        assert!(comps
-            .iter()
-            .any(|c| c["licenses"][0]["expression"] == "MIT OR Apache-2.0"));
+        // These source fixtures have no license declarations. Do not invent
+        // licenses from package names or ecosystem-wide defaults.
+        assert!(comps.iter().all(|c| c.get("licenses").is_none()));
         assert!(comps.iter().all(|c| {
-            c["licenses"].as_array().map_or(true, |licenses| {
+            c["licenses"].as_array().is_none_or(|licenses| {
                 licenses.iter().all(|entry| {
-                    entry["license"]["id"].as_str().map_or(true, |id| {
+                    entry["license"]["id"].as_str().is_none_or(|id| {
                         !id.split_whitespace()
                             .any(|part| matches!(part, "OR" | "AND" | "WITH"))
                     })

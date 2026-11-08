@@ -30,11 +30,34 @@ pub fn build_reachable_dag(nodes: Vec<RawGraphNode>) -> Vec<Dependency> {
         return vec![];
     }
 
+    #[derive(Clone, Debug)]
+    struct ScopedCandidate {
+        instance_id: String,
+        version: Option<String>,
+        scope_prefix: String,
+    }
+
+    let mut scoped_map: HashMap<String, Vec<ScopedCandidate>> = HashMap::with_capacity(nodes.len());
     let mut exact_map: HashMap<(String, String), String> = HashMap::with_capacity(nodes.len());
     let mut single_map: HashMap<String, String> = HashMap::with_capacity(nodes.len());
 
-    // 第一趟：构建双索引表
+    // 第一趟：构建多维索引（包含精确版本、单键和作用域前缀）
     for node in &nodes {
+        let scope_prefix = node
+            .location
+            .as_ref()
+            .map(|l| l.block.file.replace('\\', "/"))
+            .unwrap_or_else(|| node.instance_id.split('?').next().unwrap_or("").to_string());
+
+        scoped_map
+            .entry(node.lookup_key.clone())
+            .or_default()
+            .push(ScopedCandidate {
+                instance_id: node.instance_id.clone(),
+                version: node.version.clone(),
+                scope_prefix,
+            });
+
         if let Some(ref ver) = node.version {
             exact_map.insert(
                 (node.lookup_key.clone(), ver.clone()),
@@ -44,7 +67,7 @@ pub fn build_reachable_dag(nodes: Vec<RawGraphNode>) -> Vec<Dependency> {
         single_map.insert(node.lookup_key.clone(), node.instance_id.clone());
     }
 
-    // 第二趟：连线并计算入度
+    // 第二趟：严格按照模块寻址与作用域回溯（同作用域优先，同版本优先）
     let mut id_to_children: HashMap<String, Vec<String>> = HashMap::with_capacity(nodes.len());
     let mut in_degree: HashMap<String, usize> = HashMap::with_capacity(nodes.len());
 
@@ -53,17 +76,63 @@ pub fn build_reachable_dag(nodes: Vec<RawGraphNode>) -> Vec<Dependency> {
     }
 
     for node in &nodes {
+        let caller_scope = node
+            .location
+            .as_ref()
+            .map(|l| l.block.file.replace('\\', "/"))
+            .unwrap_or_else(|| node.instance_id.split('?').next().unwrap_or("").to_string());
+
         let mut child_ids = Vec::with_capacity(node.raw_deps.len());
         let mut seen_edges = HashSet::new();
 
         for (dep_key, dep_ver_opt) in &node.raw_deps {
-            let target_id = match dep_ver_opt {
+            let mut resolved_id: Option<String> = None;
+
+            if let Some(candidates) = scoped_map.get(dep_key) {
+                if candidates.len() == 1 {
+                    resolved_id = Some(candidates[0].instance_id.clone());
+                } else {
+                    // 多版本共存时：优先寻找同作用域且版本匹配的节点
+                    if let Some(req_ver) = dep_ver_opt.as_deref().filter(|v| !v.is_empty()) {
+                        if let Some(c) = candidates.iter().find(|c| {
+                            c.version.as_deref() == Some(req_ver)
+                                && (!c.scope_prefix.is_empty()
+                                    && (c.scope_prefix.contains(&caller_scope)
+                                        || caller_scope.contains(&c.scope_prefix)))
+                        }) {
+                            resolved_id = Some(c.instance_id.clone());
+                        } else if let Some(c) = candidates
+                            .iter()
+                            .find(|c| c.version.as_deref() == Some(req_ver))
+                        {
+                            resolved_id = Some(c.instance_id.clone());
+                        }
+                    }
+
+                    // 作用域就近回溯：若未指定版本或未命中，优先选择与调用者处于同一目录/模块上下文的依赖
+                    if resolved_id.is_none() {
+                        if let Some(c) = candidates.iter().find(|c| {
+                            !c.scope_prefix.is_empty()
+                                && (c.scope_prefix.contains(&caller_scope)
+                                    || caller_scope.contains(&c.scope_prefix))
+                        }) {
+                            resolved_id = Some(c.instance_id.clone());
+                        }
+                    }
+
+                    if resolved_id.is_none() && !candidates.is_empty() {
+                        resolved_id = Some(candidates[0].instance_id.clone());
+                    }
+                }
+            }
+
+            let target_id = resolved_id.or_else(|| match dep_ver_opt {
                 Some(ver) if !ver.is_empty() => exact_map
                     .get(&(dep_key.clone(), ver.clone()))
                     .or_else(|| single_map.get(dep_key))
                     .cloned(),
                 _ => single_map.get(dep_key).cloned(),
-            };
+            });
 
             if let Some(cid) = target_id {
                 if cid != node.instance_id && seen_edges.insert(cid.clone()) {

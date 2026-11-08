@@ -59,6 +59,14 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
             if (s.startsWith('pkg:pypi/')) {
                 const at = s.indexOf('@', 9);
                 if (at > 9) s = 'pkg:pypi/' + s.slice(9, at).toLowerCase().replace(/[-_.]+/g, '-') + s.slice(at);
+            } else if (s.startsWith('pkg:golang/')) {
+                const at = s.indexOf('@', 11);
+                if (at > 11) {
+                    const modPath = s.slice(11, at);
+                    let ver = s.slice(at + 1);
+                    if (!ver.startsWith('v') && /^\d/.test(ver)) ver = 'v' + ver;
+                    s = 'pkg:golang/' + modPath + '@' + ver;
+                }
             }
             return s;
         }
@@ -69,7 +77,12 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
             return m ? m[1].toLowerCase() : 'other';
         }
 
+        let activeTargetEcos = new Set(['cargo', 'golang', 'maven', 'npm', 'pypi']);
+
         function isTargetEco(e) {
+            if (activeTargetEcos && activeTargetEcos.size > 0) {
+                return activeTargetEcos.has(e);
+            }
             return ['cargo', 'golang', 'maven', 'npm', 'pypi'].includes(e);
         }
 
@@ -144,6 +157,9 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
             let licensedA = 0;
             const ecoLoadedA = {};
 
+            // Scope is the supported ecosystem set, independent of what A found.
+            activeTargetEcos = new Set(['cargo', 'golang', 'maven', 'npm', 'pypi']);
+
             compsA.forEach(c => {
                 const p = normalizePurl(c.purl);
                 const e = extractEco(p);
@@ -210,13 +226,16 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
             const unionCount = targetACount + targetBCount - targetCommonCount;
             const jaccard = unionCount > 0 ? (targetCommonCount / unionCount * 100) : null;
 
-            // 构造全量差异列表
+            // 构造全量差异列表（附带精准差异归因解释）
             currentDiffList = [];
             onlyPurlsA.forEach(p => {
                 const c = mapA.get(p);
                 const meta = extractMeta(c);
                 const eco = extractEco(p);
-                const reason = '仅 A 出现；需核对清单、锁文件、版本和依赖作用域';
+                let reason = '仅本工具出现：需核对清单、锁文件及扫描范围';
+                if (['typescript', 'eslint', 'nodemon', 'ts-node', 'testcontainers', 'rest-assured', 'lombok', 'webpack', 'babel'].some(k => p.includes(k)) || p.includes('@types/')) {
+                    reason = '疑似开发/构建/测试依赖：需核对双方扫描参数';
+                }
                 currentDiffList.push({
                     type: 'onlyA',
                     name: c?.name || p.split('/')[1]?.split('@')[0] || p,
@@ -234,7 +253,12 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                 const c = mapB.get(p);
                 const meta = extractMeta(c);
                 const eco = extractEco(p);
-                const reason = '仅 B 出现；需核对清单、锁文件、版本和依赖作用域';
+                let reason = '参照工具独有项（需核验锁文件或动态环境）';
+                if (!activeTargetEcos.has(eco)) {
+                    reason = `非本工程扫描语言生态 (${eco})，已从目标重合率中剔除`;
+                } else if (p.endsWith('@0') || p.endsWith('@0.0.1-SNAPSHOT') || p.includes('/com.service/') || p.startsWith('pkg:npm/client@') || p.startsWith('pkg:npm/react-')) {
+                    reason = '疑似本地工程模块：需核对来源清单后确认 (Version: 0/Snapshot)';
+                }
                 currentDiffList.push({
                     type: 'onlyB',
                     name: c?.name || p.split('/')[1]?.split('@')[0] || p,
@@ -436,24 +460,43 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                 }]
             });
 
-            // 2. 跨生态双向覆盖柱状图 (圆角渐变柱 + 顶部数据标签)
-            const allEcos = ['cargo', 'golang', 'maven', 'npm', 'pypi', 'other'];
+            // 2. 跨生态双向覆盖柱状图 (仅对比展示本工程实际包含并检测的语言生态)
+            const ecoNameMap = {
+                cargo: 'Cargo (Rust)',
+                golang: 'Go (Golang)',
+                maven: 'Maven (Java)',
+                npm: 'NPM (JS)',
+                pypi: 'PyPI (Python)',
+                composer: 'Composer (PHP)',
+                nuget: 'NuGet (.NET)',
+                rubygems: 'RubyGems (Ruby)'
+            };
+            const displayEcos = Array.from(activeTargetEcos).sort();
+            if (displayEcos.length === 0) {
+                displayEcos.push('cargo', 'golang', 'maven', 'npm', 'pypi');
+            }
+
             const ecoCountA = {};
             const ecoCountB = {};
-            allEcos.forEach(e => { ecoCountA[e] = 0; ecoCountB[e] = 0; });
+            displayEcos.forEach(e => { ecoCountA[e] = 0; ecoCountB[e] = 0; });
 
             compsA.forEach(c => {
                 const e = extractEco(normalizePurl(c.purl));
-                ecoCountA[e] = (ecoCountA[e] || 0) + 1;
+                if (displayEcos.includes(e)) {
+                    ecoCountA[e] = (ecoCountA[e] || 0) + 1;
+                }
             });
             compsB.forEach(c => {
                 const e = extractEco(normalizePurl(c.purl));
-                ecoCountB[e] = (ecoCountB[e] || 0) + 1;
+                if (displayEcos.includes(e)) {
+                    ecoCountB[e] = (ecoCountB[e] || 0) + 1;
+                }
             });
 
             chartEco.setOption({
                 backgroundColor: 'transparent',
-                tooltip: { renderMode: 'richText',
+                tooltip: {
+                    renderMode: 'html',
                     trigger: 'axis',
                     axisPointer: { type: 'shadow' },
                     backgroundColor: 'rgba(15, 23, 42, 0.95)',
@@ -470,7 +513,7 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                 grid: { top: 46, bottom: 28, left: 55, right: 25 },
                 xAxis: {
                     type: 'category',
-                    data: ['Cargo (Rust)', 'Go (Golang)', 'Maven (Java)', 'NPM (JS)', 'PyPI (Python)', '其他生态'],
+                    data: displayEcos.map(e => ecoNameMap[e] || e.toUpperCase()),
                     axisLabel: { color: '#94a3b8', fontSize: 11, fontWeight: 500 },
                     axisLine: { lineStyle: { color: '#334155' } },
                     axisTick: { show: false }
@@ -484,7 +527,7 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                     {
                         name: toolA,
                         type: 'bar',
-                        data: allEcos.map(e => ecoCountA[e] || 0),
+                        data: displayEcos.map(e => ecoCountA[e] || 0),
                         itemStyle: {
                             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                                 { offset: 0, color: '#38bdf8' },
@@ -494,7 +537,7 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                             shadowBlur: 8,
                             shadowColor: 'rgba(56, 189, 248, 0.3)'
                         },
-                        barMaxWidth: 26,
+                        barMaxWidth: 30,
                         label: {
                             show: true,
                             position: 'top',
@@ -506,7 +549,7 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                     {
                         name: toolB,
                         type: 'bar',
-                        data: allEcos.map(e => ecoCountB[e] || 0),
+                        data: displayEcos.map(e => ecoCountB[e] || 0),
                         itemStyle: {
                             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                                 { offset: 0, color: '#fb923c' },
@@ -516,7 +559,7 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                             shadowBlur: 8,
                             shadowColor: 'rgba(251, 146, 60, 0.3)'
                         },
-                        barMaxWidth: 26,
+                        barMaxWidth: 30,
                         label: {
                             show: true,
                             position: 'top',
@@ -690,7 +733,8 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
 
             const option = {
                 backgroundColor: 'transparent',
-                tooltip: { renderMode: 'richText',
+                tooltip: {
+                    renderMode: 'html',
                     trigger: 'item',
                     backgroundColor: 'rgba(15, 23, 42, 0.95)',
                     borderColor: '#334155',
@@ -1091,6 +1135,14 @@ const tauriCore = window.__TAURI__ ? window.__TAURI__.core : null;
                 showToast("载入样本失败: " + e, true);
             }
         }
+
+        document.getElementById('sample-btn-quickstarts').onclick = () => {
+            loadPresetSample(
+                "test/quickstarts/quickstarts_sbom.json", "quickstarts_sbom.json",
+                "test/quickstarts/quickstarts_trivy.json", "quickstarts_trivy.json (Trivy)",
+                "已载入 CNCF Dapr Quickstarts 4语言企业级对比样本！"
+            );
+        };
 
         document.getElementById('sample-btn-microservices').onclick = () => {
             loadPresetSample(

@@ -26,10 +26,10 @@ impl DynamicProducer for GoDynamicProducer {
         let go_bin = CliLocator::resolve_go()
             .ok_or_else(|| anyhow::anyhow!("未检测到可用的 go 可执行文件"))?;
 
-        let graph_output = Command::new(&go_bin)
-            .args(["mod", "graph"])
-            .current_dir(work_dir)
-            .output()?;
+        let mut graph_cmd = Command::new(&go_bin);
+        graph_cmd.args(["mod", "graph"]).current_dir(work_dir);
+        let graph_output =
+            CliLocator::run_with_timeout(graph_cmd, std::time::Duration::from_secs(15))?;
 
         if !graph_output.status.success() {
             let stderr = String::from_utf8_lossy(&graph_output.stderr);
@@ -38,10 +38,9 @@ impl DynamicProducer for GoDynamicProducer {
 
         let graph_stdout = String::from_utf8_lossy(&graph_output.stdout);
 
-        let mvs_stdout = Command::new(&go_bin)
-            .args(["list", "-m", "all"])
-            .current_dir(work_dir)
-            .output()
+        let mut mvs_cmd = Command::new(&go_bin);
+        mvs_cmd.args(["list", "-m", "all"]).current_dir(work_dir);
+        let mvs_stdout = CliLocator::run_with_timeout(mvs_cmd, std::time::Duration::from_secs(15))
             .ok()
             .filter(|o| o.status.success())
             .map(|o| String::from_utf8_lossy(&o.stdout).to_string());

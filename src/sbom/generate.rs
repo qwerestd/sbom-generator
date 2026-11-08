@@ -57,10 +57,71 @@ fn license_choice(value: &str) -> serde_json::Value {
     }
 }
 
+/// Repair spelling differences without changing an instance's package-id or version.
+/// Unknown targets are errors: silently dropping them would hide incomplete analysis.
+fn reconcile_dependency_refs(deps: &mut [Dependency]) -> anyhow::Result<()> {
+    use std::collections::{HashMap, HashSet};
+    fn canonical(reference: &str) -> String {
+        let (purl, suffix) = reference.split_once('?').unwrap_or((reference, ""));
+        let normalized = Dependency::auto_fix_and_validate_purl(purl);
+        if suffix.is_empty() {
+            normalized
+        } else {
+            format!("{normalized}?{suffix}")
+        }
+    }
+    let mut refs = HashSet::new();
+    let mut aliases: HashMap<String, Vec<String>> = HashMap::new();
+    for dep in deps.iter() {
+        anyhow::ensure!(
+            dep.purl.parse::<packageurl::PackageUrl>().is_ok(),
+            "invalid component PURL for {}: {}",
+            dep.name,
+            dep.purl
+        );
+        let reference = if dep.instance_id.is_empty() {
+            &dep.purl
+        } else {
+            &dep.instance_id
+        };
+        anyhow::ensure!(
+            !reference.is_empty(),
+            "component {} has no reference",
+            dep.name
+        );
+        anyhow::ensure!(
+            refs.insert(reference.clone()),
+            "duplicate component reference: {reference}"
+        );
+        aliases
+            .entry(canonical(reference))
+            .or_default()
+            .push(reference.clone());
+    }
+    for dep in deps {
+        let mut seen = HashSet::new();
+        for child in &mut dep.dependencies {
+            if !refs.contains(child) {
+                match aliases.get(&canonical(child)).map(Vec::as_slice) {
+                    Some([resolved]) => *child = resolved.clone(),
+                    _ => anyhow::bail!(
+                        "unresolved dependency reference from {}: {}",
+                        dep.name,
+                        child
+                    ),
+                }
+            }
+        }
+        dep.dependencies.retain(|child| seen.insert(child.clone()));
+    }
+    Ok(())
+}
+
 pub fn generate_sbom(
-    dependencies: Vec<Dependency>,
+    mut dependencies: Vec<Dependency>,
     configuration: &Configuration,
 ) -> anyhow::Result<()> {
+    reconcile_dependency_refs(&mut dependencies)?;
     let mut components = Vec::new();
     let mut cdx_dependencies = Vec::new();
 
@@ -113,6 +174,7 @@ pub fn generate_sbom(
         }
 
         if !d.dependencies.is_empty() {
+            // References were reconciled and validated before constructing output.
             dep_node_builder.depends_on(d.dependencies.clone());
         }
 
@@ -194,16 +256,28 @@ pub fn generate_sbom(
                         "value": ids.join(", ")
                     }));
                 }
-                // 【核心新增：动态依赖加载状态注入】
+                // 【核心新增：动态依赖加载状态与代码可达性注入】
                 let status_str = match d.dynamic_status {
                     crate::model::dependency::DynamicLoadStatus::Loaded => "loaded",
                     crate::model::dependency::DynamicLoadStatus::Dormant => "dormant",
-                    crate::model::dependency::DynamicLoadStatus::NotTraced => "untraced",
+                    crate::model::dependency::DynamicLoadStatus::NotTraced
+                    | crate::model::dependency::DynamicLoadStatus::Referenced => "untraced",
                 };
                 props.push(serde_json::json!({
                     "name": "sbom:runtime:status",
                     "value": status_str
                 }));
+                if d.dynamic_status == crate::model::dependency::DynamicLoadStatus::Referenced {
+                    props.push(serde_json::json!({
+                        "name": "sbom:source:referenced", "value": "true"
+                    }));
+                }
+                if d.dynamic_status == crate::model::dependency::DynamicLoadStatus::Loaded {
+                    props.push(serde_json::json!({
+                        "name": "sbom:reachability:used",
+                        "value": "true"
+                    }));
+                }
                 if !props.is_empty() {
                     comp_obj.insert("properties".to_string(), serde_json::Value::Array(props));
                 }
@@ -289,7 +363,37 @@ pub fn generate_sbom(
 
 #[cfg(test)]
 mod tests {
-    use super::license_choice;
+    use super::{license_choice, reconcile_dependency_refs};
+    use crate::model::dependency::Dependency;
+
+    #[test]
+    fn references_are_repaired_with_instance_scope_preserved() {
+        let mut deps = vec![
+            Dependency {
+                name: "root".into(),
+                purl: "pkg:golang/root@v1.0.0".into(),
+                instance_id: "root".into(),
+                dependencies: vec!["pkg:golang/example.com/lib@1.2.3?package-id=one".into()],
+                ..Default::default()
+            },
+            Dependency {
+                name: "lib".into(),
+                purl: "pkg:golang/example.com/lib@v1.2.3".into(),
+                instance_id: "pkg:golang/example.com/lib@v1.2.3?package-id=one".into(),
+                ..Default::default()
+            },
+            Dependency {
+                name: "lib".into(),
+                purl: "pkg:golang/example.com/lib@v1.2.3".into(),
+                instance_id: "pkg:golang/example.com/lib@v1.2.3?package-id=two".into(),
+                ..Default::default()
+            },
+        ];
+        reconcile_dependency_refs(&mut deps).unwrap();
+        assert_eq!(deps[0].dependencies[0], deps[1].instance_id);
+        deps[0].dependencies = vec!["pkg:golang/example.com/lib@v1.2.3?package-id=unknown".into()];
+        assert!(reconcile_dependency_refs(&mut deps).is_err());
+    }
 
     #[test]
     fn license_choice_uses_spdx_expression_id_or_name() {
