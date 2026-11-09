@@ -1,0 +1,55 @@
+{
+  "libraries": {
+    "pkg:npm/external@1.0.0": 1,
+    "pkg:npm/external@2.0.0": 1
+  },
+  "applications": {
+    "pkg:npm/left-app@1.0.0": 1,
+    "pkg:npm/right-app@1.0.0": 1,
+    "pkg:npm/same-local@1.0.0": 2
+  },
+  "edges": [
+    [
+      "pkg:npm/left-app@1.0.0",
+      "pkg:npm/same-local@1.0.0"
+    ],
+    [
+      "pkg:npm/right-app@1.0.0",
+      "pkg:npm/same-local@1.0.0"
+    ],
+    [
+      "pkg:npm/same-local@1.0.0",
+      "pkg:npm/external@1.0.0"
+    ],
+    [
+      "pkg:npm/same-local@1.0.0",
+      "pkg:npm/external@2.0.0"
+    ]
+  ],
+  "scoped_edges": [
+    [
+      "pkg:npm/left-app@1.0.0",
+      "left/app/package.json",
+      "pkg:npm/same-local@1.0.0",
+      "left/local/package-lock.json"
+    ],
+    [
+      "pkg:npm/right-app@1.0.0",
+      "right/app/package.json",
+      "pkg:npm/same-local@1.0.0",
+      "right/local/package.json"
+    ],
+    [
+      "pkg:npm/same-local@1.0.0",
+      "left/local/package-lock.json",
+      "pkg:npm/external@1.0.0",
+      "left/local/package-lock.json"
+    ],
+    [
+      "pkg:npm/same-local@1.0.0",
+      "right/local/package.json",
+      "pkg:npm/external@2.0.0",
+      "right/local/package.json"
+    ]
+  ]
+}

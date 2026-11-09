@@ -1,0 +1,77 @@
+{
+  "libraries": {
+    "pkg:maven/org.example/shared@1.2.3": 1,
+    "pkg:maven/org.example/shared@4.0.0": 1,
+    "pkg:maven/org.example/only-a@3.0.0": 1,
+    "pkg:maven/org.example/common@5.0.0": 2
+  },
+  "applications": {
+    "pkg:maven/org.example/parent@1.0.0": 1,
+    "pkg:maven/org.example/module-a@1.0.0": 1,
+    "pkg:maven/org.example/module-b@1.0.0": 1
+  },
+  "edges": [
+    [
+      "pkg:maven/org.example/module-a@1.0.0",
+      "pkg:maven/org.example/shared@1.2.3"
+    ],
+    [
+      "pkg:maven/org.example/module-a@1.0.0",
+      "pkg:maven/org.example/only-a@3.0.0"
+    ],
+    [
+      "pkg:maven/org.example/module-b@1.0.0",
+      "pkg:maven/org.example/shared@4.0.0"
+    ],
+    [
+      "pkg:maven/org.example/module-b@1.0.0",
+      "pkg:maven/org.example/module-a@1.0.0"
+    ],
+    [
+      "pkg:maven/org.example/module-a@1.0.0",
+      "pkg:maven/org.example/common@5.0.0"
+    ],
+    [
+      "pkg:maven/org.example/module-b@1.0.0",
+      "pkg:maven/org.example/common@5.0.0"
+    ]
+  ],
+  "scoped_edges": [
+    [
+      "pkg:maven/org.example/module-a@1.0.0",
+      "a/pom.xml",
+      "pkg:maven/org.example/shared@1.2.3",
+      "a/pom.xml"
+    ],
+    [
+      "pkg:maven/org.example/module-a@1.0.0",
+      "a/pom.xml",
+      "pkg:maven/org.example/only-a@3.0.0",
+      "a/pom.xml"
+    ],
+    [
+      "pkg:maven/org.example/module-b@1.0.0",
+      "b/pom.xml",
+      "pkg:maven/org.example/shared@4.0.0",
+      "b/pom.xml"
+    ],
+    [
+      "pkg:maven/org.example/module-b@1.0.0",
+      "b/pom.xml",
+      "pkg:maven/org.example/module-a@1.0.0",
+      "a/pom.xml"
+    ],
+    [
+      "pkg:maven/org.example/module-a@1.0.0",
+      "a/pom.xml",
+      "pkg:maven/org.example/common@5.0.0",
+      "a/pom.xml"
+    ],
+    [
+      "pkg:maven/org.example/module-b@1.0.0",
+      "b/pom.xml",
+      "pkg:maven/org.example/common@5.0.0",
+      "b/pom.xml"
+    ]
+  ]
+}

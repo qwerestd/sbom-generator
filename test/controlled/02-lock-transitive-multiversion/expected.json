@@ -1,0 +1,29 @@
+{
+  "libraries": {
+    "pkg:npm/alpha@1.1.0": 1,
+    "pkg:npm/beta@2.0.0": 1,
+    "pkg:npm/shared@1.0.0": 1,
+    "pkg:npm/shared@2.0.0": 1
+  },
+  "applications": {
+    "pkg:npm/lock-app@1.0.0": 1
+  },
+  "edges": [
+    [
+      "pkg:npm/lock-app@1.0.0",
+      "pkg:npm/alpha@1.1.0"
+    ],
+    [
+      "pkg:npm/lock-app@1.0.0",
+      "pkg:npm/beta@2.0.0"
+    ],
+    [
+      "pkg:npm/alpha@1.1.0",
+      "pkg:npm/shared@1.0.0"
+    ],
+    [
+      "pkg:npm/beta@2.0.0",
+      "pkg:npm/shared@2.0.0"
+    ]
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "right-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "alias": "file:../local"
+  },
+  "optionalDependencies": {
+    "same-local": "file:../absent"
+  }
+}

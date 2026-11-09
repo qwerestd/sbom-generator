@@ -1,0 +1,7 @@
+{
+  "name": "fallback-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "pinned": "1.2.3"
+  }
+}

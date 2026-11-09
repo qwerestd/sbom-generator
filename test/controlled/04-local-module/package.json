@@ -1,0 +1,8 @@
+{
+  "name": "local-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "local-lib": "file:./local",
+    "external": "1.0.0"
+  }
+}

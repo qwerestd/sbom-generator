@@ -1,0 +1,7 @@
+{
+  "name": "npm-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "npm-pinned": "1.2.3"
+  }
+}

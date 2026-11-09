@@ -1,0 +1,10 @@
+{
+  "name": "range-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "pinned": "1.2.3",
+    "ranged": "^2.0.0",
+    "tagged": "latest",
+    "wildcard": "*"
+  }
+}

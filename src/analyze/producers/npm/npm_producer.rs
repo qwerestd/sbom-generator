@@ -67,6 +67,101 @@ impl SbomProducer for NpmProducer {
 }
 
 impl NpmProducer {
+    /// Resolve local declarations against already scanned application directories.
+    /// Names are deliberately not an index: independent directories may use the
+    /// same package name and version, and lockfile roots have different IDs.
+    pub fn link_local_dependencies(
+        paths: &[PathBuf],
+        dependencies: &mut [Dependency],
+        base_path: &Path,
+    ) -> anyhow::Result<()> {
+        let scan_root = fs::canonicalize(base_path)?;
+        let mut roots: HashMap<PathBuf, Vec<String>> = HashMap::new();
+        for dep in dependencies.iter() {
+            if dep.r#type != DependencyType::Application || !dep.purl.starts_with("pkg:npm/") {
+                continue;
+            }
+            let Some(dir) = dep
+                .location
+                .as_ref()
+                .and_then(|l| Path::new(&l.block.file).parent())
+                .and_then(|p| fs::canonicalize(p).ok())
+            else {
+                continue;
+            };
+            if dir.starts_with(&scan_root) {
+                let ids = roots.entry(dir).or_default();
+                if !ids.contains(&dep.instance_id) {
+                    ids.push(dep.instance_id.clone());
+                }
+            }
+        }
+        let mut links: HashMap<String, Vec<String>> = HashMap::new();
+        for path in paths
+            .iter()
+            .filter(|p| p.file_name().is_some_and(|n| n == "package.json"))
+        {
+            let Some(source_dir) = path.parent().and_then(|p| fs::canonicalize(p).ok()) else {
+                continue;
+            };
+            let Some(source_ids) = roots.get(&source_dir) else {
+                continue;
+            };
+            let [source_id] = source_ids.as_slice() else {
+                continue;
+            };
+            let content = fs::read_to_string(path)?;
+            // A valid lockfile may have been chosen over an invalid manifest.
+            let Ok(json) =
+                serde_json::from_str::<serde_json::Value>(content.trim_start_matches('\u{FEFF}'))
+            else {
+                continue;
+            };
+            for category in [
+                "dependencies",
+                "devDependencies",
+                "optionalDependencies",
+                "peerDependencies",
+            ] {
+                for (_, spec) in json
+                    .get(category)
+                    .and_then(|v| v.as_object())
+                    .into_iter()
+                    .flatten()
+                {
+                    let Some(relative) = spec.as_str().and_then(|s| s.trim().strip_prefix("file:"))
+                    else {
+                        continue;
+                    };
+                    let Ok(target_dir) = fs::canonicalize(source_dir.join(relative)) else {
+                        continue;
+                    };
+                    if !target_dir.starts_with(&scan_root) || target_dir == source_dir {
+                        continue;
+                    }
+                    if let Some(ids) = roots.get(&target_dir) {
+                        if let [target_id] = ids.as_slice() {
+                            links
+                                .entry(source_id.clone())
+                                .or_default()
+                                .push(target_id.clone());
+                        }
+                    }
+                }
+            }
+        }
+        for dep in dependencies {
+            if let Some(children) = links.get(&dep.instance_id) {
+                for child in children {
+                    if !dep.dependencies.contains(child) {
+                        dep.dependencies.push(child.clone());
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// 收集 Monorepo 根 `package.json` 中的 `catalog` 或公共受管版本
     pub fn collect_workspace_catalog_context(content: &str, ctx: &mut HierarchicalContext) {
         let Ok(json) =

@@ -1,0 +1,23 @@
+{
+  "libraries": {
+    "pkg:npm/external@1.0.0": 2
+  },
+  "applications": {
+    "pkg:npm/local-app@1.0.0": 1,
+    "pkg:npm/local-lib@1.0.0": 1
+  },
+  "edges": [
+    [
+      "pkg:npm/local-app@1.0.0",
+      "pkg:npm/external@1.0.0"
+    ],
+    [
+      "pkg:npm/local-lib@1.0.0",
+      "pkg:npm/external@1.0.0"
+    ],
+    [
+      "pkg:npm/local-app@1.0.0",
+      "pkg:npm/local-lib@1.0.0"
+    ]
+  ]
+}

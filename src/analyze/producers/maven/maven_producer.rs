@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use crate::analyze::producers::maven::context::MavenProducerContext;
@@ -25,14 +26,40 @@ impl MavenProducer {
             maven_context.add_maven_file(&maven_file);
         }
 
+        let mut projects: HashMap<String, Vec<Dependency>> = HashMap::new();
+        for file in maven_context.get_all_files() {
+            if let Some(project) = file.get_project_for_sbom(&maven_context) {
+                projects
+                    .entry(project.purl.clone())
+                    .or_default()
+                    .push(project);
+            }
+        }
+
         // 第二趟：解析属性变量、继承关系并提取各模块依赖
         for maven_file in maven_context.get_all_files() {
             let file_salt = maven_file.path.to_string_lossy().replace('\\', "/");
-            let deps: Vec<Dependency> = maven_file
+            let mut deps: Vec<Dependency> = maven_file
                 .get_dependencies_for_sbom(&maven_context)
                 .iter()
                 .map(|d| d.to_isolated_dependency(&file_salt))
                 .collect();
+
+            let mut children = Vec::new();
+            deps.retain(|dep| {
+                if let Some([local]) = projects.get(&dep.purl).map(Vec::as_slice) {
+                    children.push(local.instance_id.clone());
+                    false
+                } else {
+                    children.push(dep.instance_id.clone());
+                    true
+                }
+            });
+            if let Some(mut root) = maven_file.get_project_for_sbom(&maven_context) {
+                children.retain(|id| id != &root.instance_id);
+                root.dependencies = children;
+                result.push(root);
+            }
 
             result.extend(deps);
         }

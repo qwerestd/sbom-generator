@@ -1,0 +1,6 @@
+[package]
+name='rust-app'
+version='1.0.0'
+[dependencies]
+rust-pinned='=1.2.3'
+rust-range='2.0'

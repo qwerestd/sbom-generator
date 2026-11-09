@@ -1,0 +1,7 @@
+{
+  "name": "local-lib",
+  "version": "1.0.0",
+  "dependencies": {
+    "external": "1.0.0"
+  }
+}

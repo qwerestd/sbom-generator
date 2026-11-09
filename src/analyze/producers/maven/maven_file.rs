@@ -509,6 +509,40 @@ fn replace_properties(properties: HashMap<String, String>) -> HashMap<String, St
 }
 
 impl MavenFile {
+    pub fn get_project_for_sbom(&self, context: &MavenProducerContext) -> Option<Dependency> {
+        let properties = self.get_all_properties(context);
+        let parent = self.parent.as_ref();
+        let group = self
+            .project_info
+            .group_id
+            .as_deref()
+            .or_else(|| parent.and_then(|p| p.group_id.as_deref()))?;
+        let version = self
+            .project_info
+            .version
+            .clone()
+            .or_else(|| parent.and_then(|p| p.version.clone()));
+        let project = MavenDependency {
+            group_id: group.to_string(),
+            artifact_id: self.project_info.artifact_id.clone(),
+            version,
+            r#type: None,
+            scope: None,
+            location: Some(DependencyLocation::from_file(&self.path)),
+        }
+        .enrich(&properties);
+        if !project.is_valid_for_sbom()
+            || project.group_id.contains("${")
+            || project.artifact_id.contains("${")
+        {
+            return None;
+        }
+        let salt = self.path.to_string_lossy().replace('\\', "/");
+        let mut root = project.to_isolated_dependency(&salt);
+        root.r#type = DependencyType::Application;
+        Some(root)
+    }
+
     pub fn new(path: &PathBuf, context: &MavenProducerContext) -> anyhow::Result<Self> {
         let content = fs::read_to_string(path)?;
         let t =
@@ -624,14 +658,16 @@ impl MavenFile {
         let dep_mgmt = self.get_all_dependencies_from_dependency_management(context);
 
         for dep in &self.dependencies {
-            let target_dep = if dep.version.is_none() {
-                dep_mgmt
+            let mut target_dep = dep.clone();
+            if dep.version.is_none() {
+                if let Some(managed) = dep_mgmt
                     .iter()
+                    .rev()
                     .find(|x| x.artifact_id == dep.artifact_id && x.group_id == dep.group_id)
-                    .unwrap_or(dep)
-            } else {
-                dep
-            };
+                {
+                    target_dep.version = managed.version.clone();
+                }
+            }
 
             let enriched = target_dep.enrich(&properties);
             if enriched.is_valid_for_sbom() {

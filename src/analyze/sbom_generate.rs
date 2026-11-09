@@ -196,6 +196,13 @@ pub fn analyze(configuration: &Configuration, dynamic: bool) -> anyhow::Result<(
     let go_static = GoProducer::default();
     run_ecosystem_chain("Go", Some(&go_dyn), &[&go_static])?;
 
+    // Local npm packages may have been parsed in separate directory chains.
+    NpmProducer::link_local_dependencies(
+        &all_files,
+        &mut raw_collected_deps,
+        &producer_cfg.base_path,
+    )?;
+
     // =====================================================================
     // 终极拓扑去重与边融合引擎
     // =====================================================================

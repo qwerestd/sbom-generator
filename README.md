@@ -1,151 +1,231 @@
 # SBOM Studio
 
-一个用 Rust 编写的多语言 SBOM 生成器。给定项目目录，它会识别支持的包管理器文件，提取组件及依赖关系，输出 **CycloneDX 1.6 JSON**。仓库同时包含 Tauri 桌面界面和用于比较两份 SBOM 的命令行工具。
+使用 Rust 开发的多语言软件物料清单（Software Bill of Materials，SBOM）生成工具。输入项目目录后，工具自动识别支持的包管理器文件，提取组件、版本及可获得的依赖关系，输出 **CycloneDX 1.6 JSON**，用于后续漏洞分析、许可证核查与软件供应链审计。
 
-> 本项目生成 CycloneDX SBOM；SPDX 用于表示组件许可证，当前不输出 SPDX 格式的 SBOM。
+项目以 CLI 为核心，同时提供 SBOM 对比工具和 Tauri 2 桌面界面。当前不输出 SPDX 格式的 SBOM；SPDX ID 和表达式用于表示许可证。
+
+## 主要功能
+
+- 支持 Python、JavaScript、Java/Kotlin、Go 和 Rust 五类语言生态。
+- 遍历子项目，处理同一仓库中的多种包管理器。
+- 支持清单、锁文件及可选包管理器动态解析，提取可获得的传递依赖。
+- 输出组件名称、确定版本、PURL、实例引用 bom-ref、来源位置和可获得的许可证。
+- 提供依赖树、组件集合对比、OSV 漏洞信息和可选入口加载监测。
+
+## 安装与构建
+
+从源码构建需要 Rust/Cargo，以及用于编译 Tree-sitter 原生代码的 C/C++ 工具链。Windows 推荐使用 Rust MSVC 工具链和 Visual Studio C++ Build Tools。
+
+在仓库根目录运行：
+
+~~~bash
+cargo build --release --bins
+~~~
+
+| 工具 | Windows 产物 | Linux / macOS 产物 |
+| --- | --- | --- |
+| 生成器 | target/release/sbom-generator.exe | target/release/sbom-generator |
+| 对比器 | target/release/sbom_compare.exe | target/release/sbom_compare |
+
+也可以安装生成器到 Cargo 的可执行文件目录：
+
+~~~bash
+cargo install --path . --bin sbom-generator
+~~~
+
+静态扫描不要求安装各语言包管理器。动态解析需要对应工具及适用的项目环境。源码更新后应重新构建发布版。
 
 ## 快速开始
 
-需要 Rust **1.85 或更新版本**，以及可用于编译 Tree-sitter 原生代码的 C/C++ 工具链。Windows 推荐安装 Visual Studio C++ Build Tools。
+使用仓库自带的示例执行静态扫描：
 
-```bash
-cargo build --release --bins
-```
+~~~powershell
+# Windows PowerShell，在仓库根目录运行
+.\target\release\sbom-generator.exe -i .\examples\fullstack-ecommerce -o .\sbom.json -s
+~~~
 
-扫描一个项目。建议首次运行使用静态模式，它只读取项目文件，不启动项目内的包管理器探针：
+~~~bash
+# Linux / macOS，在仓库根目录运行
+./target/release/sbom-generator -i ./examples/fullstack-ecommerce -o ./sbom.json -s
+~~~
 
-```bash
-# Windows
-.\target\release\sbom-generator.exe -i C:\path\to\project -o C:\path\to\sbom.json -s
+输出文件的父目录必须已经存在。指定已有输出文件时，扫描结果会覆盖该文件。
 
-# macOS / Linux
-./target/release/sbom-generator -i /path/to/project -o ./sbom.json -s
-```
+已安装到 PATH 后，可直接使用以下命令；否则请替换为构建产物路径：
 
-输出目录须已存在。去掉 `-s` 后，工具会在可用时调用包管理器命令来解析依赖；调用失败时回退到静态解析。添加 `--tree` 可在终端显示依赖树。
+~~~bash
+# 静态扫描并显示依赖树
+sbom-generator -i ./examples/polyglot-showcase -o ./sbom.json -s --tree
 
-## 支持范围
+# 默认模式：尝试适用的包管理器解析，必要时回退到静态解析
+sbom-generator -i ./project -o ./sbom.json
 
-| 生态 | 静态输入 | 可选动态解析 |
-| --- | --- | --- |
-| Python / PyPI | `requirements.txt`、`pyproject.toml`、`poetry.lock`、`uv.lock`、`Pipfile.lock` | `pip inspect` |
-| JavaScript / npm | `package.json`、`package-lock.json` | `npm ls` |
-| Java / Maven | `pom.xml` | `mvn dependency:tree` |
-| Java、Kotlin / Gradle | `build.gradle`、`build.gradle.kts`、版本目录及锁文件 | Gradle `dependencies` |
-| Go Modules | `go.mod`、`go.sum`、`go.work` | `go mod graph` |
-| Rust / Cargo | `Cargo.toml`、`Cargo.lock` | `cargo metadata` |
+# 允许入口执行监测，并输出详细诊断信息
+sbom-generator -i ./project -o ./sbom-runtime.json --allow-exec -d
+~~~
 
-扫描器会遍历子项目，因此一个仓库可以包含多个生态。优先使用锁文件获取确定的版本和传递依赖；只有清单文件时，版本范围和传递依赖的完整度取决于清单内容与可用的动态解析工具。
+## CLI 参数
 
-静态解析 npm、Python、Cargo、Maven 和 Gradle 清单时，版本范围不会被当作已解析版本。例如 `^1.2.3`、`>=1.0,<2.0`、Cargo 的 `"1.2.3"`、Maven 的 `[1.0,2.0)` 和 Gradle 的 `1.+` 会保留在组件属性 `sbom:version:requirement` 中，并标记 `sbom:version:status=unresolved`；组件省略 `version`，PURL 不含版本。npm 的 `1.2.3`、Python 的 `==1.2.3`（含 `==2.0rc1` 等预发布版本）、Cargo 的 `=1.2.3` 可记录为声明的精确版本。锁文件或包管理器解析结果仍保留确定版本；仅凭清单无法保证已安装版本。
-
-对比页面和 CLI 将版本未解析组件计入组件记录总数，并单独报告其数量；这类组件不参与精确版本 PURL 的重合率或 Jaccard 计算。页面提供未解析组件清单，JSON 导出保留两侧未解析记录。漏洞扫描不对未知版本推断命中结果。
-
-## 命令行
-
-```text
+~~~text
 sbom-generator -i DIRECTORY -o OUTPUT [options]
-```
+~~~
 
 | 参数 | 用途 |
 | --- | --- |
-| `-i, --directory` | 待扫描项目目录，必填 |
-| `-o, --output` | CycloneDX JSON 输出文件，必填 |
-| `-s, --static-only` | 只使用静态解析，跳过包管理器 CLI 探针 |
-| `-t, --tree` | 在终端打印依赖树 |
-| `-d, --debug` | 打印详细分析信息 |
-| `--allow-exec` | 允许可选的运行时入口加载探针；默认关闭 |
-| `-h, --help` | 查看完整帮助 |
+| -i, --directory | 待扫描目录，必填 |
+| -o, --output | 输出 JSON 文件，必填 |
+| -s, --static-only | 仅解析清单和锁文件，跳过包管理器动态探针 |
+| -t, --tree | 显示依赖树摘要 |
+| -d, --debug | 显示解析及探针诊断信息 |
+| --allow-exec | 允许可选的运行时入口执行探针，默认关闭 |
+| -h, --help | 显示帮助 |
 
-默认扫描可能调用本机的包管理器。对未知来源的项目建议使用 `-s`。启用 `--allow-exec` 前应确认被扫描项目可信。工具会跳过 `.git`、`node_modules`、`target`、`.venv` 等目录。
+默认模式可能启动包管理器进程；--allow-exec 还可能执行项目入口，应仅用于可信项目。与 -s 同时使用时，运行时监测不会执行。
 
-生成的 SBOM 包含组件版本、PURL、唯一的 `bom-ref`、可获得的依赖边和来源位置。许可证使用 SPDX ID、SPDX 表达式或许可证名称。OSV 漏洞信息来自在线查询或内置的离线匹配；其覆盖范围取决于数据源，不能代替完整的漏洞审计。
+同一生态包含多个独立清单目录时，编排器优先使用完整静态解析链，避免根项目探针掩盖子项目。扫描成功不表示每个动态探针均成功。
 
-## 桌面界面
+## 支持的输入
 
-Tauri 2 桌面应用提供项目目录选择、SBOM 导入、依赖图、漏洞和组件列表、JSON 查看以及双 SBOM 对比。安装 Tauri CLI 及目标平台的系统依赖后运行：
+| 生态 | 主要静态输入 | 可选动态解析 |
+| --- | --- | --- |
+| Python / PyPI | requirements.txt、pyproject.toml、poetry.lock、uv.lock、Pipfile.lock | pip inspect |
+| JavaScript / npm | package.json、package-lock.json | npm ls |
+| Java / Maven | pom.xml | mvn dependency:tree |
+| Java、Kotlin / Gradle | build.gradle、build.gradle.kts、libs.versions.toml、锁文件及属性文件 | Gradle dependencies |
+| Go Modules | go.mod、go.sum、go.work | Go 模块图及模块解析结果 |
+| Rust / Cargo | Cargo.toml、Cargo.lock | cargo metadata |
 
-```bash
-cargo tauri dev
-```
+扫描跳过 .git、node_modules、target、.venv 等缓存或构建目录；许可证解析在有明确目标时仍可能读取本地安装包元数据。
 
-界面使用 ECharts CDN；首次打开图谱需要网络连接。桌面应用代码位于 [ui/index.html](ui/index.html)、[ui/theme.css](ui/theme.css) 和 [src-tauri](src-tauri/)。
+仅凭直接依赖清单通常无法恢复完整传递依赖。Gradle 的条件、插件和 BOM 管理版本等可能需要构建工具实际求值，工具不保证完整解析任意构建脚本。
 
-## 示例输出
+## 输出与解释
 
-仓库提供三份可直接检查的 CycloneDX 1.6 JSON：
+### 版本和依赖图
 
-- [电商全栈示例](examples/fullstack-ecommerce/fullstack-ecommerce_sbom.json)：Python、npm、Maven。
-- [多语言示例](examples/polyglot-showcase/polyglot-showcase_sbom.json)：Cargo、Go、Maven/Gradle、npm、Python。
-- [安全边界示例](examples/security-edgecases/security-edgecases_sbom.json)：含有已知风险的依赖声明。
+版本范围不会当作确定版本输出。例如 npm 的 ^1.2.3、Python 的 >=1.0,<2.0、Cargo 的普通版本要求及 Maven/Gradle 的范围声明，在无法解析时省略组件 version，并保留可获得的需求信息：
 
-这些文件是示例快照。需要反映当前源码或依赖时，请重新扫描对应的 `examples/` 项目。
+~~~json
+[
+  { "name": "sbom:version:requirement", "value": "^1.2.3" },
+  { "name": "sbom:version:status", "value": "unresolved" }
+]
+~~~
 
-## 与 Trivy 对比
+BOM 管理声明等可能只能确定组件身份，尚无可记录的具体版本需求，此时仍保留无版本组件。锁文件或包管理器结果可提供确定版本；清单中的精确声明不等于已验证安装状态。
 
-推荐使用 [OWASP crAPI 固定提交测试](test/crapi/README.md)：它包含 Python、Go、Java/Gradle 和 npm，规模适合复现实验。Windows PowerShell 中安装 Git、Rust、Trivy 后运行：
+依赖边引用组件 bom-ref。导出前检查引用唯一性和依赖目标，对可唯一匹配的已知写法差异进行对齐；无法可靠解析的引用会报错。
 
-```powershell
-.\misc\benchmark-crapi.ps1
-```
+### 许可证与漏洞
 
-脚本把第三方源码放入 `target/test-fixtures/crapi/`，将本工具和 Trivy 的 SBOM、运行信息及 Markdown 对比报告写入 `target/benchmark-crapi/`。本工具使用静态模式；Trivy 使用 `--offline-scan --scanners license --include-dev-deps`。对比时按 PURL 去重，并排除应用根节点。Trivy 未识别的生态在报告中标记为 `N/A`，不把 0/0 计为 100%。
+许可证使用 SPDX ID、SPDX 表达式或许可证名称。npm 锁文件条目的许可证随对应组件保留；本地 npm 安装包回退要求名称和版本一致。缺少证据时留空，不按生态或包名猜测。
 
-单独比较任意两份 CycloneDX 文件：
+许可证字段完整率不等于准确率，合规结论仍需结合对应版本的上游声明核查。OSV 结果依赖在线数据或内置离线匹配的覆盖范围，不替代完整漏洞审计；未知版本不用于推断漏洞命中。
 
-```bash
+### 静态引用与运行时监测
+
+| 属性或状态 | 含义 |
+| --- | --- |
+| sbom:source:referenced=true | 源码中发现引用，不证明实际执行 |
+| sbom:runtime:status=loaded | 探针记录到加载并匹配到组件 |
+| sbom:runtime:status=dormant | 当前实现的对应生态探针未观测到该组件加载 |
+| sbom:runtime:status=untraced | 未形成该组件的运行时加载判定 |
+
+入口监测目前主要针对 Node.js 和 Python。启用监测不代表入口能启动或覆盖全部执行路径。loaded=0 不表示依赖没有使用，dormant 不表示组件不可达、无漏洞或可以安全删除。
+
+## 示例项目与输出
+
+| 示例 | 包含内容 | SBOM 快照 |
+| --- | --- | --- |
+| [电商全栈](examples/fullstack-ecommerce/) | Python、npm、Maven | [查看 JSON](examples/fullstack-ecommerce/fullstack-ecommerce_sbom.json) |
+| [多语言展示](examples/polyglot-showcase/) | Cargo、Go、Maven/Gradle、npm、Python | [查看 JSON](examples/polyglot-showcase/polyglot-showcase_sbom.json) |
+| [安全边界示例](examples/security-edgecases/) | 用于检查版本与漏洞处理的依赖声明 | [查看 JSON](examples/security-edgecases/security-edgecases_sbom.json) |
+
+这些输出是快照。验证当前生成器时，应重新扫描对应示例，并使用独立输出路径。
+
+## 与其他 SBOM 对比
+
+~~~bash
 cargo run --bin sbom_compare -- --our-sbom ours.json --competitor-sbom trivy.json --output comparison.md
-```
+~~~
 
-Trivy 结果是参照数据，不代表绝对真值。不同版本、已安装依赖和扫描参数可能改变组件及许可证数量。更多历史对照数据见 [test](test/)；解释报告时请一并核对原始 SBOM 与扫描配置。
+可用 --reference-version VERSION 记录参照工具版本。建议始终显式指定输入与输出路径。
 
-## 测试与格式验证
+[test](test/) 保存 Juice Shop、microservices、OpenTelemetry 和 quickstarts 的对照文件。不同快照的源码提交、开发依赖范围及生成时间可能不同，不能直接视为受控基准。
 
-```bash
+对比器报告组件记录、未解析版本、去重 PURL、交集、独有项和 Jaccard。精确版本比较排除未解析组件，过滤应用节点和部分合成版本，去除 PURL qualifier/subpath。目标生态固定为当前支持的五类生态；空参照集合显示 N/A。过滤可能排除合法的 0.0.0 组件。
+
+相对重合率不等于准确率或召回率。参照工具不是绝对真值，独有项应回查清单、锁文件、作用域和解析环境。
+
+## 测试与验证
+
+~~~bash
 cargo test
 node --test tests/ui_regressions.cjs
 cargo fmt --all -- --check
-```
+~~~
 
-测试覆盖解析器、图构建、CLI 行为和三个示例 SBOM。示例使用仓库内保存的 [CycloneDX 1.6 JSON schema](resources/schemas/bom-1.6.schema.json)、SPDX 与 JSF 辅助 schema 进行验证：
+| 测试位置 | 覆盖内容 |
+| --- | --- |
+| src/ 内的单元测试 | 生态解析器、版本、许可证及图工具 |
+| tests/cli_workflows.rs | CLI 生成、对比与错误处理 |
+| tests/scan_failures.rs | 无效输入、版本范围、解析回退和子项目覆盖 |
+| tests/schema_validation.rs | 使用仓库内 CycloneDX 1.6 及辅助 schema 验证输出 |
+| tests/sbom_accuracy.rs | 元数据、PURL 和依赖引用完整性 |
+| tests/ui_regressions.cjs | 界面字段转义与对比统计 |
 
-```bash
+部分测试读取仓库快照，部分涉及本机工具可用性；删除测试引用的输入文件会导致失败。单独执行 Schema 验证：
+
+~~~bash
 cargo test --test schema_validation
-```
+~~~
 
-`tests/scan_failures.rs` 验证解析失败、锁文件回退与独立子项目覆盖；前端回归测试使用 Node.js 内置测试运行器，验证导入字段转义、比较统计和报告结论，无需安装 npm 依赖。
+安装支持当前平台的 cargo-tarpaulin 后，可测量覆盖率并设置 80% 门槛：
 
-同一生态有多个清单目录时使用完整静态解析链，避免根目录动态探测跳过独立子项目。静态解析失败且无法有效回退时返回错误，并保留旧输出；成功回退会输出告警。比较页面与 CLI 按同样的 PURL 规则归一化，空参照集合显示 N/A；重合率不能代替准确率或召回率。
-
-在 2026-11-07 的 Windows 本地运行中，51 项测试通过；`cargo-tarpaulin` 的 LLVM 引擎测得行覆盖率 **81.33%（3471/4268）**。不同环境的覆盖率可能变化。安装 `cargo-tarpaulin` 后可复测并设置 80% 门槛：
-
-```bash
+~~~bash
 cargo tarpaulin --engine Llvm --output-dir target/coverage --out Json --fail-under 80
-```
+~~~
+
+测试通过数量和覆盖率应以提交版本的实际报告为准。历史报告不能证明后续代码仍保持相同覆盖率。
+
+## 可选桌面界面
+
+桌面界面支持项目选择、SBOM 导入、依赖图、组件与漏洞列表、JSON 查看和双 SBOM 对比。安装 Tauri CLI 及平台依赖后运行：
+
+~~~bash
+cargo tauri dev
+~~~
+
+图表使用 ECharts CDN，相关页面需要网络访问。CLI 可以独立使用。
 
 ## 项目结构
 
-```text
+~~~text
 src/
-  analyze/producers/   各生态的静态与动态解析器
-  sbom/generate.rs     CycloneDX 输出
-  utils/              文件遍历、许可证、OSV 与图工具
-  bin/sbom_compare.rs  SBOM 对比 CLI
-src-tauri/             Tauri 桌面后端
-ui/                    桌面前端页面与样式
-examples/              示例项目与 SBOM 快照
-resources/schemas/     CycloneDX schema 测试资源
-tests/                 CLI 与 schema 集成测试
-misc/                  基准脚本
-```
+  main.rs                 生成器 CLI 入口
+  analyze/producers/      各生态解析器
+  analyze/dynamic_monitor.rs  可选入口加载监测
+  model/                  组件、配置与位置模型
+  sbom/generate.rs        CycloneDX 输出
+  utils/                  版本、许可证、漏洞及图工具
+  bin/sbom_compare.rs     SBOM 对比 CLI
+src-tauri/                桌面后端
+ui/                       桌面前端
+examples/                 示例项目与输出
+test/                    第三方项目 SBOM 对照文件
+tests/                   集成及界面回归测试
+resources/                解析资源及 JSON schema
+misc/                     辅助脚本
+~~~
 
 ## 常见问题
 
-- **Cargo 提示无法创建增量编译硬链接**：Cargo 会改为复制缓存文件，构建结果不受影响。
-- **Trivy 提示缺少 `node_modules` 或 `site-packages`**：这会限制许可证元数据提取；组件清单仍可生成。
-- **找不到包管理器或无法联网**：使用 `-s` 运行静态扫描；只有清单文件时，输出可能无法解析完整的传递依赖。
-- **无法写入输出文件**：确认 `-o` 指定文件的父目录已存在且可写。
+- **找不到目录或输出失败**：确认输入路径存在，输出父目录存在且可写；带空格的路径使用引号。
+- **包管理器缺失或无法联网**：先使用 -s，版本及传递依赖完整度取决于现有清单和锁文件。
+- **动态结果与静态一致**：可能由回退、多项目策略或无有效探针结果造成，使用 -d 查看诊断信息。
+- **许可证为空**：表示缺少可采用的声明或匹配证据，不表示没有许可证。
+- **Cargo 提示无法创建增量编译硬链接**：若回退为复制且构建成功，可以继续使用产物。
 
 ## 许可证
 
-本仓库的 [LICENSE](LICENSE) 为 Apache License 2.0。
+本项目采用 [Apache License 2.0](LICENSE)。第三方组件遵循各自许可证。

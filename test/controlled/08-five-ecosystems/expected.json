@@ -1,0 +1,52 @@
+{
+  "libraries": {
+    "pkg:npm/npm-pinned@1.2.3": 1,
+    "pkg:pypi/python-pinned@1.2.3": 1,
+    "pkg:pypi/python-range": 1,
+    "pkg:cargo/rust-pinned@1.2.3": 1,
+    "pkg:cargo/rust-range": 1,
+    "pkg:golang/example.org/go-pinned@v1.2.3": 1,
+    "pkg:maven/org.example/java-pinned@1.2.3": 1
+  },
+  "applications": {
+    "pkg:npm/npm-app@1.0.0": 1,
+    "pkg:pypi/python@0.0.0": 1,
+    "pkg:cargo/rust-app@1.0.0": 1,
+    "pkg:golang/example.org/go-app@v0.0.0": 1,
+    "pkg:maven/org.example/java-app@1.0.0": 1
+  },
+  "edges": [
+    [
+      "pkg:npm/npm-app@1.0.0",
+      "pkg:npm/npm-pinned@1.2.3"
+    ],
+    [
+      "pkg:pypi/python@0.0.0",
+      "pkg:pypi/python-pinned@1.2.3"
+    ],
+    [
+      "pkg:pypi/python@0.0.0",
+      "pkg:pypi/python-range"
+    ],
+    [
+      "pkg:cargo/rust-app@1.0.0",
+      "pkg:cargo/rust-pinned@1.2.3"
+    ],
+    [
+      "pkg:cargo/rust-app@1.0.0",
+      "pkg:cargo/rust-range"
+    ],
+    [
+      "pkg:golang/example.org/go-app@v0.0.0",
+      "pkg:golang/example.org/go-pinned@v1.2.3"
+    ],
+    [
+      "pkg:maven/org.example/java-app@1.0.0",
+      "pkg:maven/org.example/java-pinned@1.2.3"
+    ]
+  ],
+  "requirements": {
+    "pkg:pypi/python-range": ">=2.0,<3.0",
+    "pkg:cargo/rust-range": "2.0"
+  }
+}

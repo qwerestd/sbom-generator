@@ -1,0 +1,34 @@
+{
+  "libraries": {
+    "pkg:npm/pinned@1.2.3": 1,
+    "pkg:npm/ranged": 1,
+    "pkg:npm/tagged": 1,
+    "pkg:npm/wildcard": 1
+  },
+  "applications": {
+    "pkg:npm/range-app@1.0.0": 1
+  },
+  "edges": [
+    [
+      "pkg:npm/range-app@1.0.0",
+      "pkg:npm/pinned@1.2.3"
+    ],
+    [
+      "pkg:npm/range-app@1.0.0",
+      "pkg:npm/ranged"
+    ],
+    [
+      "pkg:npm/range-app@1.0.0",
+      "pkg:npm/tagged"
+    ],
+    [
+      "pkg:npm/range-app@1.0.0",
+      "pkg:npm/wildcard"
+    ]
+  ],
+  "requirements": {
+    "pkg:npm/ranged": "^2.0.0",
+    "pkg:npm/tagged": "latest",
+    "pkg:npm/wildcard": "*"
+  }
+}

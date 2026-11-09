@@ -1,0 +1,20 @@
+{
+  "libraries": {
+    "pkg:npm/shared@1.0.0": 2
+  },
+  "applications": {
+    "pkg:npm/app-a@1.0.0": 1,
+    "pkg:npm/app-b@1.0.0": 1
+  },
+  "edges": [
+    [
+      "pkg:npm/app-a@1.0.0",
+      "pkg:npm/shared@1.0.0"
+    ],
+    [
+      "pkg:npm/app-b@1.0.0",
+      "pkg:npm/shared@1.0.0"
+    ]
+  ],
+  "same_source_edges": true
+}

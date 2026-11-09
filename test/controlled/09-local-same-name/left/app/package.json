@@ -1,0 +1,7 @@
+{
+  "name": "left-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "alias": "file:../local"
+  }
+}
