@@ -35,6 +35,20 @@ impl DynamicProducer for GoDynamicProducer {
         let go_bin = CliLocator::resolve_go()
             .ok_or_else(|| anyhow::anyhow!("未检测到可用的 go 可执行文件"))?;
 
+        let global_timeout = std::env::var("SBOM_GO_TIMEOUT")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok());
+        let mod_timeout_secs = std::env::var("SBOM_GO_MOD_TIMEOUT")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .or(global_timeout)
+            .unwrap_or(15);
+        let import_timeout_secs = std::env::var("SBOM_GO_IMPORT_TIMEOUT")
+            .ok()
+            .and_then(|v| v.parse::<u64>().ok())
+            .or(global_timeout)
+            .unwrap_or(8);
+
         let (graph_res, mvs_res) = std::thread::scope(|s| {
             let g_handle = s.spawn(|| {
                 let mut graph_cmd = Command::new(&go_bin);
@@ -42,7 +56,10 @@ impl DynamicProducer for GoDynamicProducer {
                     .args(["mod", "graph"])
                     .current_dir(work_dir)
                     .env("GOWORK", "off");
-                CliLocator::run_with_timeout(graph_cmd, std::time::Duration::from_secs(15))
+                CliLocator::run_with_timeout(
+                    graph_cmd,
+                    std::time::Duration::from_secs(mod_timeout_secs),
+                )
             });
             let m_handle = s.spawn(|| {
                 let mut mvs_cmd = Command::new(&go_bin);
@@ -50,7 +67,10 @@ impl DynamicProducer for GoDynamicProducer {
                     .args(["list", "-mod=readonly", "-m", "-json", "all"])
                     .current_dir(work_dir)
                     .env("GOWORK", "off");
-                CliLocator::run_with_timeout(mvs_cmd, std::time::Duration::from_secs(15))
+                CliLocator::run_with_timeout(
+                    mvs_cmd,
+                    std::time::Duration::from_secs(mod_timeout_secs),
+                )
             });
             (g_handle.join().unwrap(), m_handle.join().unwrap())
         });
@@ -82,27 +102,30 @@ impl DynamicProducer for GoDynamicProducer {
             dep.properties
                 .insert("sbom:analysis:method".into(), "go-module-graph".into());
         }
-        let mut command = Command::new(&go_bin);
-        command
-            .args(["list", "-mod=readonly", "-deps", "-test", "-json", "./..."])
-            .current_dir(work_dir)
-            .env("GOWORK", "off");
-        let source_result =
-            CliLocator::run_with_timeout(command, std::time::Duration::from_secs(45)).and_then(
-                |output| {
-                    anyhow::ensure!(
-                        output.status.success(),
-                        "{}",
-                        String::from_utf8_lossy(&output.stderr)
-                    );
-                    Self::apply_package_imports(&output.stdout, &selections, &mut deps)
-                },
-            );
-        if let Err(error) = source_result {
-            eprintln!(
-                " -> [Go] 源码导入图未完成 ({error:#})，保留模块要求图: {}",
-                work_dir.display()
-            );
+        if import_timeout_secs > 0 {
+            let mut command = Command::new(&go_bin);
+            command
+                .args(["list", "-mod=readonly", "-deps", "-test", "-json", "./..."])
+                .current_dir(work_dir)
+                .env("GOWORK", "off");
+            let source_result = CliLocator::run_with_timeout(
+                command,
+                std::time::Duration::from_secs(import_timeout_secs),
+            )
+            .and_then(|output| {
+                anyhow::ensure!(
+                    output.status.success(),
+                    "{}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                Self::apply_package_imports(&output.stdout, &selections, &mut deps)
+            });
+            if let Err(error) = source_result {
+                eprintln!(
+                    " -> [Go] 源码导入图未完成 ({error:#})，保留模块要求图: {}",
+                    work_dir.display()
+                );
+            }
         }
         let go_env_str = self.env_cache.get_or_init(|| {
             let mut command = Command::new(&go_bin);
