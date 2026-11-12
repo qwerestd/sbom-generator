@@ -1,0 +1,855 @@
+[
+  {
+    "name": "versions-overlap-without-identity-missing",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@1",
+          "version": "1"
+        },
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@2",
+          "version": "2"
+        },
+        {
+          "type": "library",
+          "name": "only-a",
+          "purl": "pkg:npm/only-a@1",
+          "version": "1"
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@2",
+          "version": "2"
+        },
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@3",
+          "version": "3"
+        },
+        {
+          "type": "library",
+          "name": "only-b",
+          "purl": "pkg:npm/only-b@1",
+          "version": "1"
+        }
+      ]
+    },
+    "expected": {
+      "exact.common": 1,
+      "identity.common": 1,
+      "version_differences.length": 1,
+      "only_identities_a.length": 1,
+      "only_identities_b.length": 1,
+      "only_keys_a.length": 2
+    }
+  },
+  {
+    "name": "unresolved-conflict-purl-evidence-and-valid-zero",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "unknown",
+          "purl": "pkg:npm/unknown"
+        },
+        {
+          "type": "library",
+          "name": "conflict",
+          "purl": "pkg:npm/conflict@1",
+          "version": "2"
+        },
+        {
+          "type": "library",
+          "name": "range",
+          "purl": "pkg:npm/range@1",
+          "version": "^1"
+        },
+        {
+          "type": "library",
+          "name": "purl-only",
+          "purl": "pkg:npm/purl-only@1"
+        },
+        {
+          "type": "library",
+          "name": "zero",
+          "purl": "pkg:npm/zero@0.0.0",
+          "version": "0.0.0"
+        },
+        {
+          "type": "library",
+          "name": "latest",
+          "purl": "pkg:npm/latest@latest",
+          "version": "latest"
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "unknown",
+          "purl": "pkg:npm/unknown@1",
+          "version": "1"
+        },
+        {
+          "type": "library",
+          "name": "conflict",
+          "purl": "pkg:npm/conflict@1",
+          "version": "1"
+        },
+        {
+          "type": "library",
+          "name": "range",
+          "purl": "pkg:npm/range@1",
+          "version": "1"
+        },
+        {
+          "type": "library",
+          "name": "purl-only",
+          "purl": "pkg:npm/purl-only@1",
+          "version": "1"
+        },
+        {
+          "type": "library",
+          "name": "zero",
+          "purl": "pkg:npm/zero@0.0.0",
+          "version": "0.0.0"
+        },
+        {
+          "type": "library",
+          "name": "latest",
+          "purl": "pkg:npm/latest@1",
+          "version": "1"
+        }
+      ]
+    },
+    "expected": {
+      "a.total_components": 6,
+      "a.unresolved_components": 4,
+      "a.inconsistent_components": 1,
+      "exact.common": 2,
+      "identity.common": 6,
+      "unknown_versions.length": 4,
+      "only_identities_b.length": 0
+    }
+  },
+  {
+    "name": "record-multiplicity-and-paths",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@1",
+          "version": "1",
+          "bom-ref": "a1",
+          "properties": [
+            {
+              "name": "syft:location:0:path",
+              "value": "./src/x/package.json"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@1",
+          "version": "1",
+          "bom-ref": "a2",
+          "properties": [
+            {
+              "name": "syft:location:0:path",
+              "value": "src\\y\\package.json"
+            }
+          ]
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@1",
+          "version": "1",
+          "bom-ref": "b1",
+          "properties": [
+            {
+              "name": "syft:location:0:path",
+              "value": "src/y/package.json"
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "exact.common": 1,
+      "occurrences.a": 2,
+      "occurrences.b": 1,
+      "occurrences.common": 1,
+      "located_occurrences.common": 1,
+      "occurrences.coverage_a": 50
+    }
+  },
+  {
+    "name": "references-dedup-dangling-and-duplicate-ids",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1",
+          "bom-ref": "a"
+        },
+        {
+          "type": "library",
+          "name": "two",
+          "purl": "pkg:npm/two@1",
+          "version": "1",
+          "bom-ref": "b"
+        },
+        {
+          "type": "library",
+          "name": "three",
+          "purl": "pkg:npm/three@1",
+          "version": "1",
+          "bom-ref": "duplicate"
+        },
+        {
+          "type": "library",
+          "name": "four",
+          "purl": "pkg:npm/four@1",
+          "version": "1",
+          "bom-ref": "duplicate"
+        }
+      ],
+      "dependencies": [
+        {
+          "ref": "a",
+          "dependsOn": [
+            "b",
+            "b",
+            "missing",
+            "duplicate"
+          ]
+        },
+        {
+          "ref": "absent",
+          "dependsOn": []
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1",
+          "bom-ref": "x"
+        },
+        {
+          "type": "library",
+          "name": "two",
+          "purl": "pkg:npm/two@1",
+          "version": "1",
+          "bom-ref": "y"
+        }
+      ],
+      "dependencies": [
+        {
+          "ref": "x",
+          "dependsOn": [
+            "y"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "graph.common": 1,
+      "a.edges.length": 1,
+      "a.dangling_refs.length": 2,
+      "a.duplicate_refs.length": 1
+    }
+  },
+  {
+    "name": "missing-graph-is-not-empty-graph",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1"
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1"
+        }
+      ],
+      "dependencies": []
+    },
+    "expected": {
+      "graph": null,
+      "a.graph_available": false,
+      "b.graph_available": true
+    }
+  },
+  {
+    "name": "reported-empty-graph-has-zero-overlap",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1",
+          "bom-ref": "a"
+        },
+        {
+          "type": "library",
+          "name": "two",
+          "purl": "pkg:npm/two@1",
+          "version": "1",
+          "bom-ref": "b"
+        }
+      ],
+      "dependencies": []
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1",
+          "bom-ref": "x"
+        },
+        {
+          "type": "library",
+          "name": "two",
+          "purl": "pkg:npm/two@1",
+          "version": "1",
+          "bom-ref": "y"
+        }
+      ],
+      "dependencies": [
+        {
+          "ref": "x",
+          "dependsOn": [
+            "y"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "graph.coverage_b": 0,
+      "graph.jaccard": 0
+    }
+  },
+  {
+    "name": "nested-components-and-application-root",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "application",
+          "name": "app",
+          "bom-ref": "root",
+          "purl": "pkg:npm/app@0.0.0",
+          "version": "0.0.0",
+          "components": [
+            {
+              "type": "library",
+              "name": "nested",
+              "purl": "pkg:npm/nested@1",
+              "version": "1",
+              "bom-ref": "nested"
+            }
+          ]
+        }
+      ],
+      "dependencies": [
+        {
+          "ref": "root",
+          "dependsOn": [
+            "nested"
+          ]
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "nested",
+          "purl": "pkg:npm/nested@1",
+          "version": "1",
+          "bom-ref": "n"
+        }
+      ],
+      "dependencies": []
+    },
+    "expected": {
+      "a.total_components": 1,
+      "a.excluded.application": 1,
+      "exact.common": 1,
+      "a.filtered_edges": 1
+    }
+  },
+  {
+    "name": "graph-semantics-incompatible",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1",
+          "bom-ref": "a",
+          "properties": [
+            {
+              "name": "sbom:analysis:method",
+              "value": "go-package-imports"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "two",
+          "purl": "pkg:npm/two@1",
+          "version": "1",
+          "bom-ref": "b"
+        }
+      ],
+      "dependencies": [
+        {
+          "ref": "a",
+          "dependsOn": [
+            "b"
+          ]
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1",
+          "bom-ref": "x",
+          "properties": [
+            {
+              "name": "sbom:analysis:method",
+              "value": "go-module-graph"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "two",
+          "purl": "pkg:npm/two@1",
+          "version": "1",
+          "bom-ref": "y"
+        }
+      ],
+      "dependencies": [
+        {
+          "ref": "x",
+          "dependsOn": [
+            "y"
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "exact.common": 2,
+      "graph": null
+    }
+  },
+  {
+    "name": "custom-scope-application-and-zero-policy",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "zero",
+          "purl": "pkg:npm/zero@0.0.0",
+          "version": "0.0.0"
+        },
+        {
+          "type": "application",
+          "name": "app",
+          "version": "1",
+          "purl": "pkg:npm/app@1"
+        },
+        {
+          "type": "library",
+          "name": "gem",
+          "version": "1",
+          "purl": "pkg:gem/gem@1"
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "application",
+          "name": "app",
+          "version": "1",
+          "purl": "pkg:npm/app@1"
+        }
+      ]
+    },
+    "expected": {
+      "exact.common": 1,
+      "exact.a": 1,
+      "a.excluded.zero-version": 1
+    },
+    "options": {
+      "ecosystems": [
+        "npm"
+      ],
+      "include_applications": true,
+      "exclude_zero_versions": true
+    }
+  },
+  {
+    "name": "canonical-names-encoding-and-invalid-purl",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "My_pkg",
+          "version": "1+CPU",
+          "purl": "pkg:pypi/My__..pkg@1%2BCPU?repository_url=one#src"
+        },
+        {
+          "type": "library",
+          "name": "@Scope/name",
+          "version": "1",
+          "purl": "pkg:npm/%40Scope/Name@1"
+        },
+        {
+          "type": "library",
+          "name": "bad",
+          "purl": "not-a-purl",
+          "version": "1"
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "my-pkg",
+          "version": "1+CPU",
+          "purl": "pkg:pypi/my-pkg@1+CPU"
+        },
+        {
+          "type": "library",
+          "name": "@scope/name",
+          "version": "1",
+          "purl": "pkg:npm/@scope/name@1"
+        }
+      ]
+    },
+    "expected": {
+      "exact.common": 2,
+      "a.excluded.invalid-purl": 1,
+      "a.total_components": 2
+    }
+  },
+  {
+    "name": "qualifiers-do-not-hide-path-differences",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@1?package-id=a",
+          "version": "1",
+          "properties": [
+            {
+              "name": "syft:location:0:path",
+              "value": "service-a/package.json"
+            }
+          ]
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "demo",
+          "purl": "pkg:npm/demo@1?package-id=b",
+          "version": "1",
+          "properties": [
+            {
+              "name": "syft:location:0:path",
+              "value": "service-b/package.json"
+            }
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "exact.common": 1,
+      "located_occurrences.common": 0,
+      "located_occurrences.coverage_b": 0
+    }
+  },
+  {
+    "name": "empty-reference-and-unsupported-ecosystem",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [
+        {
+          "type": "library",
+          "name": "one",
+          "purl": "pkg:npm/one@1",
+          "version": "1"
+        },
+        {
+          "type": "library",
+          "purl": "pkg:gem/a@1",
+          "version": "1"
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": []
+    },
+    "expected": {
+      "exact.a": 1,
+      "exact.coverage_b": null,
+      "all_exact.a": 2,
+      "graph": null
+    }
+  },
+  {
+    "name": "malformed-dependency-array",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": [],
+      "dependencies": {}
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "specVersion": "1.6",
+      "components": []
+    },
+    "expect_error": true
+  },
+  {
+    "name": "multiple-source-locations-and-evidence",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "components": [
+        {
+          "purl": "pkg:npm/demo@1",
+          "version": "1",
+          "properties": [
+            {
+              "name": "syft:location:0:path",
+              "value": "./x"
+            },
+            {
+              "name": "syft:location:1:path",
+              "value": "y"
+            },
+            {
+              "name": "syft:location:2:path",
+              "value": "./x"
+            }
+          ]
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "components": [
+        {
+          "purl": "pkg:npm/demo@1",
+          "version": "1",
+          "evidence": {
+            "occurrences": [
+              {
+                "location": "x"
+              },
+              {
+                "location": "y"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "expected": {
+      "located_occurrences.a": 2,
+      "located_occurrences.common": 2,
+      "a.records.length": 1
+    }
+  },
+  {
+    "name": "nested-metadata-root",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "components": [],
+      "metadata": {
+        "component": {
+          "type": "application",
+          "bom-ref": "root",
+          "name": "root",
+          "components": [
+            {
+              "purl": "pkg:npm/demo@1",
+              "version": "1",
+              "bom-ref": "child"
+            }
+          ]
+        }
+      },
+      "dependencies": [
+        {
+          "ref": "root",
+          "dependsOn": [
+            "child"
+          ]
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "components": [
+        {
+          "purl": "pkg:npm/demo@1",
+          "version": "1"
+        }
+      ]
+    },
+    "expected": {
+      "exact.common": 1,
+      "a.total_components": 1,
+      "a.filtered_edges": 1
+    }
+  },
+  {
+    "name": "literal-percent-version-canonicalization",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "components": [
+        {
+          "purl": "pkg:pypi/demo@1%25local",
+          "version": "1%local"
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "components": [
+        {
+          "purl": "pkg:pypi/demo@1%25local",
+          "version": "1%local"
+        }
+      ]
+    },
+    "expected": {
+      "exact.common": 1
+    }
+  },
+  {
+    "name": "partial-policy-normalized-case",
+    "a": {
+      "bomFormat": "CycloneDX",
+      "components": [
+        {
+          "purl": "pkg:npm/demo@1"
+        }
+      ]
+    },
+    "b": {
+      "bomFormat": "CycloneDX",
+      "components": [
+        {
+          "purl": "pkg:npm/demo@1"
+        }
+      ]
+    },
+    "options": {
+      "ecosystems": [
+        " NPM "
+      ]
+    },
+    "expected": {
+      "exact.common": 1
+    }
+  }
+]

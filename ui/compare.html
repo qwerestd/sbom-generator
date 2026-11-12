@@ -106,7 +106,7 @@
 
         .file-select-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr auto;
+            grid-template-columns: 1fr 1fr 1fr auto;
             gap: 16px;
             align-items: center;
         }
@@ -666,6 +666,20 @@
                     </div>
                 </div>
 
+                <!-- 文件 C: 参照基准 Syft -->
+                <div class="file-card-item" style="border-left: 3px solid #c084fc;">
+                    <div class="file-card-header">
+                        <span style="color: #c084fc;">🟣 SBOM 文件 C (参照基准 / Syft)</span>
+                        <span id="file-c-stat" style="color: var(--text-muted);">可选 / 未载入</span>
+                    </div>
+                    <div class="file-input-row">
+                        <input type="text" id="input-file-c" placeholder="点击右侧选择或粘贴 Syft CycloneDX JSON 路径..." />
+                        <button class="btn-industrial-default" id="btn-browse-c" style="height: 34px;">📂 浏览</button>
+                        <button class="btn-industrial-default" id="btn-clear-c" style="height: 34px;" title="移除 C，切换为双工具比较">清除</button>
+                        <input type="file" id="fallback-file-c" accept=".json" style="display:none;" />
+                    </div>
+                </div>
+
                 <!-- 触发计算与状态提示 -->
                 <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end;">
                     <button class="btn-industrial-primary" id="btn-trigger-compare" style="height: 48px; padding: 0 24px; font-size: 13px;">
@@ -694,6 +708,24 @@
         </section>
 
         <!-- 2. 核心量化指标看板卡片 (4 大高光指标，整洁 1 行平铺) -->
+        <section class="table-section-box" style="padding:16px; gap:12px;">
+            <div class="table-filter-tools">
+                <label for="compare-ecosystems">目标生态</label>
+                <input id="compare-ecosystems" class="topo-search-input" style="width:250px" value="cargo,golang,maven,npm,pypi" aria-label="目标生态，逗号分隔">
+                <label><input type="checkbox" id="compare-include-applications"> 纳入应用组件</label>
+                <label><input type="checkbox" id="compare-exclude-zero"> 排除 0.0.0（默认保留合法版本）</label>
+                <button id="btn-recompare" class="btn-industrial-default">重新比较</button>
+            </div>
+            <div id="comparison-classification" aria-live="polite">包身份、版本、记录与依赖边分别比较。</div>
+            <p id="comparison-warnings" style="color:var(--text-secondary);margin:0">请对齐源码提交、平台与依赖范围。参照 SBOM 不是独立真值。</p>
+            <div style="overflow-x:auto"><table class="industrial-table" style="width:100%">
+                <thead><tr><th>匹配层次 / 比较双方</th><th>A / 左侧</th><th>B / 右侧</th><th>交集</th><th>相对右侧重合率</th><th>相对左侧重合率</th><th>Jaccard</th></tr></thead>
+                <tbody id="comparison-metrics-body"></tbody>
+            </table></div>
+            <details><summary>输入与图引用诊断</summary><pre id="comparison-input-diagnostics" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
+            <details><summary>依赖边差集（与组件重合率独立）</summary><pre id="comparison-edge-differences" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre></details>
+        </section>
+
         <section class="kpi-summary-grid">
             <!-- 卡片 1: 目标核心生态相对重合率 & Jaccard -->
             <div class="kpi-card green">
@@ -715,8 +747,8 @@
             <!-- 卡片 2: 唯一包发现与扩展增量 -->
             <div class="kpi-card blue">
                 <div class="kpi-card-title">
-                    <span>🚀 唯一包发现与扩展增量</span>
-                    <span class="kpi-tag-pill blue">AST Discovery</span>
+                    <span>精确版本差集与记录数</span>
+                    <span class="kpi-tag-pill blue">Package Comparison</span>
                 </div>
                 <div class="kpi-val-row">
                     <span class="kpi-val-main" id="kpi-unique-diff" style="color: #38bdf8;">+0</span>
@@ -740,7 +772,7 @@
                     <div class="kpi-sub-pill mint"><span id="kpi-runtime-ratio">(0.0%) 活跃</span></div>
                 </div>
                 <div class="kpi-val-sub">
-                    <span>真实执行状态: <strong style="color: #34d399;">LOADED</strong> 真实加载运行</span>
+                    <span id="runtime-evidence-desc">输入文件未记录已加载组件</span>
                 </div>
                 <div class="kpi-card-footer">展示文件中记录的加载状态；未观测到加载不代表不可达</div>
             </div>
@@ -748,8 +780,8 @@
             <!-- 卡片 4: 参照基准 (Trivy) 与安全态势 -->
             <div class="kpi-card amber">
                 <div class="kpi-card-title">
-                    <span>🛡️ 参照基准 (Trivy) 与安全态势</span>
-                    <span class="kpi-tag-pill amber">Trivy & Security</span>
+                    <span>参照工具与漏洞记录</span>
+                    <span class="kpi-tag-pill amber">Reference Metadata</span>
                 </div>
                 <div class="kpi-val-row">
                     <span class="kpi-val-main" id="kpi-tool-b-label" style="color: #fb923c; font-size: 20px;">Trivy</span>
@@ -759,11 +791,12 @@
                     <span>OSV 漏洞挖掘: <strong id="kpi-vuln-stats" style="color: #f87171;">0 vs 0</strong></span>
                     <span id="kpi-vuln-active" class="kpi-danger-pill" style="margin-left: 6px;">可达活跃: 0</span>
                 </div>
-                <div class="kpi-card-footer">工业级容器与系统软件包扫描标杆，内置 Aqua 漏洞库比对</div>
+                <div class="kpi-card-footer">工具名称、版本和时间取自输入文件；未提供时不推断</div>
             </div>
         </section>
 
         <!-- 3. 核心精选可视化图表看板 (高饱和美化呈现) -->
+        <p id="chart-availability" role="status" style="color:var(--text-secondary)"></p>
         <section class="charts-dashboard-grid">
 
             <!-- 核心图表 1: 依赖集合交并重合度与占比环形图 -->
@@ -771,7 +804,7 @@
                 <div class="chart-header">
                     <div class="chart-title-group">
                         <span class="chart-title">📊 依赖集合交并全景重合度</span>
-                        <span class="chart-subtitle">双方共有依赖 (Common) vs 本项目独有增量 vs 参照基准独有</span>
+                        <span class="chart-subtitle">所选生态精确 PURL 集合（含版本差异）；拓扑虚线为布局辅助线，不计依赖边</span>
                     </div>
                 </div>
                 <div id="chart-overlap-pie" class="chart-canvas" style="height: 380px;"></div>
@@ -781,9 +814,10 @@
             <div class="chart-box col-6">
                 <div class="chart-header">
                     <div class="chart-title-group">
-                        <span class="chart-title">🌐 跨语言多生态覆盖度双向比对 (Instances & Unique)</span>
-                        <span class="chart-subtitle">Cargo (Rust) / Go (Golang) / Maven (Java) / NPM (JS) / PyPI (Python) / 其他生态</span>
+                        <span class="chart-title" id="eco-chart-title">🌐 各生态组件记录数</span>
+                        <span class="chart-subtitle">仅统计可比较版本；悬停同时查看记录数与去重后的包版本数</span>
                     </div>
+                    <select id="select-eco-metric" class="select-filter-sm" aria-label="生态图统计口径"><option value="records">组件记录数</option><option value="unique">唯一包版本数</option></select>
                 </div>
                 <div id="chart-eco-bar" class="chart-canvas" style="height: 380px;"></div>
             </div>
@@ -794,14 +828,24 @@
                     <div class="chart-title-group">
                         <span class="chart-title">🌐 行业对比依赖拓扑全景图 (Large Dependency Diff Graph)</span>
                         <div style="display:inline-flex; align-items:center; gap:14px; margin-top:3px; font-size:11px; font-weight:normal;">
-                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981; display:inline-block;"></span>🟢 双方共有依赖 (<span id="legend-common-count">0</span>)</span>
-                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#38bdf8; box-shadow:0 0 8px #38bdf8; display:inline-block;"></span>🔵 工具 A 独有增量 (<span id="legend-only-a-count">0</span>)</span>
-                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#fb923c; box-shadow:0 0 8px #fb923c; display:inline-block;"></span>🟠 工具 B 独有参照 (<span id="legend-only-b-count">0</span>)</span>
+                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981; display:inline-block;"></span>🟢 全部已载入工具共有 (<span id="legend-common-count">0</span>)</span>
+                            <span>🟡 三方中仅两工具共有 (<span id="legend-pair-count">0</span>)</span>
+                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#38bdf8; box-shadow:0 0 8px #38bdf8; display:inline-block;"></span>🔵 工具 A 精确差集 (<span id="legend-only-a-count">0</span>)</span>
+                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#fb923c; box-shadow:0 0 8px #fb923c; display:inline-block;"></span>🟠 工具 B 精确差集 (<span id="legend-only-b-count">0</span>)</span>
+                            <span style="display:inline-flex; align-items:center; gap:5px;"><span style="width:11px; height:11px; border-radius:50%; background:#c084fc; box-shadow:0 0 8px #c084fc; display:inline-block;"></span>🟣 Syft 独有参照 (<span id="legend-only-c-count">0</span>)</span>
                         </div>
                     </div>
                     <div class="topo-toolbar">
+                        <select id="select-topo-view" class="select-filter-sm" style="height:28px; padding:0 6px; font-size:11px; background:#0c1726; color:#38bdf8; font-weight:bold; border:1px solid #38bdf8; border-radius:6px;" title="分别画出各个工具生成的依赖图并对比">
+                            <option value="diff" selected>🔀 三方差分融合拓扑图</option>
+                            <option value="ours">🔷 本项目独立拓扑图 (Ours)</option>
+                            <option value="trivy">🔶 Trivy 独立拓扑图</option>
+                            <option value="syft">🟣 Syft 独立拓扑图</option>
+                            <option value="split">⚡ 左右双屏分屏对比</option>
+                        </select>
                         <select id="select-topo-layout" class="select-filter-sm" style="height:28px; padding:0 6px; font-size:11px; background:#0c1726; color:#fff; border:1px solid var(--border-subtle); border-radius:6px;" title="切换拓扑排布算法">
-                            <option value="force" selected>🌀 空间力导向</option>
+                            <option value="auto" selected>自动布局（大图使用环形）</option>
+                            <option value="force">🌀 空间力导向</option>
                             <option value="circular">⭕ 环形无重叠</option>
                         </select>
                         <div style="display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--text-secondary);" title="拖动滑块拉大节点物理间距，消除部件挤压">
@@ -816,6 +860,16 @@
                     </div>
                 </div>
                 <div id="chart-topo-graph" class="chart-canvas" style="min-height: 700px; height: 740px; background: #070c17; border-radius: 8px;"></div>
+                <div id="chart-split-container" style="display:none; width: 100%; height: 740px; grid-template-columns: 1fr 1fr; gap: 4px; background: var(--border-subtle); border-radius: 8px; overflow: hidden;">
+                    <div style="background: #070c17; position: relative; height: 100%;">
+                        <div id="split-badge-left" style="position: absolute; top: 12px; left: 16px; z-index: 10; background: rgba(15,23,42,0.85); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #38bdf8; border: 1px solid var(--border-subtle);">🔷 本项目拓扑图 (sbom-generator)</div>
+                        <div id="chart-split-left" style="width: 100%; height: 100%;"></div>
+                    </div>
+                    <div style="background: #070c17; position: relative; height: 100%;">
+                        <div id="split-badge-right" style="position: absolute; top: 12px; left: 16px; z-index: 10; background: rgba(15,23,42,0.85); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; color: #fb923c; border: 1px solid var(--border-subtle);">🔶 对照工具拓扑图 (Trivy / Syft)</div>
+                        <div id="chart-split-right" style="width: 100%; height: 100%;"></div>
+                    </div>
+                </div>
             </div>
 
         </section>
@@ -825,19 +879,25 @@
             <div class="table-section-header">
                 <!-- 过滤 Tab 切换 -->
                 <div class="diff-filter-tabs">
-                    <button class="diff-filter-btn active" data-type="onlyA">
-                        <span>🔵 工具 A 独有增量</span>
+                    <button class="diff-filter-btn" data-type="onlyA">
+                        <span>🔵 A 相对 B 独有包身份</span>
                         <span id="tab-cnt-only-a" class="badge-pill badge-only-a">0</span>
                     </button>
                     <button class="diff-filter-btn" data-type="onlyB">
-                        <span>🟠 工具 B 独有依赖</span>
+                        <span>🟠 B 相对 A 独有包身份</span>
                         <span id="tab-cnt-only-b" class="badge-pill badge-only-b">0</span>
                     </button>
+                    <button class="diff-filter-btn" data-type="onlyC">
+                        <span>🟣 C 独有包版本</span>
+                        <span id="tab-cnt-only-c" class="badge-pill" style="background: rgba(192, 132, 252, 0.2); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.4);">0</span>
+                    </button>
+                    <button class="diff-filter-btn" data-type="versionMismatch">版本集合差异 <span id="tab-cnt-version-mismatch">0</span></button>
+                    <button class="diff-filter-btn" data-type="versionUnknown">同包版本未知 <span id="tab-cnt-version-unknown">0</span></button>
                     <button class="diff-filter-btn" data-type="common">
-                        <span>🟢 共同识别依赖</span>
+                        <span>🟢 A/B 相同包版本</span>
                         <span id="tab-cnt-common" class="badge-pill badge-common">0</span>
                     </button>
-                    <button class="diff-filter-btn" data-type="all">
+                    <button class="diff-filter-btn active" data-type="all">
                         <span>📋 全部集合对比</span>
                         <span id="tab-cnt-all" class="badge-pill">0</span>
                     </button>
@@ -857,7 +917,8 @@
                     <select id="filter-runtime-select" class="select-filter-sm">
                         <option value="all">⚡ 全部监测状态</option>
                         <option value="loaded">🟢 仅看活跃加载 (Loaded)</option>
-                        <option value="dormant">⚪ 仅看静态休眠 (Dormant)</option>
+                        <option value="dormant">⚪ 已监测但未加载 (Dormant)</option>
+                        <option value="untraced">未记录运行监测</option>
                     </select>
 
                     <input type="text" id="diff-search-input" placeholder="搜索包名 / PURL / 路径..." style="height: 30px; background: #0c1626; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0 10px; color: #fff; font-size: 11px; width: 180px;" />
@@ -875,7 +936,7 @@
                             <th style="width: 140px;">⚡ 动态运行时状态</th>
                             <th style="width: 130px;">SPDX 开源许可</th>
                             <th>标准 Package URL (PURL) / 清单文件路径</th>
-                            <th style="width: 280px;">差异机制与 AST 穿透归因分析</th>
+                            <th style="width: 280px;">差异分类与待核验说明</th>
                         </tr>
                     </thead>
                     <tbody id="paginated-diff-tbody">
@@ -922,12 +983,14 @@
     <div id="toast" class="toast-notify">操作成功</div>
 
     <details style="padding:16px; margin:12px;">
-        <summary>版本未解析组件（计入总数，不参与精确版本重合率）</summary>
+        <summary>版本未解析或冲突组件（计入记录，不参与精确版本重合率）</summary>
         <table class="industrial-table" style="width:100%;">
+            <caption id="unresolved-summary" style="caption-side:top;text-align:left;color:var(--text-secondary)"></caption>
             <thead><tr><th>来源</th><th>组件</th><th>PURL</th><th>版本约束</th></tr></thead>
             <tbody id="unresolved-tbody"></tbody>
         </table>
     </details>
+    <script src="compare-core.js"></script>
     <script src="compare.js"></script>
 </body>
 </html>

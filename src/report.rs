@@ -161,44 +161,14 @@ pub fn generate_report(sbom_path: &str) -> anyhow::Result<LogicalReport> {
 }
 
 /// 在控制台优雅展示报表（包含逻辑组件聚合、SPDX 许可证与 OSV 漏洞安全告警）
+/// Print a concise summary; detailed inventory remains in the SBOM file.
 pub fn print_report(report: &LogicalReport) {
-    println!("{:=^86}", " SBOM 逻辑聚合与许可证合规报表 ");
     println!(
-        "{:<32} | {:<14} | {:<20} | {:<8}",
-        "组件名称", "版本", "开源许可证 (SPDX)", "实例数"
+        "扫描完成：{} 个逻辑组件，{} 条组件记录，{} 条漏洞记录。",
+        report.total_logical_components,
+        report.total_physical_instances,
+        report.vulnerabilities.len()
     );
-    println!("{:-<86}", "");
-
-    for comp in &report.components {
-        let ver = comp.version.as_deref().unwrap_or("n/a");
-        let lic = comp.license.as_deref().unwrap_or("UNKNOWN");
-        println!(
-            "{:<32} | {:<14} | {:<20} | {:<8}",
-            comp.name, ver, lic, comp.instance_count
-        );
-    }
-
-    println!("{:-<86}", "");
-    println!(
-        "总结：识别到 {} 个逻辑组件，共映射 {} 个物理隔离实例。",
-        report.total_logical_components, report.total_physical_instances
-    );
-
-    if !report.vulnerabilities.is_empty() {
-        println!("\n{:=^86}", " 🚨 OSV 开源漏洞联动审计告警 ");
-        for vuln in &report.vulnerabilities {
-            println!(
-                "[{}] {:.1} | {} -> 命中组件: {}",
-                vuln.severity,
-                vuln.score,
-                vuln.id,
-                vuln.affected_components.join(", ")
-            );
-            println!("  ├─ 风险描述: {}", vuln.description);
-            println!("  └─ 修复建议: {}", vuln.recommendation);
-        }
-        println!("{:=^86}", "");
-    }
 }
 
 struct TreeNodeMeta {

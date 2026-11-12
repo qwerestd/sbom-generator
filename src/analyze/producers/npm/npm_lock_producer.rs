@@ -9,9 +9,45 @@ use crate::utils::file_utils::make_instance_id;
 pub struct NpmLockProducer {}
 
 impl SbomProducer for NpmLockProducer {
+    fn is_complete(&self, paths: &[PathBuf], deps: &[Dependency]) -> bool {
+        // An unsupported v1 lock or a skipped entry must not suppress the manifest.
+        let expected = paths.iter().try_fold(0usize, |count, path| {
+            let json: serde_json::Value =
+                serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()?;
+            let packages = json.get("packages")?.as_object()?;
+            for package in packages.values() {
+                for category in [
+                    "dependencies",
+                    "devDependencies",
+                    "optionalDependencies",
+                    "peerDependencies",
+                ] {
+                    if let Some(declared) = package.get(category).and_then(|v| v.as_object()) {
+                        if declared
+                            .keys()
+                            .any(|name| !deps.iter().any(|d| &d.name == name))
+                        {
+                            return None;
+                        }
+                    }
+                }
+            }
+            if packages.is_empty()
+                || packages
+                    .values()
+                    .any(|p| p.get("link").and_then(|v| v.as_bool()) == Some(true))
+            {
+                return None;
+            }
+            Some(count + packages.len())
+        });
+        expected == Some(deps.len()) && !deps.is_empty()
+    }
     fn use_file(&self, path: &Path, _config: &SbomProducerConfiguration) -> bool {
-        path.file_name()
-            .is_some_and(|n| n.eq_ignore_ascii_case("package-lock.json"))
+        path.file_name().is_some_and(|n| {
+            n.eq_ignore_ascii_case("package-lock.json")
+                || n.eq_ignore_ascii_case("npm-shrinkwrap.json")
+        })
     }
 
     fn find_dependencies(
@@ -47,6 +83,50 @@ impl NpmLockProducer {
         location: Option<DependencyLocation>,
     ) -> anyhow::Result<Vec<Dependency>> {
         let Some(packages) = json.get("packages").and_then(|p| p.as_object()) else {
+            if json
+                .get("dependencies")
+                .and_then(|v| v.as_object())
+                .is_some()
+            {
+                fn expand(
+                    value: &serde_json::Value,
+                    parent: &str,
+                    packages: &mut serde_json::Map<String, serde_json::Value>,
+                ) {
+                    if let Some(deps) = value.get("dependencies").and_then(|v| v.as_object()) {
+                        for (name, data) in deps {
+                            let path = if parent.is_empty() {
+                                format!("node_modules/{name}")
+                            } else {
+                                format!("{parent}/node_modules/{name}")
+                            };
+                            let mut entry = data.clone();
+                            entry["name"] = name.clone().into();
+                            if let Some(required) = data.get("requires") {
+                                entry["dependencies"] = required.clone();
+                            } else {
+                                entry.as_object_mut().unwrap().remove("dependencies");
+                            }
+                            packages.insert(path.clone(), entry);
+                            expand(data, &path, packages);
+                        }
+                    }
+                }
+                let mut packages = serde_json::Map::new();
+                let root_deps: serde_json::Map<_, _> = json["dependencies"]
+                    .as_object()
+                    .unwrap()
+                    .iter()
+                    .map(|(n, v)| (n.clone(), v["version"].clone()))
+                    .collect();
+                packages.insert("".into(), serde_json::json!({"name":json.get("name").and_then(|v|v.as_str()).unwrap_or("npm-app"),"version":json.get("version").and_then(|v|v.as_str()).unwrap_or("0.0.0"),"dependencies":root_deps}));
+                expand(json, "", &mut packages);
+                return Self::parse_npm_lock(
+                    &serde_json::json!({"packages":packages}),
+                    file_salt,
+                    location,
+                );
+            }
             return Ok(vec![]);
         };
 
@@ -175,7 +255,8 @@ impl NpmLockProducer {
                 DependencyType::Library
             };
 
-            if let Ok(dep) = DependencyBuilder::default()
+            let declared_count = node.dep_names.len();
+            if let Ok(mut dep) = DependencyBuilder::default()
                 .name(node.name)
                 .version(Some(node.version))
                 .license(node.license)
@@ -186,6 +267,14 @@ impl NpmLockProducer {
                 .location(location.clone())
                 .build()
             {
+                dep.properties.insert(
+                    "sbom:graph:declared-edges".into(),
+                    declared_count.to_string(),
+                );
+                dep.properties.insert(
+                    "sbom:graph:resolved-edges".into(),
+                    dep.dependencies.len().to_string(),
+                );
                 final_deps.push(dep);
             }
         }

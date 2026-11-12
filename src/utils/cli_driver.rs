@@ -145,6 +145,46 @@ impl CliLocator {
         )
     }
 
+    /// 探测当前环境可用的 JAVA_HOME
+    pub fn resolve_java_home() -> Option<String> {
+        for env_key in ["JAVA_HOME", "JDK_HOME"] {
+            if let Ok(val) = env::var(env_key) {
+                let trimmed = val.trim();
+                if !trimmed.is_empty() && Path::new(trimmed).exists() {
+                    return Some(trimmed.to_string());
+                }
+            }
+        }
+
+        if let Some(java_bin) = Self::resolve_global_tool(
+            "java",
+            if cfg!(target_os = "windows") {
+                &["java.exe", "java"]
+            } else {
+                &["java"]
+            },
+            &["-version"],
+            &["JAVA_HOME", "JDK_HOME"],
+            &[
+                r"jbr\bin\java.exe",
+                r"bin\java.exe",
+                r"jbr\bin\java",
+                r"bin\java",
+            ],
+        ) {
+            let path = PathBuf::from(java_bin);
+            if let Some(bin_dir) = path.parent() {
+                if bin_dir.file_name().and_then(|n| n.to_str()) == Some("bin") {
+                    if let Some(home) = bin_dir.parent() {
+                        return Some(home.to_string_lossy().to_string());
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
     /// 探测通用全局 CLI 工具并缓存结果
     pub fn resolve_global_tool(
         tool_key: &str,
@@ -298,42 +338,97 @@ impl CliLocator {
 
     /// 跨平台执行外部子进程，带有毫秒级精准超时控制与管道缓冲区死锁防护。
     /// 当包管理器或编译工具陷入网络拉取卡死、外部输入等待或死锁时，主动强杀子进程并快速回退到静态分析。
+    /// 同时防御 Windows 下多线程并发 spawn 或后台常驻守护进程（如 GradleDaemon）继承管道句柄导致 read_to_end 永久阻塞的问题。
     pub fn run_with_timeout(
         mut cmd: Command,
         timeout: std::time::Duration,
     ) -> anyhow::Result<std::process::Output> {
         use std::io::Read;
+        use std::sync::Arc;
 
+        static SPAWN_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+        cmd.stdin(std::process::Stdio::null());
         cmd.stdout(std::process::Stdio::piped());
         cmd.stderr(std::process::Stdio::piped());
 
-        let mut child = cmd
-            .spawn()
-            .map_err(|e| anyhow::anyhow!("启动外部进程失败: {e}"))?;
+        let mut child = {
+            let lock = SPAWN_LOCK.get_or_init(|| Mutex::new(()));
+            let _guard = lock.lock().unwrap_or_else(|e| e.into_inner());
+            #[cfg(target_os = "windows")]
+            {
+                use std::os::windows::io::AsRawHandle;
+                extern "system" {
+                    fn SetHandleInformation(
+                        hObject: *mut std::ffi::c_void,
+                        dwMask: u32,
+                        dwFlags: u32,
+                    ) -> i32;
+                }
+                const HANDLE_FLAG_INHERIT: u32 = 0x00000001;
+                unsafe {
+                    let _ = SetHandleInformation(
+                        std::io::stdin().as_raw_handle(),
+                        HANDLE_FLAG_INHERIT,
+                        0,
+                    );
+                    let _ = SetHandleInformation(
+                        std::io::stdout().as_raw_handle(),
+                        HANDLE_FLAG_INHERIT,
+                        0,
+                    );
+                    let _ = SetHandleInformation(
+                        std::io::stderr().as_raw_handle(),
+                        HANDLE_FLAG_INHERIT,
+                        0,
+                    );
+                }
+            }
+            cmd.spawn()
+                .map_err(|e| anyhow::anyhow!("启动外部进程失败: {e}"))?
+        };
         let stdout = child.stdout.take();
         let stderr = child.stderr.take();
 
+        let stdout_acc = Arc::new(Mutex::new(Vec::new()));
+        let stderr_acc = Arc::new(Mutex::new(Vec::new()));
         let (stdout_tx, stdout_rx) = std::sync::mpsc::channel();
         let (stderr_tx, stderr_rx) = std::sync::mpsc::channel();
 
         if let Some(mut out) = stdout {
+            let acc = Arc::clone(&stdout_acc);
             std::thread::spawn(move || {
-                let mut buf = Vec::new();
-                let _ = out.read_to_end(&mut buf);
-                let _ = stdout_tx.send(buf);
+                let mut chunk = [0u8; 8192];
+                while let Ok(n) = out.read(&mut chunk) {
+                    if n == 0 {
+                        break;
+                    }
+                    if let Ok(mut guard) = acc.lock() {
+                        guard.extend_from_slice(&chunk[..n]);
+                    }
+                }
+                let _ = stdout_tx.send(());
             });
         } else {
-            let _ = stdout_tx.send(Vec::new());
+            let _ = stdout_tx.send(());
         }
 
         if let Some(mut err) = stderr {
+            let acc = Arc::clone(&stderr_acc);
             std::thread::spawn(move || {
-                let mut buf = Vec::new();
-                let _ = err.read_to_end(&mut buf);
-                let _ = stderr_tx.send(buf);
+                let mut chunk = [0u8; 8192];
+                while let Ok(n) = err.read(&mut chunk) {
+                    if n == 0 {
+                        break;
+                    }
+                    if let Ok(mut guard) = acc.lock() {
+                        guard.extend_from_slice(&chunk[..n]);
+                    }
+                }
+                let _ = stderr_tx.send(());
             });
         } else {
-            let _ = stderr_tx.send(Vec::new());
+            let _ = stderr_tx.send(());
         }
 
         let start = std::time::Instant::now();
@@ -349,13 +444,23 @@ impl CliLocator {
                             timeout
                         );
                     }
-                    std::thread::sleep(std::time::Duration::from_millis(50));
+                    std::thread::sleep(std::time::Duration::from_millis(30));
                 }
             }
         };
 
-        let stdout_bytes = stdout_rx.recv().unwrap_or_default();
-        let stderr_bytes = stderr_rx.recv().unwrap_or_default();
+        // 子进程已退出，最多等待 200ms 排空管道残余字节，避免后台孙进程（如 GradleDaemon）持有句柄导致死锁
+        let _ = stdout_rx.recv_timeout(std::time::Duration::from_millis(200));
+        let _ = stderr_rx.recv_timeout(std::time::Duration::from_millis(200));
+
+        let stdout_bytes = stdout_acc
+            .lock()
+            .map(|mut g| std::mem::take(&mut *g))
+            .unwrap_or_default();
+        let stderr_bytes = stderr_acc
+            .lock()
+            .map(|mut g| std::mem::take(&mut *g))
+            .unwrap_or_default();
 
         Ok(std::process::Output {
             status,

@@ -1,613 +1,299 @@
 use getopts::Options;
+use sbom_generator::compare::{compare, ecosystem, CompareOptions, Comparison, Metrics, Summary};
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
-use std::env;
-use std::fs;
-use std::path::Path;
+use std::{
+    collections::BTreeSet,
+    env, fs,
+    path::{Path, PathBuf},
+};
 
-struct SbomSummary {
-    tool_name: String,
-    spec_version: String,
-    total_components: usize,
-    unresolved_components: usize,
-    unique_purls: HashSet<String>,
-    ecosystems: HashMap<String, usize>,
-    ecosystem_unique_purls: HashMap<String, HashSet<String>>,
-}
-
-/// 判定是否为真实的第三方依赖库组件（剔除 type == "application" 的本地工程根模块及 @0.0.0 合成虚拟根节点）
-fn is_valid_third_party_lib(comp: &Value) -> bool {
-    let Some(purl) = comp["purl"].as_str() else {
-        return false;
-    };
-    let purl = purl.trim();
-    if purl.is_empty() {
-        return false;
-    }
-    if comp["type"].as_str() == Some("application") {
-        return false;
-    }
-    let version = comp["version"].as_str().unwrap_or("").trim();
-    if version == "0.0.0" || version.eq_ignore_ascii_case("runtime") || purl.ends_with("@0.0.0") {
-        return false;
-    }
-    true
-}
-
-/// 仅规范已知的编码与 PyPI 包名差异；版本大小写可能有意义，不能整体转小写。
-fn normalize_purl(raw: &str) -> String {
-    let base = raw
-        .trim()
-        .split('?')
-        .next()
-        .unwrap_or("")
-        .split('#')
-        .next()
-        .unwrap_or("");
-    let mut s = base
-        .replace("%2B", "+")
-        .replace("%2b", "+")
-        .replace("%40", "@");
-    if let Some(rest) = s.strip_prefix("pkg:pypi/") {
-        if let Some(at_pos) = rest.find('@') {
-            let pkg_name = rest[..at_pos]
-                .to_ascii_lowercase()
-                .split(['-', '_', '.'])
-                .filter(|part| !part.is_empty())
-                .collect::<Vec<_>>()
-                .join("-");
-            let ver_part = &rest[at_pos..];
-            s = format!("pkg:pypi/{}{}", pkg_name, ver_part);
-        }
-    } else if let Some(rest) = s.strip_prefix("pkg:golang/") {
-        if let Some(at_pos) = rest.find('@') {
-            let mod_path = &rest[..at_pos];
-            let raw_ver = &rest[at_pos + 1..];
-            let clean_ver = if !raw_ver.starts_with('v')
-                && raw_ver.chars().next().is_some_and(|c| c.is_ascii_digit())
-            {
-                format!("v{}", raw_ver)
-            } else {
-                raw_ver.to_string()
-            };
-            s = format!("pkg:golang/{}@{}", mod_path, clean_ver);
-        }
-    }
-    s
-}
-
-fn is_supported_ecosystem(eco: &str) -> bool {
-    matches!(eco, "cargo" | "golang" | "maven" | "npm" | "pypi")
-}
-
-fn explain_diff_reason(purl: &str, side: &str, is_target_eco: bool) -> &'static str {
-    if side == "B" {
-        if !is_target_eco {
-            "非本工程扫描语言生态（已从目标重合率中剔除）"
-        } else if purl.ends_with("@0")
-            || purl.ends_with("@0.0.1-SNAPSHOT")
-            || purl.contains("/com.service/")
-            || purl.starts_with("pkg:npm/client@")
-            || purl.starts_with("pkg:npm/react-")
-        {
-            "疑似本地工程模块：需核对来源清单后确认"
-        } else {
-            "参照工具独有项（需核对锁文件或动态运行环境）"
-        }
-    } else if purl.contains("@types/")
-        || [
-            "typescript",
-            "eslint",
-            "nodemon",
-            "ts-node",
-            "testcontainers",
-            "rest-assured",
-            "lombok",
-            "webpack",
-            "babel",
-        ]
-        .iter()
-        .any(|k| purl.contains(k))
-    {
-        "疑似开发/构建/测试依赖：需核对双方扫描参数"
+fn ratio(n: usize, d: usize) -> String {
+    if d == 0 {
+        "N/A".into()
     } else {
-        "仅本工具出现：需核对清单、锁文件及扫描范围"
+        format!("{:.2}% ({n}/{d})", n as f64 / d as f64 * 100.0)
     }
 }
-
-fn ratio_text(numerator: usize, denominator: usize) -> String {
-    if denominator == 0 {
-        "N/A".to_string()
-    } else {
-        format!(
-            "{:.2}% ({}/{})",
-            numerator as f64 / denominator as f64 * 100.0,
-            numerator,
-            denominator
-        )
-    }
+fn md(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('\\', "\\\\")
+        .replace('|', "\\|")
+        .replace('`', "\\`")
+        .replace(['\n', '\r'], " ")
 }
-
-fn analyze_sbom(path: &str) -> anyhow::Result<SbomSummary> {
-    let content =
-        fs::read_to_string(path).map_err(|e| anyhow::anyhow!("无法读取文件 {}: {}", path, e))?;
-    let json: Value = serde_json::from_str(&content)
-        .map_err(|e| anyhow::anyhow!("JSON 解析失败 {}: {}", path, e))?;
-
-    if json["bomFormat"].as_str() != Some("CycloneDX") {
-        anyhow::bail!("{} 不是 CycloneDX SBOM", path);
-    }
-    let components = json["components"]
-        .as_array()
-        .ok_or_else(|| anyhow::anyhow!("{} 缺少 components 数组", path))?;
-
-    let spec_version = json["specVersion"].as_str().unwrap_or("未知").to_string();
-
-    // 提取工具名称
-    let mut tool_name = "Unknown".to_string();
-    if let Some(tools) = json["metadata"]["tools"].as_array() {
-        if let Some(first) = tools.first() {
-            if let Some(n) = first["name"].as_str() {
-                tool_name = n.to_string();
-            }
-        }
-    } else if let Some(components) = json["metadata"]["tools"]["components"].as_array() {
-        if let Some(first) = components.first() {
-            if let Some(n) = first["name"].as_str() {
-                let v = first["version"].as_str().unwrap_or("");
-                tool_name = format!("{} (v{})", n, v);
-            }
-        }
-    }
-
-    let mut total_components = 0;
-    let mut unresolved_components = 0;
-    let mut unique_purls = HashSet::new();
-    let mut ecosystems: HashMap<String, usize> = HashMap::new();
-    let mut ecosystem_unique_purls: HashMap<String, HashSet<String>> = HashMap::new();
-
-    for comp in components {
-        if !is_valid_third_party_lib(comp) {
-            continue;
-        }
-        total_components += 1;
-        if comp["version"].as_str().unwrap_or("").trim().is_empty() {
-            unresolved_components += 1;
-            continue;
-        }
-
-        if let Some(raw_purl) = comp["purl"].as_str() {
-            let norm_purl = normalize_purl(raw_purl);
-            if !norm_purl.is_empty() {
-                let eco = extract_eco(&norm_purl);
-                unique_purls.insert(norm_purl.clone());
-                *ecosystems.entry(eco.clone()).or_insert(0) += 1;
-                ecosystem_unique_purls
-                    .entry(eco)
-                    .or_default()
-                    .insert(norm_purl);
-            }
-        }
-    }
-
-    Ok(SbomSummary {
-        tool_name,
-        spec_version,
-        total_components,
-        unresolved_components,
-        unique_purls,
-        ecosystems,
-        ecosystem_unique_purls,
-    })
-}
-
-fn extract_eco(purl: &str) -> String {
-    if let Some(stripped) = purl.strip_prefix("pkg:") {
-        if let Some(slash_pos) = stripped.find('/') {
-            return stripped[..slash_pos].to_string();
-        }
-    }
-    "unknown".to_string()
-}
-
-fn print_usage(program: &str, opts: Options) {
-    let brief = format!("用法: {} [选项]", program);
-    print!("{}", opts.usage(&brief));
-}
-
-pub fn main() -> anyhow::Result<()> {
-    let args: Vec<String> = env::args().collect();
-    let program = args[0].clone();
-
-    let mut opts = Options::new();
-    opts.optflag("h", "help", "显示帮助信息");
-    opts.optopt("", "reference-version", "参照工具的实际版本", "VERSION");
-    opts.optopt(
-        "a",
-        "our-sbom",
-        "本平台生成的 SBOM JSON 路径 (默认: test/mircoservices/microservices-demo_sbom.json)",
-        "PATH",
-    );
-    opts.optopt(
-        "b",
-        "competitor-sbom",
-        "行业头部工具 (如 Trivy/Syft) 生成的 SBOM JSON 路径 (默认: test/mircoservices/sbom-cyclonedx.json)",
-        "PATH",
-    );
-    opts.optopt(
-        "o",
-        "output",
-        "导出的 Markdown 评测报告路径 (默认: test/benchmark_report.md)",
-        "PATH",
-    );
-
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(f) => anyhow::bail!("解析参数失败: {}", f),
-    };
-
-    if matches.opt_present("h") {
-        print_usage(&program, opts);
-        return Ok(());
-    }
-
-    let our_path = matches
-        .opt_str("a")
-        .unwrap_or_else(|| "test/mircoservices/microservices-demo_sbom.json".to_string());
-    let comp_path = matches
-        .opt_str("b")
-        .unwrap_or_else(|| "test/mircoservices/sbom-cyclonedx.json".to_string());
-    let output_md = matches
-        .opt_str("o")
-        .unwrap_or_else(|| "test/benchmark_report.md".to_string());
-    let reference_version = matches
-        .opt_str("reference-version")
-        .unwrap_or_else(|| "未提供".to_string());
-
-    println!(
-        "\n🔍 正在解析待对比的 SBOM 文件 (已自动剥离本地 application 根模块并完成 PURL 规范化)..."
-    );
-    println!("  - 本平台 SBOM [A]: {}", our_path);
-    println!("  - 参照工具 SBOM [B]: {}", comp_path);
-
-    let summary_a = analyze_sbom(&our_path)?;
-    let summary_b = analyze_sbom(&comp_path)?;
-    println!(
-        "未解析版本组件（纳入记录总数，不参与精确 PURL 重合率）：A={}，B={}",
-        summary_a.unresolved_components, summary_b.unresolved_components
-    );
-
-    // 计算集合交集与独有集
-    let purls_a = &summary_a.unique_purls;
-    let purls_b = &summary_b.unique_purls;
-
-    let common_purls: HashSet<_> = purls_a.intersection(purls_b).cloned().collect();
-    let only_in_a: HashSet<_> = purls_a.difference(purls_b).cloned().collect();
-    let only_in_b: HashSet<_> = purls_b.difference(purls_a).cloned().collect();
-
-    // Include every supported ecosystem, even when A misses it entirely.
-    let is_target_eco = is_supported_ecosystem;
-
-    // 计算本工程目标核心生态在参照工具 B 中的唯一包集合与共有交集
-    let supported_purls_b: HashSet<_> = purls_b
-        .iter()
-        .filter(|p| is_target_eco(&extract_eco(p)))
-        .cloned()
-        .collect();
-    let supported_common: HashSet<_> = common_purls
-        .iter()
-        .filter(|p| is_target_eco(&extract_eco(p)))
-        .cloned()
-        .collect();
-
-    let overlap_supported = ratio_text(supported_common.len(), supported_purls_b.len());
-    let overlap_total = ratio_text(common_purls.len(), purls_b.len());
-    let supported_purls_a: HashSet<_> = purls_a
-        .iter()
-        .filter(|p| is_target_eco(&extract_eco(p)))
-        .collect();
-    let union_len = supported_purls_a.len() + supported_purls_b.len() - supported_common.len();
-    let jaccard = ratio_text(supported_common.len(), union_len);
-
-    // 格式化输出终端报表
-    println!(
-        "\n{:=^92}",
-        " 📊 软件物料清单 (SBOM) 第三方依赖库横向对比评测结果 "
-    );
-    println!(
-        "{:<34} | {:<26} | {:<26}",
-        "对比评测指标项 (Metrics)",
-        format!("本平台 ({})", summary_a.tool_name),
-        format!("参照基准 ({})", summary_b.tool_name)
-    );
-    println!("{:-<92}", "");
-    println!(
-        "{:<34} | {:<26} | {:<26}",
-        "CycloneDX 规范版本",
-        format!("v{}", summary_a.spec_version),
-        format!("v{}", summary_b.spec_version)
-    );
-    println!(
-        "{:<34} | {:<26} | {:<26}",
-        "第三方组件记录数",
-        format!("{} 个", summary_a.total_components),
-        format!("{} 个", summary_b.total_components)
-    );
-    println!(
-        "{:<34} | {:<26} | {:<26}",
-        "去重唯一依赖包数 (Unique PURLs)",
-        format!("{} 个", summary_a.unique_purls.len()),
-        format!(
-            "{} 个 (本工程目标生态 {} 个)",
-            summary_b.unique_purls.len(),
-            supported_purls_b.len()
-        )
-    );
-    println!(
-        "{:<34} | {:<26} | {:<26}",
-        "目标生态相对重合率", overlap_supported, "参照集合"
-    );
-    println!(
-        "{:<34} | {:<26} | {:<26}",
-        "全仓库相对重合率", overlap_total, "参照集合"
-    );
-    println!(
-        "{:<34} | {:<26} | {:<26}",
-        "仅一侧出现的 PURL",
-        format!("{} 个 (待逐项核验)", only_in_a.len()),
-        format!("{} 个 (待逐项核验)", only_in_b.len())
-    );
-
-    println!("{:-<92}", "");
-    println!("🌐 双方全部语言生态第三方组件记录对比:");
-
-    let mut project_ecos: Vec<_> = summary_a
-        .ecosystems
-        .keys()
-        .chain(summary_b.ecosystems.keys())
-        .cloned()
-        .collect::<HashSet<_>>()
+fn listing<'a>(items: impl IntoIterator<Item = &'a String>) -> String {
+    let rows = items
         .into_iter()
-        .collect();
-    project_ecos.sort();
-
-    let excluded_ecos: Vec<_> = summary_b
-        .ecosystems
-        .keys()
-        .filter(|e| !is_target_eco(e))
-        .cloned()
-        .collect();
-
-    for eco in &project_ecos {
-        let inst_a = summary_a.ecosystems.get(eco).copied().unwrap_or(0);
-        let inst_b = summary_b.ecosystems.get(eco).copied().unwrap_or(0);
-        let uniq_a = summary_a
-            .ecosystem_unique_purls
-            .get(eco)
-            .map(|s| s.len())
-            .unwrap_or(0);
-        let uniq_b = summary_b
-            .ecosystem_unique_purls
-            .get(eco)
-            .map(|s| s.len())
-            .unwrap_or(0);
-        let com_cnt = common_purls
-            .iter()
-            .filter(|p| &extract_eco(p) == eco)
-            .count();
-        let cov_str = if uniq_b > 0 {
-            format!(
-                "{:.1}% ({}/{})",
-                (com_cnt as f64 / uniq_b as f64) * 100.0,
-                com_cnt,
-                uniq_b
-            )
-        } else {
-            "N/A".to_string()
-        };
-
-        println!(
-            "  • [{:<7}] 本系统: {:>4} 记录 ({:>4} 唯一) | 参照: {:>4} 记录 ({:>4} 唯一) | 相对重合率: {}",
-            eco.to_uppercase(),
-            inst_a,
-            uniq_a,
-            inst_b,
-            uniq_b,
-            cov_str
-        );
-    }
-
-    if !excluded_ecos.is_empty() {
-        let ex_desc = excluded_ecos
-            .iter()
-            .map(|e| {
-                format!(
-                    "{} ({} 记录 / {} 唯一)",
-                    e.to_uppercase(),
-                    summary_b.ecosystems.get(e).unwrap_or(&0),
-                    summary_b
-                        .ecosystem_unique_purls
-                        .get(e)
-                        .map(|s| s.len())
-                        .unwrap_or(0)
-                )
-            })
-            .collect::<Vec<_>>()
-            .join(", ");
-        println!("  ℹ️  [已过滤非本工程扫描语言]: {}", ex_desc);
-    }
-    println!("{:=^92}", "");
-
-    // 生成适用于毕业论文的严谨 Markdown 报告
-    let inst_diff = summary_a.total_components as i64 - summary_b.total_components as i64;
-
-    let mut eco_rows_md = String::new();
-    for eco in &project_ecos {
-        let inst_a = summary_a.ecosystems.get(eco).copied().unwrap_or(0);
-        let inst_b = summary_b.ecosystems.get(eco).copied().unwrap_or(0);
-        let uniq_a = summary_a
-            .ecosystem_unique_purls
-            .get(eco)
-            .map(|s| s.len())
-            .unwrap_or(0);
-        let uniq_b = summary_b
-            .ecosystem_unique_purls
-            .get(eco)
-            .map(|s| s.len())
-            .unwrap_or(0);
-        let com_cnt = common_purls
-            .iter()
-            .filter(|p| &extract_eco(p) == eco)
-            .count();
-        let cov_str = if uniq_b > 0 {
-            format!(
-                "**{:.1}%** ({}/{})",
-                (com_cnt as f64 / uniq_b as f64) * 100.0,
-                com_cnt,
-                uniq_b
-            )
-        } else {
-            "N/A".to_string()
-        };
-        let note = if is_target_eco(eco) {
-            "差异需核对清单、锁文件、版本及扫描参数"
-        } else {
-            "非目标生态，不计入目标指标"
-        };
-        eco_rows_md.push_str(&format!(
-            "| **{}** | **{}** ({}) | {} ({}) | {} | {} | {} |\n",
-            eco.to_uppercase(),
-            inst_a,
-            uniq_a,
-            inst_b,
-            uniq_b,
-            com_cnt,
-            cov_str,
-            note
-        ));
-    }
-
-    let mut only_a_list: Vec<_> = only_in_a.iter().cloned().collect();
-    let mut only_b_list: Vec<_> = only_in_b.iter().cloned().collect();
-    only_a_list.sort();
-    only_b_list.sort();
-    let only_a_rows = only_a_list
-        .iter()
-        .map(|p| {
-            let reason = explain_diff_reason(p, "A", is_target_eco(&extract_eco(p)));
-            format!("- `{p}` — **{reason}**\n")
-        })
+        .map(|v| format!("- {}\n", md(v)))
         .collect::<String>();
-    let only_b_rows = only_b_list
+    if rows.is_empty() {
+        "无。\n".into()
+    } else {
+        rows
+    }
+}
+fn metric_row(label: &str, metric: &Metrics) -> String {
+    format!(
+        "| {} | {} | {} | {} | {} | {} |\n",
+        md(label),
+        metric.a,
+        metric.b,
+        metric.common,
+        ratio(metric.common, metric.b),
+        ratio(metric.common, metric.a)
+    )
+}
+fn counts(summary: &Summary) -> String {
+    summary
+        .excluded
         .iter()
-        .map(|p| {
-            let reason = explain_diff_reason(p, "B", is_target_eco(&extract_eco(p)));
-            format!("- `{p}` — **{reason}**\n")
-        })
-        .collect::<String>();
+        .map(|(reason, n)| format!("{reason}={n}"))
+        .collect::<Vec<_>>()
+        .join(", ")
+}
 
-    let markdown_content = format!(
-        r#"# SBOM 组件集合对比报告
+fn output_path(path: &str) -> anyhow::Result<PathBuf> {
+    let path = Path::new(path);
+    if path.exists() {
+        return Ok(path.canonicalize()?);
+    }
+    let parent = path
+        .parent()
+        .filter(|p| !p.as_os_str().is_empty())
+        .unwrap_or(Path::new("."));
+    Ok(parent.canonicalize()?.join(
+        path.file_name()
+            .ok_or_else(|| anyhow::anyhow!("输出路径没有文件名"))?,
+    ))
+}
 
-参照 SBOM 不是独立真值；相对重合率不等于准确率或召回率。独有项不自动代表误报或漏检。
-
-- 本工具：{our_file}
-- 参照文件：{comp_file}
-- 参照工具版本：{reference_version}
-
-## 统计规则
-
-目标生态固定为 Cargo、Go、Maven、npm、PyPI，即使本工具未检出某生态，也保留该生态的参照包。排除 type=application、0.0.0 及 runtime；未解析版本计入记录数并单列，不参与精确版本集合比较。PURL 去除 qualifier/subpath，并统一已知编码、PyPI 名称及 Go 版本前缀。该过滤可能误排合法的 0.0.0 组件；记录数不代表已核实的物理部署实例。
-
-## 汇总
-
-| 指标 | 本工具 | 参照 SBOM |
-| --- | ---: | ---: |
-| CycloneDX 版本 | {spec_a} | {spec_b} |
-| 组件记录数 | {total_a} | {total_b} |
-| 版本未解析记录数 | {unresolved_a} | {unresolved_b} |
-| 去重 PURL | {unique_a} | {unique_b} |
-| 记录数差值 | {inst_diff:+} | — |
-| 目标生态相对重合率（交集 / 参照集合） | {overlap_supported} | 目标生态 {supp_b} 个 |
-| 全部生态相对重合率 | {overlap_total} | 全部 {unique_b} 个 |
-| 目标生态 Jaccard（交集 / 并集） | {jaccard} | — |
-| 仅本工具出现 | {only_a_count} | 待核验 |
-| 仅参照工具出现 | {only_b_count} | 待核验 |
-
-## 各生态
-
-| 生态 | 本工具记录数（唯一 PURL） | 参照记录数（唯一 PURL） | 交集 | 相对重合率 | 备注 |
-| --- | ---: | ---: | ---: | ---: | --- |
-{eco_rows}
-## 待核验的差异 PURL
-
-以下原因仅为排查线索，未逐项回查源码，不能作为已验证结论。
-
-### 仅本工具出现 ({only_a_count} 项)
-
-{only_a_rows}
-### 仅参照工具出现 ({only_b_count} 项)
-
-{only_b_rows}
-## 解读限制
-
-本报告仅衡量这两份文件的组件集合关系。差异应回查相同源码提交、清单和锁文件，核对开发/测试依赖范围、扫描参数及解析方式。许可证、依赖边及运行时加载证据需独立评估；不能仅凭重合率认定整体准确度或工具优劣。
-"#,
-        our_file = our_path,
-        comp_file = comp_path,
-        spec_a = summary_a.spec_version,
-        spec_b = summary_b.spec_version,
-        unresolved_a = summary_a.unresolved_components,
-        unresolved_b = summary_b.unresolved_components,
-        total_a = summary_a.total_components,
-        total_b = summary_b.total_components,
-        inst_diff = inst_diff,
-        unique_a = summary_a.unique_purls.len(),
-        unique_b = summary_b.unique_purls.len(),
-        supp_b = supported_purls_b.len(),
-        only_b_count = only_in_b.len(),
-        reference_version = reference_version,
-        only_a_count = only_in_a.len(),
-        jaccard = jaccard,
-        overlap_supported = overlap_supported,
-        overlap_total = overlap_total,
-        eco_rows = eco_rows_md,
-        only_a_rows = only_a_rows,
-        only_b_rows = only_b_rows,
+fn validate_outputs(a: &str, b: &str, output: &str, json: Option<&str>) -> anyhow::Result<()> {
+    let inputs = [Path::new(a).canonicalize()?, Path::new(b).canonicalize()?];
+    let mut outputs = vec![output_path(output)?];
+    if let Some(json) = json {
+        outputs.push(output_path(json)?);
+    }
+    let same = |a: &Path, b: &Path| {
+        if cfg!(windows) {
+            a.to_string_lossy()
+                .eq_ignore_ascii_case(&b.to_string_lossy())
+        } else {
+            a == b
+        }
+    };
+    anyhow::ensure!(
+        !outputs
+            .iter()
+            .any(|out| inputs.iter().any(|input| same(out, input))),
+        "报告输出路径不能覆盖输入 SBOM"
     );
-
-    fs::write(&output_md, markdown_content)?;
-    println!("\n📝 严谨版评测实验报告已自动生成！");
-    println!("   文件保存至: {}", Path::new(&output_md).display());
-
+    anyhow::ensure!(
+        outputs.len() < 2 || !same(&outputs[0], &outputs[1]),
+        "Markdown 与 JSON 报告必须使用不同路径"
+    );
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn normalization_preserves_version_case_and_aligns_pypi_name() {
-        assert_eq!(
-            normalize_purl("pkg:golang/example.com/Module@v1.0.0-RC1?type=module"),
-            "pkg:golang/example.com/Module@v1.0.0-RC1"
-        );
-        assert_eq!(
-            normalize_purl("pkg:pypi/My_Package@1.0"),
-            "pkg:pypi/my-package@1.0"
-        );
-        assert_eq!(
-            normalize_purl("pkg:pypi/My__..Package@1.0-RC1"),
-            "pkg:pypi/my-package@1.0-RC1"
-        );
-    }
-
-    #[test]
-    fn invalid_versions_and_empty_reference_are_not_successes() {
-        assert!(!is_valid_third_party_lib(
-            &serde_json::json!({"type":"library","version":"runtime","purl":"pkg:maven/org.postgresql/postgresql@runtime"})
+fn graph_details(label: &str, summary: &Summary) -> String {
+    format!("### {} 图诊断\n\n- dependencies 是否提供：{}\n- 被过滤的边：{}\n- 涉及未知版本的边：{}\n- 悬空引用：{}\n- 重复引用：{}\n\n{}{}\n", label, summary.graph_available, summary.filtered_edges, summary.unresolved_edges, summary.dangling_refs.len(), summary.duplicate_refs.len(), listing(&summary.dangling_refs), listing(&summary.duplicate_refs))
+}
+fn report(result: &Comparison, path_a: &str, path_b: &str, reference: &str) -> String {
+    let a = &result.a;
+    let b = &result.b;
+    let mut out = format!("# SBOM 组件与依赖图对比报告\n\n参照 SBOM 不是独立真值；相对重合率不等于准确率或召回率，独有项不自动代表误报或漏检。\n\n- A：{} ({})\n- B：{} ({})\n- 参照工具版本：{}\n\n## 统计规则\n\n目标生态：{}。应用节点{}；合法 0.0.0 版本{}。PURL 去掉 qualifier/subpath 后按包名和版本比较，来源路径另行比较。版本范围、占位符、version 与 PURL 版本冲突不进入精确匹配；只有 PURL 提供版本时可使用其版本。嵌套 components 一并读取。\n\n", md(&a.tool_name), md(path_a), md(&b.tool_name), md(path_b), md(reference), result.policy.ecosystems.iter().cloned().collect::<Vec<_>>().join(", "), if result.policy.include_applications { "纳入" } else { "排除" }, if result.policy.exclude_zero_versions { "显式排除" } else { "保留" });
+    out.push_str(&format!("## 汇总\n\n| 指标 | 本工具 | 参照 SBOM |\n| --- | ---: | ---: |\n| CycloneDX 版本 | {} | {} |\n| 组件记录数 | {} | {} |\n| 版本未解析记录数 | {} | {} |\n| 其中版本冲突记录数 | {} | {} |\n| 去重 PURL（全部生态） | {} | {} |\n| 目标生态相对重合率（交集 / 参照集合） | {} | — |\n| 全部生态相对重合率 | {} | — |\n| 目标生态 Jaccard（交集 / 并集） | {} | — |\n| 仅 A 出现的包身份 | {} | — |\n| 仅 B 出现的包身份 | — | {} |\n| 同包版本集合差异组数 | {} | — |\n| 同包版本未知组数 | {} | — |\n\n", md(&a.spec_version), md(&b.spec_version), a.total_components, b.total_components, a.unresolved_components, b.unresolved_components, a.inconsistent_components, b.inconsistent_components, a.keys.len(), b.keys.len(), ratio(result.exact.common,result.exact.b), ratio(result.all_exact.common,result.all_exact.b), ratio(result.exact.common,result.exact.a + result.exact.b - result.exact.common), result.only_identities_a.len(), result.only_identities_b.len(), result.version_differences.len(), result.unknown_versions.len()));
+    out.push_str("## 目标生态匹配层次\n\n| 层次 | A | B | 交集 | 相对 B 重合率 | 相对 A 重合率 |\n| --- | ---: | ---: | ---: | --- | --- |\n");
+    out.push_str(&metric_row("包名＋版本", &result.exact));
+    out.push_str(&metric_row("包身份（忽略版本）", &result.identity));
+    out.push_str(&metric_row(
+        "记录重数（逐包取两侧较小计数）",
+        &result.occurrences,
+    ));
+    out.push_str(&metric_row(
+        "包名＋版本＋来源路径记录重数",
+        &result.located_occurrences,
+    ));
+    out.push_str(&format!("\n缺少路径的已解析目标记录：A={}，B={}。记录重数不代表已核实的物理实例。路径只统一分隔符和前导 ./，不猜测不同绝对扫描根目录的对应关系。\n\n", a.missing_locations, b.missing_locations));
+    out.push_str("## 各生态\n\n| 生态 | A 唯一 PURL | B 唯一 PURL | 交集 | 相对 B 重合率 | 范围 |\n| --- | ---: | ---: | ---: | --- | --- |\n");
+    let ecosystems: BTreeSet<_> = a
+        .identities
+        .iter()
+        .chain(&b.identities)
+        .map(|p| ecosystem(p).to_string())
+        .collect();
+    for eco in ecosystems {
+        let sa: BTreeSet<_> = a.keys.iter().filter(|p| ecosystem(p) == eco).collect();
+        let sb: BTreeSet<_> = b.keys.iter().filter(|p| ecosystem(p) == eco).collect();
+        let common = sa.intersection(&sb).count();
+        out.push_str(&format!(
+            "| **{}** | {} | {} | {} | {} | {} |\n",
+            md(&eco.to_uppercase()),
+            sa.len(),
+            sb.len(),
+            common,
+            ratio(common, sb.len()),
+            if result.policy.ecosystems.contains(&eco) {
+                "目标生态"
+            } else {
+                "范围外，未计入目标指标"
+            }
         ));
-        assert_eq!(ratio_text(0, 0), "N/A");
     }
+    out.push_str("\n## 差异分类\n\n### 同包版本集合差异\n\n| 包身份 | A 版本 | B 版本 | 仅 A 的版本 | 仅 B 的版本 |\n| --- | --- | --- | --- | --- |\n");
+    for row in &result.version_differences {
+        let join = |v: &BTreeSet<String>| md(&v.iter().cloned().collect::<Vec<_>>().join(", "));
+        out.push_str(&format!(
+            "| {} | {} | {} | {} | {} |\n",
+            md(&row.identity),
+            join(&row.versions_a),
+            join(&row.versions_b),
+            join(&row.only_a),
+            join(&row.only_b)
+        ));
+    }
+    out.push_str(&format!("\n### 同包版本未知\n\n{}\n### 仅 A 出现的包身份\n\n{}\n### 仅 B 出现的包身份\n\n{}\n### 精确 PURL 差集（包含版本差异）\n\nA − B：\n\n{}\nB − A：\n\n{}\n", listing(&result.unknown_versions), listing(&result.only_identities_a), listing(&result.only_identities_b), listing(&result.only_keys_a), listing(&result.only_keys_b)));
+    out.push_str("## 依赖边独立比较\n\n只比较目标生态内两端均有确定版本的有向包级依赖边；应用根边、同包自边和未知版本边另行过滤。重复边去重，bom-ref 仅在各自文件内寻址，不跨工具直接比较。\n\n");
+    if let Some(graph) = &result.graph {
+        out.push_str(&format!(
+            "A={}，B={}，共有={}；相对 B 重合率={}，Jaccard={}。\n\n",
+            graph.a,
+            graph.b,
+            graph.common,
+            ratio(graph.common, graph.b),
+            ratio(graph.common, graph.a + graph.b - graph.common)
+        ));
+    } else {
+        out.push_str("依赖边重合率：N/A（缺少图或关系口径不同）。\n\n");
+    }
+    out.push_str(&format!(
+        "仅 A 的边：\n\n{}\n仅 B 的边：\n\n{}\n",
+        listing(&result.only_edges_a),
+        listing(&result.only_edges_b)
+    ));
+    out.push_str(&graph_details("A", a));
+    out.push_str(&graph_details("B", b));
+    out.push_str(&format!(
+        "## 输入诊断\n\n- A 排除记录：{}\n- B 排除记录：{}\n\n{}{}\n",
+        md(&counts(a)),
+        md(&counts(b)),
+        listing(&a.diagnostics),
+        listing(&b.diagnostics)
+    ));
+    out.push_str("## 解读限制\n\n");
+    out.push_str(&listing(result.warnings.iter()));
+    out.push_str("\n未自动验证源码 commit、目标平台和依赖分组一致；许可证、漏洞和运行时加载证据不计入组件重合率。图指标只衡量已报告且可解析的边，缺少 dependencies 与显式空数组分别处理。不同版本集合可能同时含共有版本，版本差异与精确共有并不互斥。\n");
+    out
+}
+
+fn main() -> anyhow::Result<()> {
+    let args: Vec<_> = env::args().collect();
+    let mut options = Options::new();
+    options.optflag("h", "help", "显示帮助");
+    options.optopt("a", "our-sbom", "A CycloneDX JSON", "PATH");
+    options.optopt("b", "competitor-sbom", "B CycloneDX JSON", "PATH");
+    options.optopt("o", "output", "Markdown 报告", "PATH");
+    options.optopt(
+        "",
+        "json-output",
+        "结构化比较报告（含差异与图诊断）",
+        "PATH",
+    );
+    options.optopt("", "reference-version", "参照工具实际版本", "VERSION");
+    options.optopt(
+        "",
+        "ecosystems",
+        "目标生态，逗号分隔；默认 cargo,golang,maven,npm,pypi",
+        "LIST",
+    );
+    options.optflag(
+        "",
+        "include-applications",
+        "纳入明确标记为 application 的组件",
+    );
+    options.optflag(
+        "",
+        "exclude-zero-versions",
+        "显式排除 0.0.0/v0.0.0；默认保留合法版本",
+    );
+    let args = options.parse(&args[1..])?;
+    anyhow::ensure!(args.free.is_empty(), "不支持位置参数: {:?}", args.free);
+    if args.opt_present("help") {
+        print!("{}", options.usage("用法: sbom_compare [选项]"));
+        return Ok(());
+    }
+    let path_a = args
+        .opt_str("a")
+        .unwrap_or_else(|| "test/mircoservices/microservices-demo_sbom.json".into());
+    let path_b = args
+        .opt_str("b")
+        .unwrap_or_else(|| "test/mircoservices/sbom-cyclonedx.json".into());
+    let output = args
+        .opt_str("o")
+        .unwrap_or_else(|| "test/benchmark_report.md".into());
+    let mut policy = CompareOptions {
+        include_applications: args.opt_present("include-applications"),
+        exclude_zero_versions: args.opt_present("exclude-zero-versions"),
+        ..Default::default()
+    };
+    if let Some(ecos) = args.opt_str("ecosystems") {
+        policy.ecosystems = ecos
+            .split(',')
+            .map(str::trim)
+            .filter(|v| !v.is_empty())
+            .map(str::to_ascii_lowercase)
+            .collect();
+        anyhow::ensure!(
+            policy.ecosystems.iter().all(|e| e
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '+' | '-'))),
+            "目标生态名称无效"
+        );
+    }
+    let a: Value = serde_json::from_str(&fs::read_to_string(&path_a)?)?;
+    let b: Value = serde_json::from_str(&fs::read_to_string(&path_b)?)?;
+    let result = compare(&a, &b, policy)?;
+    let markdown = report(
+        &result,
+        &path_a,
+        &path_b,
+        &args.opt_str("reference-version").unwrap_or_else(|| {
+            result
+                .b
+                .tool_version
+                .clone()
+                .unwrap_or_else(|| "未提供".into())
+        }),
+    );
+    // Finish validation and serialization before touching existing reports.
+    let json = args
+        .opt_str("json-output")
+        .map(|path| serde_json::to_string_pretty(&result).map(|json| (path, json)))
+        .transpose()?;
+    validate_outputs(
+        &path_a,
+        &path_b,
+        &output,
+        args.opt_str("json-output").as_deref(),
+    )?;
+    fs::write(&output, markdown)?;
+    if let Some((path, json)) = json {
+        fs::write(path, json)?;
+    }
+    println!(
+        "精确版本相对 B 重合率: {}；Jaccard: {}",
+        ratio(result.exact.common, result.exact.b),
+        ratio(
+            result.exact.common,
+            result.exact.a + result.exact.b - result.exact.common
+        )
+    );
+    println!(
+        "包身份相对 B 重合率: {}；版本集合差异 {} 组；版本未知 {} 组",
+        ratio(result.identity.common, result.identity.b),
+        result.version_differences.len(),
+        result.unknown_versions.len()
+    );
+    println!("报告: {output}");
+    Ok(())
 }

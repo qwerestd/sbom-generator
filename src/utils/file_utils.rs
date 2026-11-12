@@ -38,6 +38,17 @@ fn is_ignored_dir(entry: &DirEntry, root: &Path) -> bool {
 }
 
 pub fn get_files(directory: &str) -> Result<Vec<PathBuf>> {
+    get_files_with_options(directory, &ScanOptions::default())
+}
+
+#[derive(Clone, Default)]
+pub struct ScanOptions {
+    pub installed: bool,
+    pub artifacts: bool,
+    pub exclude_dirs: Vec<String>,
+}
+
+pub fn get_files_with_options(directory: &str, options: &ScanOptions) -> Result<Vec<PathBuf>> {
     let root_path = Path::new(directory);
     if !root_path.exists() {
         anyhow::bail!("directory does not exist: {}", directory);
@@ -48,7 +59,32 @@ pub fn get_files(directory: &str) -> Result<Vec<PathBuf>> {
     let walker = WalkDir::new(root_path)
         .follow_links(false)
         .into_iter()
-        .filter_entry(|e| !is_ignored_dir(e, root_path));
+        .filter_entry(|e| {
+            if e.path() == root_path || !e.file_type().is_dir() {
+                return true;
+            }
+            let name = e.file_name().to_string_lossy();
+            let relative = e
+                .path()
+                .strip_prefix(root_path)
+                .unwrap_or(e.path())
+                .to_string_lossy()
+                .replace('\\', "/");
+            if options
+                .exclude_dirs
+                .iter()
+                .any(|x| x == name.as_ref() || x.replace('\\', "/") == relative)
+            {
+                return false;
+            }
+            if options.installed && matches!(name.as_ref(), "node_modules" | ".venv" | "venv") {
+                return true;
+            }
+            if options.artifacts && matches!(name.as_ref(), "build" | "dist" | "target") {
+                return true;
+            }
+            !is_ignored_dir(e, root_path)
+        });
 
     for entry in walker {
         let dir_entry = entry?;

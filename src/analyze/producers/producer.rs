@@ -7,8 +7,44 @@ pub struct SbomProducerConfiguration {
     pub base_path: PathBuf,
 }
 
+pub struct Discovery {
+    pub dependencies: Vec<Dependency>,
+    pub complete: bool,
+    pub files: Vec<PathBuf>,
+}
+
 /// Generic trait for SBOM producer
-pub trait SbomProducer {
+pub trait SbomProducer: Sync {
+    fn discover(
+        &self,
+        paths: &[PathBuf],
+        config: &SbomProducerConfiguration,
+    ) -> anyhow::Result<Discovery> {
+        let mut dependencies = self.find_dependencies_checked(paths, config)?;
+        let complete = self.is_complete(paths, &dependencies);
+        for dep in &mut dependencies {
+            dep.properties
+                .entry("sbom:analysis:method".into())
+                .or_insert_with(|| "static".into());
+            dep.properties.insert(
+                "sbom:evidence:parser".into(),
+                std::any::type_name::<Self>().into(),
+            );
+            dep.properties
+                .insert("sbom:evidence:files".into(), serde_json::to_string(paths)?);
+            dep.properties
+                .insert("sbom:evidence:complete".into(), complete.to_string());
+        }
+        Ok(Discovery {
+            dependencies,
+            complete,
+            files: paths.to_vec(),
+        })
+    }
+    /// Only an explicitly complete resolution may suppress lower-priority inputs.
+    fn is_complete(&self, _paths: &[PathBuf], _deps: &[Dependency]) -> bool {
+        false
+    }
     /// Validate readable structured inputs before invoking permissive extractors.
     fn find_dependencies_checked(
         &self,

@@ -28,6 +28,20 @@ impl MavenCliDriver {
             .ok_or_else(|| "未检测到可用的 Maven 可执行文件 (mvn / mvnw)".to_string())?;
 
         let mut cmd = Command::new(mvn_bin);
+        if let Some(java_home) = CliLocator::resolve_java_home() {
+            cmd.env("JAVA_HOME", &java_home);
+            let java_bin = Path::new(&java_home).join("bin");
+            let mut new_path = java_bin.to_string_lossy().to_string();
+            if let Ok(cur_path) = std::env::var("PATH") {
+                new_path.push(if cfg!(target_os = "windows") {
+                    ';'
+                } else {
+                    ':'
+                });
+                new_path.push_str(&cur_path);
+            }
+            cmd.env("PATH", new_path);
+        }
         cmd.args([
             "dependency:tree",
             "-DoutputType=text",

@@ -213,6 +213,9 @@ impl PypiProducer {
             byte_cursor = line_end;
 
             let clean_line = line
+                .split("--hash")
+                .next()
+                .unwrap_or("")
                 .split('#')
                 .next()
                 .unwrap_or("")

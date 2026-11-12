@@ -7,7 +7,6 @@ use regex::Regex;
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyLocation, DependencyType};
 use crate::utils::file_utils::make_instance_id;
-use crate::utils::graph_utils::{build_reachable_dag, RawGraphNode};
 
 lazy_static! {
     static ref PEP503_NORM_RE: Regex = Regex::new(r"[-_.]+").unwrap();
@@ -71,66 +70,7 @@ impl PypiLockProducer {
         file_salt: &str,
         lock_path: &Path,
     ) -> anyhow::Result<Vec<Dependency>> {
-        let lock_toml: toml::Value = toml::from_str(content)?;
-        let Some(packages) = lock_toml.get("package").and_then(|p| p.as_array()) else {
-            return Ok(vec![]);
-        };
-
-        let location = Some(DependencyLocation::from_file(lock_path));
-        let mut raw_nodes = Vec::with_capacity(packages.len());
-
-        for pkg in packages {
-            let Some(name) = pkg.get("name").and_then(|n| n.as_str()) else {
-                continue;
-            };
-            let Some(version) = pkg.get("version").and_then(|v| v.as_str()) else {
-                continue;
-            };
-
-            let norm_name = pep503_normalize(name);
-            let raw_purl = format!("pkg:pypi/{}@{}", norm_name, version);
-            let valid_purl = Dependency::auto_fix_and_validate_purl(&raw_purl);
-            let instance_id = make_instance_id(&valid_purl, file_salt);
-
-            let mut raw_deps = Vec::new();
-
-            if let Some(deps_val) = pkg.get("dependencies") {
-                // 兼容 poetry.lock 的 [package.dependencies] 字典格式
-                if let Some(deps_table) = deps_val.as_table() {
-                    for dep_key in deps_table.keys() {
-                        raw_deps.push((pep503_normalize(dep_key), None));
-                    }
-                }
-                // 兼容 uv.lock 的 dependencies = [{ name = "..." }, ...] 数组格式
-                else if let Some(deps_arr) = deps_val.as_array() {
-                    for item in deps_arr {
-                        if let Some(dep_name) = item.get("name").and_then(|n| n.as_str()) {
-                            let dep_ver = item
-                                .get("version")
-                                .and_then(|v| v.as_str())
-                                .map(|s| s.to_string());
-                            raw_deps.push((pep503_normalize(dep_name), dep_ver));
-                        } else if let Some(dep_str) = item.as_str() {
-                            raw_deps.push((pep503_normalize(dep_str), None));
-                        }
-                    }
-                }
-            }
-
-            raw_nodes.push(RawGraphNode {
-                group: None,
-                name: name.to_string(),
-                version: Some(version.to_string()),
-                purl: valid_purl,
-                instance_id,
-                raw_deps,
-                lookup_key: norm_name,
-                force_root: false,
-                location: location.clone(),
-            });
-        }
-
-        Ok(build_reachable_dag(raw_nodes))
+        super::lock_graph::parse(content, file_salt, lock_path)
     }
 
     /// 解析 `Pipfile.lock` (JSON)
@@ -250,7 +190,7 @@ version = "0.36.3"
         assert_eq!(deps.len(), 3);
         let fastapi = deps.iter().find(|d| d.name == "fastapi").unwrap();
         assert_eq!(fastapi.dependencies.len(), 2);
-        assert_eq!(fastapi.r#type, DependencyType::Application);
+        assert_eq!(fastapi.r#type, DependencyType::Library);
     }
 
     #[test]

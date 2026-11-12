@@ -42,13 +42,27 @@ impl GradleDynamicProducer {
             .ok_or_else(|| anyhow::anyhow!("未检测到可用的 Gradle / gradlew 可执行文件"))?;
 
         let mut process_cmd = Command::new(cmd);
+        if let Some(java_home) = CliLocator::resolve_java_home() {
+            process_cmd.env("JAVA_HOME", &java_home);
+            let java_bin = Path::new(&java_home).join("bin");
+            let mut new_path = java_bin.to_string_lossy().to_string();
+            if let Ok(cur_path) = std::env::var("PATH") {
+                new_path.push(if cfg!(target_os = "windows") {
+                    ';'
+                } else {
+                    ':'
+                });
+                new_path.push_str(&cur_path);
+            }
+            process_cmd.env("PATH", new_path);
+        }
         process_cmd
             .current_dir(work_dir)
             .arg("dependencies")
-            .arg("--configuration")
-            .arg("runtimeClasspath");
+            .arg("buildEnvironment")
+            .arg("--console=plain");
 
-        let output = CliLocator::run_with_timeout(process_cmd, std::time::Duration::from_secs(30))?;
+        let output = CliLocator::run_with_timeout(process_cmd, std::time::Duration::from_secs(90))?;
 
         if !output.status.success() {
             let err_msg = String::from_utf8_lossy(&output.stderr);
@@ -120,7 +134,27 @@ impl GradleDynamicProducer {
             return Ok(vec![]);
         }
 
-        Ok(stack_builder.into_dependencies())
+        let mut deps = stack_builder.into_dependencies();
+        for dep in &mut deps {
+            dep.properties.insert(
+                "sbom:gradle:inventory".into(),
+                "all-reported-configurations-and-build-environment".into(),
+            );
+            if dep.r#type == crate::model::dependency::DependencyType::Library {
+                let (version, requirement) =
+                    crate::utils::version_spec::manifest_version(dep.version.as_deref(), "gradle");
+                if version.is_none() {
+                    dep.purl = format!(
+                        "pkg:maven/{}/{}",
+                        dep.group.as_deref().unwrap_or(""),
+                        dep.name
+                    );
+                }
+                dep.version = version;
+                dep.version_requirement = requirement;
+            }
+        }
+        Ok(deps)
     }
 }
 

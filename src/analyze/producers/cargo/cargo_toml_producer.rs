@@ -129,8 +129,21 @@ impl CargoTomlProducer {
         let mut child_ids = Vec::new();
         let mut seen = HashSet::new();
 
+        let mut sections = Vec::new();
         for sec in ["dependencies", "dev-dependencies", "build-dependencies"] {
             if let Some(table) = toml_val.get(sec).and_then(|t| t.as_table()) {
+                sections.push((sec.to_owned(), table));
+            }
+            if let Some(targets) = toml_val.get("target").and_then(|t| t.as_table()) {
+                for (condition, target) in targets {
+                    if let Some(table) = target.get(sec).and_then(|t| t.as_table()) {
+                        sections.push((format!("target.{condition}.{sec}"), table));
+                    }
+                }
+            }
+        }
+        for (scope, table) in sections {
+            {
                 for (dep_key, dep_val) in table {
                     let Some((real_name, raw_ver_opt)) = Self::extract_dep_spec(dep_key, dep_val)
                     else {
@@ -157,11 +170,20 @@ impl CargoTomlProducer {
                     let child_id = make_instance_id(&valid_purl, file_salt);
 
                     if !seen.insert(child_id.clone()) {
+                        if let Some(existing) = leaf_deps.iter_mut().find(
+                            |d: &&mut crate::model::dependency::Dependency| {
+                                d.instance_id == child_id
+                            },
+                        ) {
+                            existing
+                                .properties
+                                .insert(format!("sbom:scope:{scope}"), "true".into());
+                        }
                         continue;
                     }
                     child_ids.push(child_id.clone());
 
-                    if let Ok(dep) = DependencyBuilder::default()
+                    if let Ok(mut dep) = DependencyBuilder::default()
                         .name(real_name)
                         .version(resolved_ver)
                         .version_requirement(requirement)
@@ -172,6 +194,11 @@ impl CargoTomlProducer {
                         .location(location.clone())
                         .build()
                     {
+                        dep.properties.insert("sbom:scope".into(), scope.clone());
+                        dep.properties
+                            .insert(format!("sbom:scope:{scope}"), "true".into());
+                        dep.properties
+                            .insert("sbom:dependency:declaration".into(), dep_val.to_string());
                         leaf_deps.push(dep);
                     }
                 }
@@ -200,12 +227,6 @@ impl CargoTomlProducer {
             return Some((dep_key.to_string(), Some(ver_str.to_string())));
         }
         if let Some(table) = val.as_table() {
-            if table.contains_key("path")
-                && !table.contains_key("version")
-                && !table.contains_key("workspace")
-            {
-                return None;
-            }
             let real_name = table
                 .get("package")
                 .and_then(|p| p.as_str())

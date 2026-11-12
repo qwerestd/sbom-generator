@@ -84,6 +84,10 @@ pub struct Dependency {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub version_requirement: Option<String>,
 
+    #[builder(default)]
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub properties: std::collections::BTreeMap<String, String>,
+
     #[allow(dead_code)]
     #[builder(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -304,6 +308,7 @@ impl DependencyBuilder {
             name,
             version: self.version.clone().unwrap_or_default(),
             version_requirement: self.version_requirement.clone().unwrap_or_default(),
+            properties: self.properties.clone().unwrap_or_default(),
             license: self.license.clone().unwrap_or_default(),
             purl: clean_purl,
             instance_id: final_id, // 👈 干净合规的唯一身份证号优雅入库

@@ -6,3 +6,4 @@ pub mod maven_dynamic;
 pub mod maven_file;
 pub mod maven_producer;
 pub mod model;
+pub mod supplement;

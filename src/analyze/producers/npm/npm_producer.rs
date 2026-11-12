@@ -72,7 +72,7 @@ impl NpmProducer {
     /// same package name and version, and lockfile roots have different IDs.
     pub fn link_local_dependencies(
         paths: &[PathBuf],
-        dependencies: &mut [Dependency],
+        dependencies: &mut Vec<Dependency>,
         base_path: &Path,
     ) -> anyhow::Result<()> {
         let scan_root = fs::canonicalize(base_path)?;
@@ -97,6 +97,7 @@ impl NpmProducer {
             }
         }
         let mut links: HashMap<String, Vec<String>> = HashMap::new();
+        let mut aliases = HashMap::<String, String>::new();
         for path in paths
             .iter()
             .filter(|p| p.file_name().is_some_and(|n| n == "package.json"))
@@ -123,17 +124,40 @@ impl NpmProducer {
                 "optionalDependencies",
                 "peerDependencies",
             ] {
-                for (_, spec) in json
+                for (name, spec) in json
                     .get(category)
                     .and_then(|v| v.as_object())
                     .into_iter()
                     .flatten()
                 {
-                    let Some(relative) = spec.as_str().and_then(|s| s.trim().strip_prefix("file:"))
-                    else {
+                    let Some(raw) = spec.as_str().map(str::trim) else {
                         continue;
                     };
-                    let Ok(target_dir) = fs::canonicalize(source_dir.join(relative)) else {
+                    let target_dir = if let Some(relative) = raw
+                        .strip_prefix("file:")
+                        .or_else(|| raw.strip_prefix("link:"))
+                    {
+                        fs::canonicalize(source_dir.join(relative)).ok()
+                    } else if raw.starts_with("workspace:") {
+                        let matching: Vec<_> = dependencies
+                            .iter()
+                            .filter(|d| d.r#type == DependencyType::Application && &d.name == name)
+                            .filter_map(|d| {
+                                d.location
+                                    .as_ref()
+                                    .and_then(|l| Path::new(&l.block.file).parent())
+                                    .and_then(|p| fs::canonicalize(p).ok())
+                            })
+                            .collect();
+                        if matching.len() == 1 {
+                            matching.into_iter().next()
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+                    let Some(target_dir) = target_dir else {
                         continue;
                     };
                     if !target_dir.starts_with(&scan_root) || target_dir == source_dir {
@@ -141,6 +165,23 @@ impl NpmProducer {
                     }
                     if let Some(ids) = roots.get(&target_dir) {
                         if let [target_id] = ids.as_slice() {
+                            for d in dependencies.iter().filter(|d| {
+                                &d.name == name
+                                    && d.r#type == DependencyType::Library
+                                    && d.properties
+                                        .get("sbom:dependency:declaration")
+                                        .is_some_and(|v| v == raw)
+                            }) {
+                                if d.location
+                                    .as_ref()
+                                    .and_then(|l| Path::new(&l.block.file).parent())
+                                    .and_then(|p| fs::canonicalize(p).ok())
+                                    .as_ref()
+                                    == Some(&source_dir)
+                                {
+                                    aliases.insert(d.instance_id.clone(), target_id.clone());
+                                }
+                            }
                             links
                                 .entry(source_id.clone())
                                 .or_default()
@@ -150,7 +191,13 @@ impl NpmProducer {
                 }
             }
         }
+        dependencies.retain(|d| !aliases.contains_key(&d.instance_id));
         for dep in dependencies {
+            for child in &mut dep.dependencies {
+                if let Some(id) = aliases.get(child) {
+                    *child = id.clone();
+                }
+            }
             if let Some(children) = links.get(&dep.instance_id) {
                 for child in children {
                     if !dep.dependencies.contains(child) {
@@ -280,9 +327,6 @@ impl NpmProducer {
             if let Some(deps) = json.get(category).and_then(|d| d.as_object()) {
                 for (name, version) in deps {
                     let raw_ver_str = version.as_str().unwrap_or("").trim();
-                    if raw_ver_str.starts_with("file:") || raw_ver_str.starts_with("git+") {
-                        continue;
-                    }
 
                     let clean_ver = sanitize_semver_range(raw_ver_str);
                     // 若子包使用 "catalog:" 或 "workspace:*"，自动回退查询 workspace_ctx 受管版本表
@@ -313,7 +357,7 @@ impl NpmProducer {
                         .cloned()
                         .or_else(|| fallback_location.clone());
 
-                    let leaf = DependencyBuilder::default()
+                    let mut leaf = DependencyBuilder::default()
                         .name(name.clone())
                         .version(resolved_ver_opt)
                         .version_requirement(requirement)
@@ -325,6 +369,20 @@ impl NpmProducer {
                         .build()
                         .unwrap();
 
+                    leaf.properties
+                        .insert(format!("sbom:scope:{category}"), "true".into());
+                    leaf.properties
+                        .insert("sbom:dependency:declaration".into(), raw_ver_str.into());
+                    if raw_ver_str.starts_with("file:")
+                        || raw_ver_str.starts_with("link:")
+                        || raw_ver_str.starts_with("workspace:")
+                    {
+                        leaf.properties
+                            .insert("sbom:source:kind".into(), "local-reference".into());
+                    } else if raw_ver_str.starts_with("git") || raw_ver_str.contains("://") {
+                        leaf.properties
+                            .insert("sbom:source:kind".into(), "vcs-or-url".into());
+                    }
                     leaf_deps.push(leaf);
                 }
             }
@@ -376,12 +434,14 @@ mod tests {
             && d.version.is_none()
             && d.version_requirement.as_deref() == Some("~2.3.2")));
 
-        assert!(!deps.iter().any(|d| d.name == "git-dep"));
+        assert!(deps
+            .iter()
+            .any(|d| d.name == "git-dep" && d.version.is_none()));
 
         assert_eq!(
             deps.len(),
-            6,
-            "Expected 6 dependencies, found {}",
+            8,
+            "Expected 8 declarations including local and Git dependencies, found {}",
             deps.len()
         );
     }

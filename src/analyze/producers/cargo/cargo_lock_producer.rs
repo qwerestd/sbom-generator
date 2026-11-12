@@ -60,7 +60,11 @@ impl CargoProducer {
 
             let raw_purl = format!("pkg:cargo/{}@{}", name, version);
             let valid_purl = Dependency::auto_fix_and_validate_purl(&raw_purl);
-            let instance_id = make_instance_id(&valid_purl, file_salt);
+            let source = pkg
+                .get("source")
+                .and_then(|v| v.as_str())
+                .unwrap_or("local");
+            let instance_id = make_instance_id(&valid_purl, &format!("{file_salt}:{source}"));
 
             let mut raw_deps = Vec::new();
             if let Some(deps) = pkg.get("dependencies").and_then(|d| d.as_array()) {
@@ -87,7 +91,7 @@ impl CargoProducer {
                 instance_id,
                 raw_deps,
                 lookup_key: name.to_string(),
-                force_root: false,
+                force_root: source == "local",
                 location: location.clone(),
             });
         }

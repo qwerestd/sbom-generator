@@ -64,6 +64,9 @@ impl MavenProducer {
             result.extend(deps);
         }
 
+        for path in paths {
+            result.extend(super::supplement::collect(path)?);
+        }
         Ok(result)
     }
 }

@@ -46,6 +46,7 @@ fn main() {
             .include(dir)
             .files(files)
             .warnings(false)
+            .debug(false)
             .cpp(cpp)
             .compile(tree_sitter_project.compilation_unit.as_str());
     }

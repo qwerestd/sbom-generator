@@ -2,7 +2,6 @@ use std::env;
 use std::process::exit;
 
 use getopts::Options;
-use sbom_generator::analyze::sbom_generate::analyze;
 use sbom_generator::model::configuration::Configuration;
 use sbom_generator::report::print_dependency_tree;
 
@@ -16,6 +15,18 @@ pub fn main() {
     let program = args[0].clone();
 
     let mut opts = Options::new();
+    opts.optopt(
+        "",
+        "scan-mode",
+        "source, installed, artifacts or all (default source)",
+        "MODE",
+    );
+    opts.optmulti(
+        "",
+        "exclude-dir",
+        "exclude directory name or scan-relative directory path",
+        "PATH",
+    );
     opts.optflag("h", "help", "print this help");
     opts.optopt(
         "i",
@@ -87,7 +98,23 @@ pub fn main() {
         allow_exec,
     };
 
-    if let Err(error) = analyze(&configuration, enable_dynamic) {
+    let mode = matches
+        .opt_str("scan-mode")
+        .unwrap_or_else(|| "source".into());
+    if !["source", "installed", "artifacts", "all"].contains(&mode.as_str()) {
+        eprintln!("invalid scan mode: {mode}");
+        exit(1);
+    }
+    let options = sbom_generator::utils::file_utils::ScanOptions {
+        installed: matches!(mode.as_str(), "installed" | "all"),
+        artifacts: matches!(mode.as_str(), "artifacts" | "all"),
+        exclude_dirs: matches.opt_strs("exclude-dir"),
+    };
+    if let Err(error) = sbom_generator::analyze::sbom_generate::analyze_with_options(
+        &configuration,
+        enable_dynamic,
+        &options,
+    ) {
         eprintln!("error when generating SBOM: {error:#}");
         exit(1);
     }

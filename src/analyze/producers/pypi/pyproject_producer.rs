@@ -2,19 +2,10 @@ use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use lazy_static::lazy_static;
-use regex::Regex;
-
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::analyze::producers::pypi::pypi_lock_producer::pep503_normalize;
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyLocation, DependencyType};
 use crate::utils::file_utils::make_instance_id;
-
-lazy_static! {
-    static ref PEP508_SPEC_RE: Regex = Regex::new(
-        r"(?i)^\s*([A-Z0-9][A-Z0-9_\-\.]*)(?:\[[^\]]*\])?\s*(?:\(?\s*(==|>=|<=|~=|!=|>|<|\^|~)\s*([A-Z0-9\.\-\*]+))?"
-    ).unwrap();
-}
 
 /// 现代 Python 清单解析器：支持 `pyproject.toml` (PEP 621 标准 & Poetry) 与 `Pipfile`
 #[derive(Clone, Default)]
@@ -115,6 +106,27 @@ impl PyprojectProducer {
         let root_id = make_instance_id(&root_purl, file_salt);
 
         let mut extracted_specs: Vec<(String, Option<String>)> = Vec::new();
+        if let Some(requires) = toml_val
+            .get("build-system")
+            .and_then(|v| v.get("requires"))
+            .and_then(|v| v.as_array())
+        {
+            for spec in requires.iter().filter_map(|v| v.as_str()) {
+                if let Some(parsed) = Self::parse_pep508_spec(spec) {
+                    extracted_specs.push(parsed);
+                }
+            }
+        }
+        if let Some(groups) = toml_val.get("dependency-groups").and_then(|v| v.as_table()) {
+            // Every group is inventoried, so include-group targets are visited independently.
+            for entries in groups.values().filter_map(|v| v.as_array()) {
+                for spec in entries.iter().filter_map(|v| v.as_str()) {
+                    if let Some(parsed) = Self::parse_pep508_spec(spec) {
+                        extracted_specs.push(parsed);
+                    }
+                }
+            }
+        }
 
         // A. 解析 PEP 621 [project.dependencies] 与 [project.optional-dependencies]
         if let Some(proj) = project_table {
@@ -213,7 +225,7 @@ impl PyprojectProducer {
             return Ok(vec![]);
         }
 
-        let root_dep = DependencyBuilder::default()
+        let mut root_dep = DependencyBuilder::default()
             .name(app_name)
             .version(Some(app_version))
             .r#type(DependencyType::Application)
@@ -223,6 +235,33 @@ impl PyprojectProducer {
             .location(location)
             .build()
             .map_err(|e| anyhow::anyhow!(e))?;
+        fn declarations(value: &toml::Value, path: &str, out: &mut Vec<serde_json::Value>) {
+            if let Some(table) = value.as_table() {
+                if path.ends_with("dependencies") || path.ends_with("packages") {
+                    for (name, spec) in table {
+                        out.push(serde_json::json!({"name":name,"declaration":spec.to_string(),"scope":path}));
+                    }
+                }
+                for (name, value) in table {
+                    declarations(value, &format!("{path}.{name}"), out);
+                }
+            } else if let Some(items) = value.as_array() {
+                if path.contains("dependencies")
+                    || path.contains("dependency-groups")
+                    || path.ends_with("build-system.requires")
+                {
+                    for item in items.iter().filter_map(|v| v.as_str()) {
+                        out.push(serde_json::json!({"declaration":item,"scope":path}));
+                    }
+                }
+            }
+        }
+        let mut declared = Vec::new();
+        declarations(&toml_val, "", &mut declared);
+        root_dep.properties.insert(
+            "sbom:dependency:declarations".into(),
+            serde_json::to_string(&declared)?,
+        );
 
         let mut all = Vec::with_capacity(leaf_deps.len() + 1);
         all.push(root_dep);
@@ -238,8 +277,13 @@ impl PyprojectProducer {
             if let Some(ver_str) = val.as_str() {
                 out.push((name.clone(), Some(ver_str.to_string())));
             } else if let Some(sub_table) = val.as_table() {
-                // 跳过 path / git 指向的本地或非注册表包
                 if sub_table.contains_key("path") || sub_table.contains_key("git") {
+                    let source = sub_table
+                        .get("git")
+                        .or_else(|| sub_table.get("path"))
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                    out.push((name.clone(), Some(format!("source:{source}"))));
                     continue;
                 }
                 let ver = sub_table
@@ -252,13 +296,13 @@ impl PyprojectProducer {
     }
 
     pub fn parse_pep508_spec(spec: &str) -> Option<(String, Option<String>)> {
-        let clean = spec.split(';').next().unwrap_or("").trim();
-        let caps = PEP508_SPEC_RE.captures(clean)?;
-        let name = caps.get(1)?.as_str().to_string();
-        let ver = caps
-            .get(2)
-            .map(|m| clean[m.start()..].trim().trim_end_matches(')').to_string());
-        Some((name, ver))
+        let req = super::requirements::parse_requirement(spec).ok()?;
+        let version = match req.version_or_url {
+            Some(pep508_rs::VersionOrUrl::VersionSpecifier(spec)) => Some(spec.to_string()),
+            Some(pep508_rs::VersionOrUrl::Url(url)) => Some(url.to_string()),
+            _ => None,
+        };
+        Some((req.name.to_string(), version))
     }
 }
 

@@ -118,10 +118,19 @@ fn reconcile_dependency_refs(deps: &mut [Dependency]) -> anyhow::Result<()> {
 }
 
 pub fn generate_sbom(
-    mut dependencies: Vec<Dependency>,
+    dependencies: Vec<Dependency>,
     configuration: &Configuration,
 ) -> anyhow::Result<()> {
+    generate_sbom_with_diagnostics(dependencies, configuration, &[])
+}
+
+pub fn generate_sbom_with_diagnostics(
+    mut dependencies: Vec<Dependency>,
+    configuration: &Configuration,
+    diagnostics: &[serde_json::Value],
+) -> anyhow::Result<()> {
     reconcile_dependency_refs(&mut dependencies)?;
+    // Preserve unresolved declarations; exact-version comparison filters them separately.
     let mut components = Vec::new();
     let mut cdx_dependencies = Vec::new();
 
@@ -202,13 +211,15 @@ pub fn generate_sbom(
 
     let metadata_val = serde_json::json!({
         "timestamp": real_now,
-        "tools": [
+        "tools": {"components": [
             {
-                "vendor": "BNBU_DS",
+                "type": "application",
+                "group": "BNBU_DS",
                 "name": "sbom-generator",
                 "version": env!("CARGO_PKG_VERSION")
             }
-        ]
+        ]},
+        "component": {"type":"application", "name": configuration.directory.replace('\\', "/")}
     });
 
     // =====================================================================
@@ -230,10 +241,23 @@ pub fn generate_sbom(
 
                 // 【方向二兑现：注入文件物理路径与 OSV 风险标签 (Properties)】
                 let mut props = Vec::new();
+                for (name, value) in &d.properties {
+                    // Keep inventory properties, not serialized parser logs inside the BOM.
+                    if name.starts_with("sbom:evidence:")
+                        || name == "sbom:scan:diagnostics"
+                        || name == "sbom:dependency:declarations"
+                        || name == "sbom:pnpm:skipped-keys"
+                    {
+                        continue;
+                    }
+                    props.push(serde_json::json!({"name": name, "value": value}));
+                }
                 if let Some(requirement) = &d.version_requirement {
                     props.push(serde_json::json!({
                         "name": "sbom:version:requirement", "value": requirement
                     }));
+                }
+                if d.version.is_none() {
                     props.push(serde_json::json!({
                         "name": "sbom:version:status", "value": "unresolved"
                     }));
@@ -355,8 +379,24 @@ pub fn generate_sbom(
     };
 
     let value_to_write = serde_json::to_string_pretty(&final_output)?;
+    // Diagnostic data is structured JSON in a separate file, never a JSON string property.
+    let diagnostic_output = format!("{}.scan.json", configuration.output);
+    fs::write(
+        &diagnostic_output,
+        serde_json::to_vec_pretty(&serde_json::json!({
+            "scan": diagnostics,
+            "components": dependencies.iter().map(|d|serde_json::json!({"bom-ref":d.instance_id,"properties":d.properties})).collect::<Vec<_>>()
+        }))?,
+    )?;
     let mut file = fs::File::create(configuration.output.as_str())?;
     file.write_all(value_to_write.as_bytes())?;
+    file.flush()?;
+    println!(
+        "SBOM 输出完成: {} ({} 个组件)，扫描诊断: {}",
+        configuration.output,
+        dependencies.len(),
+        diagnostic_output
+    );
 
     Ok(())
 }

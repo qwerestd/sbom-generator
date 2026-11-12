@@ -38,8 +38,6 @@ pub fn build_reachable_dag(nodes: Vec<RawGraphNode>) -> Vec<Dependency> {
     }
 
     let mut scoped_map: HashMap<String, Vec<ScopedCandidate>> = HashMap::with_capacity(nodes.len());
-    let mut exact_map: HashMap<(String, String), String> = HashMap::with_capacity(nodes.len());
-    let mut single_map: HashMap<String, String> = HashMap::with_capacity(nodes.len());
 
     // 第一趟：构建多维索引（包含精确版本、单键和作用域前缀）
     for node in &nodes {
@@ -57,14 +55,6 @@ pub fn build_reachable_dag(nodes: Vec<RawGraphNode>) -> Vec<Dependency> {
                 version: node.version.clone(),
                 scope_prefix,
             });
-
-        if let Some(ref ver) = node.version {
-            exact_map.insert(
-                (node.lookup_key.clone(), ver.clone()),
-                node.instance_id.clone(),
-            );
-        }
-        single_map.insert(node.lookup_key.clone(), node.instance_id.clone());
     }
 
     // 第二趟：严格按照模块寻址与作用域回溯（同作用域优先，同版本优先）
@@ -86,52 +76,27 @@ pub fn build_reachable_dag(nodes: Vec<RawGraphNode>) -> Vec<Dependency> {
         let mut seen_edges = HashSet::new();
 
         for (dep_key, dep_ver_opt) in &node.raw_deps {
-            let mut resolved_id: Option<String> = None;
-
-            if let Some(candidates) = scoped_map.get(dep_key) {
-                if candidates.len() == 1 {
-                    resolved_id = Some(candidates[0].instance_id.clone());
+            let target_id = scoped_map.get(dep_key).and_then(|candidates| {
+                let compatible: Vec<_> = candidates
+                    .iter()
+                    .filter(|c| {
+                        dep_ver_opt
+                            .as_deref()
+                            .filter(|v| !v.is_empty())
+                            .is_none_or(|v| c.version.as_deref() == Some(v))
+                    })
+                    .collect();
+                let local: Vec<_> = compatible
+                    .iter()
+                    .filter(|c| c.scope_prefix == caller_scope)
+                    .collect();
+                if local.len() == 1 {
+                    Some(local[0].instance_id.clone())
+                } else if compatible.len() == 1 {
+                    Some(compatible[0].instance_id.clone())
                 } else {
-                    // 多版本共存时：优先寻找同作用域且版本匹配的节点
-                    if let Some(req_ver) = dep_ver_opt.as_deref().filter(|v| !v.is_empty()) {
-                        if let Some(c) = candidates.iter().find(|c| {
-                            c.version.as_deref() == Some(req_ver)
-                                && (!c.scope_prefix.is_empty()
-                                    && (c.scope_prefix.contains(&caller_scope)
-                                        || caller_scope.contains(&c.scope_prefix)))
-                        }) {
-                            resolved_id = Some(c.instance_id.clone());
-                        } else if let Some(c) = candidates
-                            .iter()
-                            .find(|c| c.version.as_deref() == Some(req_ver))
-                        {
-                            resolved_id = Some(c.instance_id.clone());
-                        }
-                    }
-
-                    // 作用域就近回溯：若未指定版本或未命中，优先选择与调用者处于同一目录/模块上下文的依赖
-                    if resolved_id.is_none() {
-                        if let Some(c) = candidates.iter().find(|c| {
-                            !c.scope_prefix.is_empty()
-                                && (c.scope_prefix.contains(&caller_scope)
-                                    || caller_scope.contains(&c.scope_prefix))
-                        }) {
-                            resolved_id = Some(c.instance_id.clone());
-                        }
-                    }
-
-                    if resolved_id.is_none() && !candidates.is_empty() {
-                        resolved_id = Some(candidates[0].instance_id.clone());
-                    }
+                    None
                 }
-            }
-
-            let target_id = resolved_id.or_else(|| match dep_ver_opt {
-                Some(ver) if !ver.is_empty() => exact_map
-                    .get(&(dep_key.clone(), ver.clone()))
-                    .or_else(|| single_map.get(dep_key))
-                    .cloned(),
-                _ => single_map.get(dep_key).cloned(),
             });
 
             if let Some(cid) = target_id {
@@ -174,33 +139,32 @@ pub fn build_reachable_dag(nodes: Vec<RawGraphNode>) -> Vec<Dependency> {
         }
     }
 
+    // Inventory must survive incomplete edges, disconnected components and cycles.
+    // Reachability is evidence, never a reason to delete a locked package.
+    let inventory_ids: HashSet<_> = nodes.iter().map(|n| n.instance_id.clone()).collect();
+
     // 第四趟：组装最终依赖列表
     let mut final_deps = Vec::with_capacity(reachable_ids.len());
     for node in nodes {
-        if !reachable_ids.contains(&node.instance_id) {
-            continue;
-        }
-
         let valid_children: Vec<String> = id_to_children
             .get(&node.instance_id)
             .map(|children| {
                 children
                     .iter()
-                    .filter(|cid| reachable_ids.contains(*cid))
+                    .filter(|cid| inventory_ids.contains(*cid))
                     .cloned()
                     .collect()
             })
             .unwrap_or_default();
 
-        let is_root =
-            node.force_root || in_degree.get(&node.instance_id).copied().unwrap_or(0) == 0;
+        let is_root = node.force_root;
         let dep_type = if is_root {
             DependencyType::Application
         } else {
             DependencyType::Library
         };
 
-        if let Ok(dep) = DependencyBuilder::default()
+        if let Ok(mut dep) = DependencyBuilder::default()
             .group(node.group)
             .name(node.name)
             .version(node.version)
@@ -211,6 +175,18 @@ pub fn build_reachable_dag(nodes: Vec<RawGraphNode>) -> Vec<Dependency> {
             .location(node.location)
             .build()
         {
+            dep.properties.insert(
+                "sbom:graph:reachable".into(),
+                reachable_ids.contains(&dep.instance_id).to_string(),
+            );
+            dep.properties.insert(
+                "sbom:graph:declared-edges".into(),
+                node.raw_deps.len().to_string(),
+            );
+            dep.properties.insert(
+                "sbom:graph:resolved-edges".into(),
+                dep.dependencies.len().to_string(),
+            );
             final_deps.push(dep);
         }
     }
@@ -277,6 +253,7 @@ impl AsciiTreeStackBuilder {
                 name,
                 version: Some(version),
                 version_requirement: None,
+                properties: Default::default(),
                 purl: valid_purl,
                 instance_id: instance_id.clone(),
                 dependencies: Vec::new(),

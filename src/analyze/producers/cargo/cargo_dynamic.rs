@@ -25,7 +25,7 @@ impl DynamicProducer for CargoDynamicProducer {
         cmd.args(["metadata", "--format-version=1", "--all-features"])
             .current_dir(&configuration.directory);
 
-        let output = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(15))?;
+        let output = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(60))?;
 
         if !output.status.success() {
             let stderr_str = String::from_utf8_lossy(&output.stderr);

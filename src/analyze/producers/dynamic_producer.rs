@@ -1,7 +1,7 @@
 use crate::model::configuration::Configuration;
 use crate::model::dependency::Dependency;
 
-pub trait DynamicProducer {
+pub trait DynamicProducer: Sync {
     /// 检查该探测器是否适用于当前环境
     fn is_applicable(&self, configuration: &Configuration) -> bool;
 

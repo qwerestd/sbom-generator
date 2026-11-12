@@ -22,12 +22,14 @@ fn generated_metadata_distinguishes_source_and_runtime_evidence() {
     let deps = vec![
         DependencyBuilder::default()
             .name("@scope/unknown".into())
-            .purl("pkg:npm/@scope/unknown".into())
+            .version(Some("1.0.0".into()))
+            .purl("pkg:npm/@scope/unknown@1.0.0".into())
             .dynamic_status(DynamicLoadStatus::Referenced)
             .build()
             .unwrap(),
         DependencyBuilder::default()
             .name("observed".into())
+            .version(Some("1.0.0".into()))
             .purl("pkg:npm/observed@1.0.0".into())
             .license(Some("MIT OR Apache-2.0".into()))
             .dynamic_status(DynamicLoadStatus::Loaded)
@@ -35,6 +37,7 @@ fn generated_metadata_distinguishes_source_and_runtime_evidence() {
             .unwrap(),
         DependencyBuilder::default()
             .name("unobserved".into())
+            .version(Some("1.0.0".into()))
             .purl("pkg:npm/unobserved@1.0.0".into())
             .dynamic_status(DynamicLoadStatus::Dormant)
             .build()
@@ -51,7 +54,7 @@ fn generated_metadata_distinguishes_source_and_runtime_evidence() {
             .find(|p| p["name"] == name)
             .map(|p| p["value"].as_str().unwrap().to_owned())
     };
-    assert_eq!(cs[0]["purl"], "pkg:npm/%40scope/unknown");
+    assert_eq!(cs[0]["purl"], "pkg:npm/%40scope/unknown@1.0.0");
     assert!(cs[0].get("licenses").is_none());
     assert_eq!(
         property(0, "sbom:runtime:status").as_deref(),

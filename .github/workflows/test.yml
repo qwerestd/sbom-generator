@@ -15,6 +15,6 @@ jobs:
     - name: Run unit and CycloneDX schema tests
       run: cargo test
     - name: Run viewer security and comparison regression tests
-      run: node --test tests/ui_regressions.cjs
+      run: node --test tests/ui_regressions.cjs tests/compare_core.cjs
     - name: run integration tests
       run: ./misc/test.sh
