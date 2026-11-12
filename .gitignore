@@ -22,3 +22,11 @@ Cargo.lock
 
 # Misc
 *~
+
+# Python caches and installed JavaScript dependencies
+__pycache__/
+*.pyc
+node_modules/
+
+# Local scan output
+/sbom_result.json
