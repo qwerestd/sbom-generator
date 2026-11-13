@@ -47,7 +47,9 @@ impl DynamicProducer for GoDynamicProducer {
             .ok()
             .and_then(|v| v.parse::<u64>().ok())
             .or(global_timeout)
-            .unwrap_or(8);
+            // Listing test imports can compile standard-library metadata on a cold
+            // Go cache. Allow that work without prematurely losing source evidence.
+            .unwrap_or(60);
 
         let (graph_res, mvs_res) = std::thread::scope(|s| {
             let g_handle = s.spawn(|| {

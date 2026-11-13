@@ -1,11 +1,12 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserialize;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tree_sitter::{Language, Parser, Query, QueryCursor};
 
+use crate::analyze::producers::maven::local_repo::{LocalPomRepo, SeedDep};
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyLocation, DependencyType};
 use crate::utils::context_resolver::HierarchicalContext;
@@ -85,6 +86,7 @@ impl SbomProducer for GradleProducer {
         // =================================================================
         // 第二趟：带上下文变量插值 (${var} / $var) 与受管版本补全解析各构建文件
         // =================================================================
+        let mut local_repo = LocalPomRepo::new();
         for path in paths {
             let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
             let content = match fs::read_to_string(path) {
@@ -100,8 +102,9 @@ impl SbomProducer for GradleProducer {
             local_ctx.inherit_from(&root_context);
 
             let file_salt = path.to_string_lossy().replace('\\', "/");
+            let is_lockfile = file_name.ends_with("gradle.lockfile");
 
-            let extracted_deps = match file_name {
+            let mut extracted_deps = match file_name {
                 name if name.ends_with(".gradle.kts") => {
                     Self::parse_kotlin_dependencies(&content, path, &local_ctx).unwrap_or_default()
                 }
@@ -109,14 +112,54 @@ impl SbomProducer for GradleProducer {
                     Self::parse_groovy_dependencies(&content, path, &local_ctx).unwrap_or_default()
                 }
                 "libs.versions.toml" => Self::parse_version_catalog(&content).unwrap_or_default(),
-                name if name.ends_with("gradle.lockfile") => {
-                    Self::parse_gradle_lockfile(&content).unwrap_or_default()
-                }
+                _ if is_lockfile => Self::parse_gradle_lockfile(&content).unwrap_or_default(),
                 _ => vec![],
             };
 
             if extracted_deps.is_empty() {
                 continue;
+            }
+
+            if !is_lockfile && local_repo.is_available() {
+                let mut managed_overrides: HashMap<(String, String), String> = HashMap::new();
+                for d in &extracted_deps {
+                    if !d.version.is_empty() {
+                        if let Some(eff) =
+                            local_repo.resolve_effective_pom(&d.group, &d.name, &d.version)
+                        {
+                            for (k, v) in eff.managed_versions {
+                                managed_overrides.entry(k).or_insert(v);
+                            }
+                        }
+                    }
+                }
+                for d in &mut extracted_deps {
+                    if d.version.is_empty() {
+                        if let Some(mv) = managed_overrides.get(&(d.group.clone(), d.name.clone()))
+                        {
+                            d.version = mv.clone();
+                        }
+                    }
+                }
+                let seeds: Vec<SeedDep> = extracted_deps
+                    .iter()
+                    .filter(|d| !d.version.is_empty())
+                    .map(|d| SeedDep {
+                        group_id: d.group.clone(),
+                        artifact_id: d.name.clone(),
+                        version: d.version.clone(),
+                        exclusions: HashSet::new(),
+                    })
+                    .collect();
+                let fallback_loc = Some(DependencyLocation::from_file(path));
+                for t in local_repo.expand_transitive_deps(&seeds, &managed_overrides) {
+                    extracted_deps.push(ExtractedDep {
+                        group: t.group_id,
+                        name: t.artifact_id,
+                        version: t.version,
+                        location: fallback_loc.clone(),
+                    });
+                }
             }
 
             let file_deps = Self::build_dependency_graph(extracted_deps, &file_salt, path)?;

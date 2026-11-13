@@ -18,7 +18,7 @@ pub fn main() {
     opts.optopt(
         "",
         "scan-mode",
-        "source, installed, artifacts or all (default source)",
+        "source, installed, artifacts or all (default all)",
         "MODE",
     );
     opts.optmulti(
@@ -98,9 +98,7 @@ pub fn main() {
         allow_exec,
     };
 
-    let mode = matches
-        .opt_str("scan-mode")
-        .unwrap_or_else(|| "source".into());
+    let mode = matches.opt_str("scan-mode").unwrap_or_else(|| "all".into());
     if !["source", "installed", "artifacts", "all"].contains(&mode.as_str()) {
         eprintln!("invalid scan mode: {mode}");
         exit(1);

@@ -146,6 +146,9 @@ impl NpmLockProducer {
 
         for (pkg_path, pkg_data) in packages {
             let is_root = pkg_path.is_empty();
+            if !is_root && !Self::is_os_compatible(pkg_data) {
+                continue;
+            }
 
             let name = match pkg_data.get("name").and_then(|n| n.as_str()) {
                 Some(n) => n.to_string(),
@@ -313,6 +316,28 @@ impl NpmLockProducer {
 
         None
     }
+
+    fn is_os_compatible(pkg_data: &serde_json::Value) -> bool {
+        let Some(os_arr) = pkg_data.get("os").and_then(|v| v.as_array()) else {
+            return true;
+        };
+        let items: Vec<&str> = os_arr.iter().filter_map(|v| v.as_str()).collect();
+        if items.is_empty() {
+            return true;
+        }
+        let host_os = match std::env::consts::OS {
+            "windows" => "win32",
+            "macos" => "darwin",
+            other => other,
+        };
+        if items.iter().any(|s| s.strip_prefix('!') == Some(host_os)) {
+            return false;
+        }
+        if items.iter().any(|s| !s.starts_with('!')) {
+            return items.contains(&host_os);
+        }
+        true
+    }
 }
 
 #[cfg(test)]
@@ -329,6 +354,25 @@ mod tests {
         assert!(producer.use_file(Path::new("package-lock.json"), &config));
         assert!(producer.use_file(Path::new("sub/package-lock.json"), &config));
         assert!(!producer.use_file(Path::new("package.json"), &config));
+    }
+
+    #[test]
+    fn test_npm_lock_os_compatibility_filter() {
+        let host_os = match std::env::consts::OS {
+            "windows" => "win32",
+            "macos" => "darwin",
+            other => other,
+        };
+        let other_os = if host_os == "win32" { "linux" } else { "win32" };
+        let excluded = serde_json::json!({ "os": [other_os] });
+        let negated = serde_json::json!({ "os": [format!("!{host_os}")] });
+        let allowed = serde_json::json!({ "os": [host_os, other_os] });
+        let unrestricted = serde_json::json!({});
+
+        assert!(!NpmLockProducer::is_os_compatible(&excluded));
+        assert!(!NpmLockProducer::is_os_compatible(&negated));
+        assert!(NpmLockProducer::is_os_compatible(&allowed));
+        assert!(NpmLockProducer::is_os_compatible(&unrestricted));
     }
 
     #[test]

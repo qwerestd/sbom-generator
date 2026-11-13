@@ -27,9 +27,20 @@ pub struct PypiProducer {}
 
 impl SbomProducer for PypiProducer {
     fn use_file(&self, path: &Path, _config: &SbomProducerConfiguration) -> bool {
-        path.file_name()
+        let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+            return false;
+        };
+        let lower = file_name.to_ascii_lowercase();
+        if !lower.ends_with(".txt") || lower.contains("constraints") {
+            return false;
+        }
+        if lower.starts_with("requirements") {
+            return true;
+        }
+        path.parent()
+            .and_then(|p| p.file_name())
             .and_then(|n| n.to_str())
-            .is_some_and(|n| n.eq_ignore_ascii_case("requirements.txt"))
+            .is_some_and(|dir| dir.eq_ignore_ascii_case("requirements"))
     }
 
     fn find_dependencies(
@@ -349,5 +360,19 @@ mod tests {
 
         assert_eq!(resolved_var.as_deref(), Some("0.110.0"));
         assert_eq!(resolved_managed.as_deref(), Some("2.31.0"));
+    }
+
+    #[test]
+    fn test_pypi_use_file_matches_requirements_variants() {
+        let producer = PypiProducer::default();
+        let config = SbomProducerConfiguration {
+            base_path: PathBuf::from("."),
+            use_debug: false,
+        };
+        assert!(producer.use_file(Path::new("requirements.txt"), &config));
+        assert!(producer.use_file(Path::new("requirements-dev.txt"), &config));
+        assert!(producer.use_file(Path::new("requirements/base.txt"), &config));
+        assert!(!producer.use_file(Path::new("requirements-constraints.txt"), &config));
+        assert!(!producer.use_file(Path::new("notes.txt"), &config));
     }
 }
