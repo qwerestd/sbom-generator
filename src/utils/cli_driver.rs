@@ -52,7 +52,21 @@ impl CliLocator {
     }
 
     /// 探测宿主机受控 Python 解释器（安全加固：严禁直接执行被扫描仓库目录内的 `.venv/venv` 自带解释器二进制）
-    pub fn resolve_python_for_dir(_project_dir: &Path) -> Option<String> {
+    pub fn resolve_python_for_dir(project_dir: &Path) -> Option<String> {
+        if let Ok(map) = env::var("SBOM_PYTHON_ENV_MAP") {
+            match Self::python_from_map(Path::new(&map), project_dir) {
+                Ok(Some(path)) => return Some(path.to_string_lossy().into_owned()),
+                Ok(None) => {}
+                Err(error) => {
+                    eprintln!("Python environment map error: {error:#}");
+                    return None;
+                }
+            }
+        }
+        if let Some(path) = env::var_os("SBOM_PYTHON_EXECUTABLE") {
+            let path = PathBuf::from(path);
+            return path.is_file().then(|| path.to_string_lossy().into_owned());
+        }
         // 1. 检查宿主机当前显式激活的 VIRTUAL_ENV 或 CONDA_PREFIX
         for env_key in ["VIRTUAL_ENV", "CONDA_PREFIX"] {
             if let Ok(venv_root) = env::var(env_key) {
@@ -76,6 +90,42 @@ impl CliLocator {
             &["PYTHONHOME"],
             &[],
         )
+    }
+
+    /// Explicit user mappings may select a trusted project interpreter. The
+    /// longest containing project path wins; repository executables are never
+    /// selected implicitly.
+    fn python_from_map(map_file: &Path, project_dir: &Path) -> anyhow::Result<Option<PathBuf>> {
+        let base = map_file.parent().unwrap_or(Path::new("."));
+        let map: std::collections::BTreeMap<String, String> =
+            serde_json::from_str(&fs::read_to_string(map_file)?)?;
+        let project = fs::canonicalize(project_dir)?;
+        let mut selected = None;
+        let mut length = 0;
+        for (root, executable) in map {
+            let root = PathBuf::from(root);
+            let root = fs::canonicalize(if root.is_absolute() {
+                root
+            } else {
+                base.join(root)
+            })?;
+            if project.starts_with(&root) && root.components().count() > length {
+                let path = PathBuf::from(executable);
+                let path = if path.is_absolute() {
+                    path
+                } else {
+                    base.join(path)
+                };
+                anyhow::ensure!(
+                    path.is_file(),
+                    "Python executable missing: {}",
+                    path.display()
+                );
+                length = root.components().count();
+                selected = Some(fs::canonicalize(path)?);
+            }
+        }
+        Ok(selected)
     }
 
     /// 探测项目目录内的 Maven（优先 `./mvnw` Wrapper，其次全局/IDEA 内置 Maven）
@@ -543,6 +593,28 @@ mod tests {
             );
         }
         let _ = fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn explicit_python_map_prefers_longest_project_prefix() {
+        let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("target/test_outputs/python_map");
+        fs::create_dir_all(dir.join("service/src")).unwrap();
+        fs::write(dir.join("host-python.exe"), "selection fixture only").unwrap();
+        fs::write(dir.join("service-python.exe"), "selection fixture only").unwrap();
+        let map = dir.join("interpreters.json");
+        fs::write(
+            &map,
+            r#"{".":"host-python.exe","service":"service-python.exe"}"#,
+        )
+        .unwrap();
+        let selected = CliLocator::python_from_map(&map, &dir.join("service/src"))
+            .unwrap()
+            .unwrap();
+        assert!(selected.ends_with("service-python.exe"));
+        assert!(CliLocator::python_from_map(&map, &dir)
+            .unwrap()
+            .unwrap()
+            .ends_with("host-python.exe"));
     }
 
     #[test]

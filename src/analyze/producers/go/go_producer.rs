@@ -64,6 +64,18 @@ impl SbomProducer for GoProducer {
 }
 
 impl GoProducer {
+    pub(super) fn module_declarations(content: &str) -> (Option<String>, Vec<(String, String)>) {
+        let parsed = Self::parse_go_mod(content);
+        (
+            parsed.module_name,
+            parsed
+                .requires
+                .into_iter()
+                .map(|r| (r.module, r.version))
+                .collect(),
+        )
+    }
+
     fn analyze_go_mod(content: &str, path: &Path) -> anyhow::Result<Vec<Dependency>> {
         Self::analyze_go_mod_with_cache(content, path, Self::find_go_mod_cache().as_deref())
     }

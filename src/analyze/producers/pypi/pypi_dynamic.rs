@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
 use std::path::PathBuf;
-use std::process::Command;
 
 use anyhow::Context;
 use pep508_rs::{ExtraName, MarkerEnvironment, Requirement, VersionOrUrl};
@@ -15,6 +14,9 @@ use crate::utils::cli_driver::CliLocator;
 use crate::utils::file_utils::make_instance_id;
 
 type PipInspectCell = std::sync::Arc<std::sync::OnceLock<Result<serde_json::Value, String>>>;
+
+#[path = "dynamic_probe.rs"]
+mod probe;
 
 #[derive(Default)]
 pub struct PypiDynamicProducer {
@@ -39,36 +41,6 @@ impl DynamicProducer for PypiDynamicProducer {
         );
         let py_bin = CliLocator::resolve_python_for_dir(&work_dir)
             .ok_or_else(|| anyhow::anyhow!("当前宿主机未找到 Python 解释器"))?;
-        let cell = {
-            let mut guard = self.inspect_cache.lock().unwrap_or_else(|e| e.into_inner());
-            guard
-                .entry(py_bin.clone())
-                .or_insert_with(|| std::sync::Arc::new(std::sync::OnceLock::new()))
-                .clone()
-        };
-        let inspect_res = cell.get_or_init(|| {
-            let mut cmd = Command::new(&py_bin);
-            // Isolate from project PYTHONPATH/sitecustomize/pip.py while querying the selected interpreter.
-            cmd.args(["-I", "-X", "utf8", "-m", "pip", "inspect"])
-                .current_dir(&work_dir);
-            let output = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(15))
-                .map_err(|e| format!("{e:#}"))?;
-            if !output.status.success() {
-                return Err(format!(
-                    "pip inspect 执行失败: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                ));
-            }
-            serde_json::from_slice(&output.stdout).map_err(|e| format!("{e:#}"))
-        });
-        let json = inspect_res
-            .as_ref()
-            .map_err(|msg| anyhow::anyhow!("{msg}"))?;
-        let env: MarkerEnvironment = serde_json::from_value(
-            json.get("environment")
-                .context("pip inspect 缺少 environment")?
-                .clone(),
-        )?;
         let app_name = work_dir
             .file_name()
             .and_then(|n| n.to_str())
@@ -79,29 +51,7 @@ impl DynamicProducer for PypiDynamicProducer {
             .find(|p| p.exists())
             .context("Python manifest missing")?;
         let salt = manifest.to_string_lossy().replace('\\', "/");
-        let mut deps = Self::parse_inspect(
-            json,
-            app_name,
-            &declared.roots,
-            &declared.constraints,
-            Some(&env),
-            &salt,
-        )?;
-        for dep in &mut deps {
-            dep.properties
-                .insert("sbom:analysis:method".into(), "pip-inspect".into());
-            if dep.r#type == DependencyType::Application {
-                dep.properties.insert(
-                    "sbom:python:environment".into(),
-                    serde_json::to_string(&env)?,
-                );
-                dep.properties.insert(
-                    "sbom:python:scope".into(),
-                    "runtime-with-declared-extras".into(),
-                );
-            }
-        }
-        Ok(deps)
+        self.probe_project(&py_bin, &work_dir, &declared, app_name, &salt)
     }
 }
 
@@ -150,6 +100,19 @@ impl PypiDynamicProducer {
         env: Option<&MarkerEnvironment>,
         file_salt: &str,
     ) -> anyhow::Result<Vec<Dependency>> {
+        Self::parse_inspect_policy(json, app_name, roots, constraints, env, file_salt, false)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn parse_inspect_policy(
+        json: &serde_json::Value,
+        app_name: &str,
+        roots: &[Requirement],
+        constraints: &[Requirement],
+        env: Option<&MarkerEnvironment>,
+        file_salt: &str,
+        partial: bool,
+    ) -> anyhow::Result<Vec<Dependency>> {
         let installed = json
             .get("installed")
             .and_then(|v| v.as_array())
@@ -179,6 +142,7 @@ impl PypiDynamicProducer {
         let mut queue = VecDeque::new();
         let mut root_names = BTreeSet::new();
         let mut edges: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        let mut issues = BTreeSet::new();
         let enable = |req: &Requirement,
                       enabled: &mut BTreeMap<String, BTreeSet<ExtraName>>,
                       queue: &mut VecDeque<String>|
@@ -216,10 +180,18 @@ impl PypiDynamicProducer {
         };
         for req in roots {
             if active(req, &[]) {
-                enable(req, &mut enabled, &mut queue)?;
-                root_names.insert(req.name.to_string());
+                match enable(req, &mut enabled, &mut queue) {
+                    Ok(()) => {
+                        root_names.insert(req.name.to_string());
+                    }
+                    Err(error) if partial => {
+                        issues.insert(format!("{error:#}"));
+                    }
+                    Err(error) => return Err(error),
+                }
             }
         }
+        anyhow::ensure!(!root_names.is_empty(), "没有匹配到项目的已确认根依赖");
         while let Some(name) = queue.pop_front() {
             let extras: Vec<_> = enabled[&name].iter().cloned().collect();
             let meta = &packages[&name]["metadata"];
@@ -229,11 +201,29 @@ impl PypiDynamicProducer {
                 .into_iter()
                 .flatten()
             {
-                let req = parse_requirement(raw.as_str().context("invalid requires_dist entry")?)?;
+                let req = match raw
+                    .as_str()
+                    .context("invalid requires_dist entry")
+                    .and_then(parse_requirement)
+                {
+                    Ok(req) => req,
+                    Err(error) if partial => {
+                        issues.insert(format!("{error:#}"));
+                        continue;
+                    }
+                    Err(error) => return Err(error),
+                };
                 if !active(&req, &extras) {
                     continue;
                 }
-                enable(&req, &mut enabled, &mut queue)?;
+                match enable(&req, &mut enabled, &mut queue) {
+                    Ok(()) => {}
+                    Err(error) if partial => {
+                        issues.insert(format!("{error:#}"));
+                        continue;
+                    }
+                    Err(error) => return Err(error),
+                }
                 edges
                     .entry(name.clone())
                     .or_default()
@@ -257,6 +247,9 @@ impl PypiDynamicProducer {
             )]);
             if let Some(source) = item.get("direct_url") {
                 properties.insert("sbom:python:source".into(), source.to_string());
+            }
+            if let Some(source) = item.get("download_info") {
+                properties.insert("sbom:python:resolution-download".into(), source.to_string());
             }
             result.push(
                 DependencyBuilder::default()
@@ -297,6 +290,15 @@ impl PypiDynamicProducer {
                 .build()
                 .map_err(|e| anyhow::anyhow!(e))?,
         );
+        if !issues.is_empty() {
+            for dep in &mut result {
+                dep.properties
+                    .insert("sbom:analysis:status".into(), "partial".into());
+            }
+            result[0]
+                .properties
+                .insert("sbom:python:issues".into(), serde_json::to_string(&issues)?);
+        }
         Ok(result)
     }
 }
@@ -304,6 +306,66 @@ impl PypiDynamicProducer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn partial_evidence_preserves_valid_roots_and_closed_edges() {
+        let json = serde_json::json!({"installed":[
+            {"metadata":{"name":"client","version":"1","requires_dist":["transport>=2","missing-child"]}},
+            {"metadata":{"name":"transport","version":"2"}},
+            {"metadata":{"name":"unrelated","version":"9"}}
+        ]});
+        let roots = [
+            parse_requirement("client>=1").unwrap(),
+            parse_requirement("missing-root").unwrap(),
+        ];
+        let deps = PypiDynamicProducer::parse_inspect_policy(
+            &json,
+            "app",
+            &roots,
+            &[],
+            None,
+            "test",
+            true,
+        )
+        .unwrap();
+        assert_eq!(deps.len(), 3);
+        assert!(deps
+            .iter()
+            .all(|d| d.properties["sbom:analysis:status"] == "partial"));
+        assert!(deps[0].properties["sbom:python:issues"].contains("missing-root"));
+        assert!(deps[0].properties["sbom:python:issues"].contains("missing-child"));
+        let ids: HashSet<_> = deps.iter().map(|d| &d.instance_id).collect();
+        assert!(deps
+            .iter()
+            .flat_map(|d| &d.dependencies)
+            .all(|id| ids.contains(id)));
+        assert!(!deps.iter().any(|d| d.name == "unrelated"));
+    }
+
+    #[test]
+    fn partial_evidence_does_not_accept_incompatible_versions() {
+        let json = serde_json::json!({"installed":[
+            {"metadata":{"name":"good","version":"1"}},
+            {"metadata":{"name":"wrong","version":"1"}}
+        ]});
+        let roots = [
+            parse_requirement("good==1").unwrap(),
+            parse_requirement("wrong>=2").unwrap(),
+        ];
+        let deps = PypiDynamicProducer::parse_inspect_policy(
+            &json,
+            "app",
+            &roots,
+            &[],
+            None,
+            "test",
+            true,
+        )
+        .unwrap();
+        assert!(deps.iter().any(|d| d.name == "good"));
+        assert!(!deps.iter().any(|d| d.name == "wrong"));
+        assert!(deps[0].properties["sbom:python:issues"].contains("不满足约束"));
+    }
 
     fn windows_environment() -> MarkerEnvironment {
         serde_json::from_value(serde_json::json!({

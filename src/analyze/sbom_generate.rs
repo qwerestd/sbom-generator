@@ -63,9 +63,16 @@ fn collect_dynamic_projects(
         }
         match producer.detect_dependencies(&local) {
             Ok(mut deps) if !deps.is_empty() => {
-                let diag = serde_json::json!({"ecosystem":ecosystem,"directory":directory,"method":"package-manager","records":deps.len(),"complete":false});
+                let partial = deps.iter().any(|d| {
+                    d.properties
+                        .get("sbom:analysis:status")
+                        .is_some_and(|s| s == "partial")
+                });
+                let diag = serde_json::json!({"ecosystem":ecosystem,"directory":directory,"method":"package-manager","status":if partial {"partial"} else {"success"},"records":deps.len(),"complete":false,"resolution_complete":!partial,
+                    "details":deps.iter().filter(|d|d.r#type==crate::model::dependency::DependencyType::Application).map(|d|&d.properties).collect::<Vec<_>>()});
                 println!(
-                    " -> [{ecosystem}] 动态探测成功: {} ({} 个组件)",
+                    " -> [{ecosystem}] 动态探测{}: {} ({} 个组件)",
+                    if partial { "部分成功" } else { "成功" },
                     directory.display(),
                     deps.len()
                 );
@@ -116,7 +123,7 @@ fn collect_dynamic_projects(
                         directory.to_string_lossy().into_owned(),
                     );
                 }
-                (deps, true, diag)
+                (deps, !partial, diag)
             }
             Ok(_) => {
                 let diag = serde_json::json!({"ecosystem":ecosystem,"directory":directory,"method":"package-manager","records":0});
@@ -179,8 +186,8 @@ fn collect_dynamic_projects(
 
     for (directory, deps, is_resolved, diag) in ordered_outcomes {
         diagnostics.push(diag);
+        collected.extend(deps);
         if is_resolved {
-            collected.extend(deps);
             if per_project {
                 resolved.insert(directory);
             } else {

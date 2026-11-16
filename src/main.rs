@@ -35,6 +35,23 @@ pub fn main() {
         "/path/to/code/to/analyze",
     );
     opts.optflag("d", "debug", "use debug mode");
+    opts.optopt(
+        "",
+        "python-executable",
+        "explicit trusted Python interpreter",
+        "PATH",
+    );
+    opts.optopt(
+        "",
+        "python-env-map",
+        "JSON map of project paths to trusted Python interpreters",
+        "PATH",
+    );
+    opts.optflag(
+        "",
+        "no-python-resolve",
+        "disable Python wheel-only dry-run resolution",
+    );
 
     opts.optflag(
         "s",
@@ -89,6 +106,22 @@ pub fn main() {
     }
 
     let enable_dynamic = !matches.opt_present("s");
+    for (option, variable) in [
+        ("python-executable", "SBOM_PYTHON_EXECUTABLE"),
+        ("python-env-map", "SBOM_PYTHON_ENV_MAP"),
+    ] {
+        if let Some(value) = matches.opt_str(option) {
+            if !std::path::Path::new(&value).is_file() {
+                eprintln!("{option}: file does not exist: {value}");
+                exit(2);
+            }
+            // Set once before analysis starts any worker threads.
+            env::set_var(variable, value);
+        }
+    }
+    if matches.opt_present("no-python-resolve") {
+        env::set_var("SBOM_PYTHON_RESOLVE", "0");
+    }
     let allow_exec = matches.opt_present("allow-exec");
     let configuration = Configuration {
         directory: directory_to_analyze_option.unwrap(),

@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::Path;
-use std::process::Command;
 
 use crate::analyze::producers::dynamic_producer::DynamicProducer;
 use crate::analyze::producers::go::go_producer::GoProducer;
@@ -9,9 +8,17 @@ use crate::model::dependency::{Dependency, DependencyBuilder, DependencyLocation
 use crate::utils::cli_driver::CliLocator;
 use crate::utils::file_utils::make_instance_id;
 
+#[path = "dynamic_workspace.rs"]
+mod workspace;
+use workspace::{ModuleEvidence, WorkspaceContext};
+
+type WorkspaceCell = std::sync::Arc<std::sync::OnceLock<Result<WorkspaceContext, String>>>;
+type ModuleCell = std::sync::Arc<std::sync::OnceLock<ModuleEvidence>>;
+
 #[derive(Default)]
 pub struct GoDynamicProducer {
-    env_cache: std::sync::OnceLock<Option<String>>,
+    workspaces: std::sync::Mutex<HashMap<std::path::PathBuf, WorkspaceCell>>,
+    module_cache: std::sync::Mutex<HashMap<String, ModuleCell>>,
 }
 
 #[derive(Clone)]
@@ -32,127 +39,206 @@ impl DynamicProducer for GoDynamicProducer {
         configuration: &Configuration,
     ) -> anyhow::Result<Vec<Dependency>> {
         let work_dir = Path::new(&configuration.directory);
-        let go_bin = CliLocator::resolve_go()
-            .ok_or_else(|| anyhow::anyhow!("未检测到可用的 go 可执行文件"))?;
-
-        let global_timeout = std::env::var("SBOM_GO_TIMEOUT")
+        let go_bin =
+            CliLocator::resolve_go().ok_or_else(|| anyhow::anyhow!("Go executable unavailable"))?;
+        let global = std::env::var("SBOM_GO_TIMEOUT")
             .ok()
-            .and_then(|v| v.parse::<u64>().ok());
-        let mod_timeout_secs = std::env::var("SBOM_GO_MOD_TIMEOUT")
-            .ok()
-            .and_then(|v| v.parse::<u64>().ok())
-            .or(global_timeout)
-            .unwrap_or(15);
-        let import_timeout_secs = std::env::var("SBOM_GO_IMPORT_TIMEOUT")
-            .ok()
-            .and_then(|v| v.parse::<u64>().ok())
-            .or(global_timeout)
-            // Listing test imports can compile standard-library metadata on a cold
-            // Go cache. Allow that work without prematurely losing source evidence.
-            .unwrap_or(60);
-
-        let (graph_res, mvs_res) = std::thread::scope(|s| {
-            let g_handle = s.spawn(|| {
-                let mut graph_cmd = Command::new(&go_bin);
-                graph_cmd
-                    .args(["mod", "graph"])
-                    .current_dir(work_dir)
-                    .env("GOWORK", "off");
-                CliLocator::run_with_timeout(
-                    graph_cmd,
-                    std::time::Duration::from_secs(mod_timeout_secs),
-                )
-            });
-            let m_handle = s.spawn(|| {
-                let mut mvs_cmd = Command::new(&go_bin);
-                mvs_cmd
-                    .args(["list", "-mod=readonly", "-m", "-json", "all"])
-                    .current_dir(work_dir)
-                    .env("GOWORK", "off");
-                CliLocator::run_with_timeout(
-                    mvs_cmd,
-                    std::time::Duration::from_secs(mod_timeout_secs),
-                )
-            });
-            (g_handle.join().unwrap(), m_handle.join().unwrap())
-        });
-
-        let graph_output = graph_res?;
-        if !graph_output.status.success() {
-            let stderr = String::from_utf8_lossy(&graph_output.stderr);
-            anyhow::bail!("go mod graph 执行失败: {}", stderr.trim());
-        }
-
-        let graph_stdout = String::from_utf8_lossy(&graph_output.stdout);
-
-        let mvs_output = mvs_res?;
+            .and_then(|s| s.parse::<u64>().ok());
+        let budget = |name: &str, default| {
+            std::env::var(name)
+                .ok()
+                .and_then(|s| s.parse::<u64>().ok())
+                .or(global)
+                .unwrap_or(default)
+        };
+        let module_budget = budget("SBOM_GO_MOD_TIMEOUT", 60);
+        let import_budget = budget("SBOM_GO_IMPORT_TIMEOUT", 120);
         anyhow::ensure!(
-            mvs_output.status.success(),
-            "go list -m -json all 执行失败: {}",
-            String::from_utf8_lossy(&mvs_output.stderr)
+            module_budget > 0,
+            "Go module queries disabled by timeout configuration"
         );
-        let selections = Self::parse_module_json(&mvs_output.stdout)?;
-
-        let file_salt = work_dir.join("go.mod").to_string_lossy().replace('\\', "/");
-
-        let mut deps = Self::parse_graph(&graph_stdout, Some(selections.clone()), &file_salt)?;
+        let mut issues = Vec::new();
+        let context = self.workspace(work_dir, &go_bin)?;
+        let disabled = WorkspaceContext::disabled();
+        let workspace = match context.get().unwrap() {
+            Ok(context) if context.effective.is_none() || context.active_for(work_dir) => context,
+            Ok(_) => &disabled, // An independent tools module outside go.work.
+            Err(error) => {
+                issues.push(format!("Workspace unavailable: {error}"));
+                &disabled
+            }
+        };
+        if !workspace.missing.is_empty() {
+            issues.push(format!(
+                "Workspace members unavailable: {}",
+                workspace
+                    .missing
+                    .iter()
+                    .map(|p| p.display().to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
+        }
+        let evidence = self.modules(workspace, &go_bin, work_dir, module_budget);
+        let evidence = evidence.get().unwrap();
+        let selections = evidence.selections.as_ref().ok().cloned();
+        if let Err(e) = &evidence.graph {
+            issues.push(format!("Module graph unavailable: {e}"));
+        }
+        if let Err(e) = &evidence.selections {
+            issues.push(format!("Selected module list unavailable: {e}"));
+        }
+        anyhow::ensure!(
+            evidence.graph.is_ok() || selections.is_some(),
+            "{}",
+            issues.join("; ")
+        );
+        let salt = work_dir.join("go.mod").to_string_lossy().replace('\\', "/");
+        let mut graph = evidence.graph.as_ref().ok().cloned().unwrap_or_default();
+        if evidence.graph.is_err() && selections.is_some() {
+            // Native go.mod declarations supply only direct edges. They do not
+            // manufacture transitive relationships when the graph query failed.
+            let mut cmd = workspace.command(&go_bin, work_dir);
+            cmd.args(["mod", "edit", "-json"]);
+            if let Ok(output) =
+                CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(10))
+            {
+                if output.status.success() {
+                    if let Ok(json) = serde_json::from_slice::<serde_json::Value>(&output.stdout) {
+                        if let Some(root) = json["Module"]["Path"].as_str() {
+                            for req in json["Require"].as_array().into_iter().flatten() {
+                                if let (Some(name), Some(version)) =
+                                    (req["Path"].as_str(), req["Version"].as_str())
+                                {
+                                    graph.push_str(&format!("{root} {name}@{version}\n"));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let mut deps = Self::parse_graph(&graph, selections.clone(), &salt)?;
+        anyhow::ensure!(
+            !deps.is_empty(),
+            "Go queries produced no component evidence"
+        );
+        let module_method = if selections.is_none() {
+            "go-module-requirements"
+        } else if evidence.graph.is_err() {
+            "go-selected-modules"
+        } else {
+            "go-module-graph"
+        };
         for dep in &mut deps {
             dep.properties.insert(
                 "sbom:go:module-requires".into(),
                 serde_json::to_string(&dep.dependencies)?,
             );
             dep.properties
-                .insert("sbom:analysis:method".into(), "go-module-graph".into());
-        }
-        if import_timeout_secs > 0 {
-            let mut command = Command::new(&go_bin);
-            command
-                .args(["list", "-mod=readonly", "-deps", "-test", "-json", "./..."])
-                .current_dir(work_dir)
-                .env("GOWORK", "off");
-            let source_result = CliLocator::run_with_timeout(
-                command,
-                std::time::Duration::from_secs(import_timeout_secs),
-            )
-            .and_then(|output| {
-                anyhow::ensure!(
-                    output.status.success(),
-                    "{}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-                Self::apply_package_imports(&output.stdout, &selections, &mut deps)
-            });
-            if let Err(error) = source_result {
-                eprintln!(
-                    " -> [Go] 源码导入图未完成 ({error:#})，保留模块要求图: {}",
-                    work_dir.display()
-                );
+                .insert("sbom:analysis:method".into(), module_method.into());
+            if selections.is_none() {
+                dep.properties
+                    .insert("sbom:go:selection-status".into(), "requirement-only".into());
             }
         }
-        let go_env_str = self.env_cache.get_or_init(|| {
-            let mut command = Command::new(&go_bin);
-            command
-                .args(["env", "-json", "GOOS", "GOARCH", "GOFLAGS", "GOVERSION"])
-                .current_dir(work_dir)
-                .env("GOWORK", "off");
-            if let Ok(output) =
-                CliLocator::run_with_timeout(command, std::time::Duration::from_secs(5))
-            {
-                if output.status.success() {
-                    if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&output.stdout) {
-                        return Some(value.to_string());
+        let mut import_status = "disabled";
+        if import_budget > 0 {
+            if let Some(selected) = &selections {
+                let tests = std::env::var("SBOM_GO_INCLUDE_TESTS")
+                    .is_ok_and(|v| v == "1" || v.eq_ignore_ascii_case("true"));
+                let mut cmd = workspace.command(&go_bin, work_dir);
+                cmd.args(["list", "-e", "-mod=readonly", "-deps", "-json"]);
+                if tests {
+                    cmd.arg("-test");
+                }
+                cmd.arg("./...");
+                match CliLocator::run_with_timeout(
+                    cmd,
+                    std::time::Duration::from_secs(import_budget),
+                ) {
+                    Ok(output) if output.status.success() => {
+                        match Self::apply_import_evidence(&output.stdout, selected, &mut deps) {
+                            Ok((status, notes)) => {
+                                import_status = status;
+                                issues.extend(notes);
+                            }
+                            Err(e) => {
+                                import_status = "partial";
+                                issues.push(format!("Package imports: {e:#}"));
+                            }
+                        }
+                    }
+                    Ok(output) => {
+                        import_status = "partial";
+                        issues.push(format!(
+                            "Package imports: {}",
+                            String::from_utf8_lossy(&output.stderr)
+                        ));
+                    }
+                    Err(e) => {
+                        import_status = "partial";
+                        issues.push(format!("Package imports: {e:#}"));
                     }
                 }
+                for dep in &mut deps {
+                    dep.properties
+                        .insert("sbom:go:include-tests".into(), tests.to_string());
+                }
+            } else {
+                import_status = "unavailable";
             }
-            None
-        });
-        if let Some(env_val) = go_env_str {
-            for dep in deps
-                .iter_mut()
-                .filter(|d| d.r#type == DependencyType::Application)
-            {
+        }
+        if workspace.effective.is_some() {
+            let contents = std::fs::read_to_string(work_dir.join("go.mod"))?;
+            if let Some(root) = contents.lines().find_map(|s| {
+                s.trim()
+                    .strip_prefix("module ")
+                    .map(|s| s.trim().trim_matches('"'))
+            }) {
+                Self::retain_project(&mut deps, root);
+            }
+        }
+        let mut cmd = workspace.command(&go_bin, work_dir);
+        cmd.args([
+            "env",
+            "-json",
+            "GOOS",
+            "GOARCH",
+            "GOFLAGS",
+            "GOVERSION",
+            "GOWORK",
+        ]);
+        let environment = CliLocator::run_with_timeout(cmd, std::time::Duration::from_secs(5))
+            .ok()
+            .filter(|o| o.status.success())
+            .and_then(|o| serde_json::from_slice::<serde_json::Value>(&o.stdout).ok());
+        for dep in &mut deps {
+            dep.properties
+                .insert("sbom:go:source-import-status".into(), import_status.into());
+            if !issues.is_empty() {
                 dep.properties
-                    .insert("sbom:go:environment".into(), env_val.clone());
+                    .insert("sbom:analysis:status".into(), "partial".into());
+            }
+            if dep.r#type == DependencyType::Application {
+                dep.properties
+                    .insert("sbom:go:issues".into(), serde_json::to_string(&issues)?);
+                if let Some(file) = &workspace.original {
+                    dep.properties.insert(
+                        "sbom:go:workspace".into(),
+                        file.to_string_lossy().into_owned(),
+                    );
+                }
+                if !workspace.missing.is_empty() {
+                    dep.properties.insert(
+                        "sbom:go:workspace:missing-members".into(),
+                        serde_json::to_string(&workspace.missing)?,
+                    );
+                }
+                if let Some(env) = &environment {
+                    dep.properties
+                        .insert("sbom:go:environment".into(), env.to_string());
+                }
             }
         }
         Ok(deps)
@@ -160,6 +246,109 @@ impl DynamicProducer for GoDynamicProducer {
 }
 
 impl GoDynamicProducer {
+    fn retain_project(deps: &mut Vec<Dependency>, name: &str) {
+        let mut keep = HashSet::new();
+        let by_id: HashMap<_, _> = deps.iter().map(|d| (&d.instance_id, d)).collect();
+        let mut queue: VecDeque<_> = deps
+            .iter()
+            .filter(|d| d.name == name)
+            .map(|d| d.instance_id.clone())
+            .collect();
+        // Keep inventories reached through either module requirements or imports;
+        // do not attribute unrelated workspace members to this project.
+        while let Some(id) = queue.pop_front() {
+            if !keep.insert(id.clone()) {
+                continue;
+            }
+            if let Some(dep) = by_id.get(&id) {
+                queue.extend(dep.dependencies.iter().cloned());
+                if let Some(raw) = dep.properties.get("sbom:go:module-requires") {
+                    if let Ok(children) = serde_json::from_str::<Vec<String>>(raw) {
+                        queue.extend(children);
+                    }
+                }
+            }
+        }
+        deps.retain(|d| keep.contains(&d.instance_id));
+        for dep in deps {
+            dep.dependencies.retain(|id| keep.contains(id));
+            for property in ["sbom:go:module-requires", "sbom:go:source-imports"] {
+                if let Some(raw) = dep.properties.get(property) {
+                    if let Ok(mut children) = serde_json::from_str::<Vec<String>>(raw) {
+                        children.retain(|id| keep.contains(id));
+                        dep.properties
+                            .insert(property.into(), serde_json::to_string(&children).unwrap());
+                    }
+                }
+            }
+        }
+    }
+
+    fn apply_import_evidence(
+        bytes: &[u8],
+        selections: &HashMap<String, ModuleSelection>,
+        deps: &mut [Dependency],
+    ) -> anyhow::Result<(&'static str, Vec<String>)> {
+        let packages: Vec<serde_json::Value> = serde_json::Deserializer::from_slice(bytes)
+            .into_iter()
+            .collect::<Result<_, _>>()?;
+        if packages.is_empty() {
+            return Ok(("not-applicable", Vec::new()));
+        }
+        let mut issues = Vec::new();
+        let mut usable = Vec::new();
+        let known: HashSet<_> = deps.iter().map(|d| d.name.as_str()).collect();
+        for package in packages {
+            let incomplete = package.get("Error").is_some()
+                || package["Incomplete"] == true
+                || package["DepsErrors"]
+                    .as_array()
+                    .is_some_and(|e| !e.is_empty());
+            let mapped = package["Module"]["Path"]
+                .as_str()
+                .and_then(|p| selections.get(p))
+                .is_some_and(|s| known.contains(s.name.as_str()));
+            if incomplete || (package["Standard"] != true && !mapped) {
+                issues.push(format!(
+                    "Incomplete or unmapped package: {}",
+                    package["ImportPath"]
+                ));
+            } else {
+                usable.push(package);
+            }
+        }
+        if usable.is_empty() {
+            return Ok(("partial", issues));
+        }
+        let stream = usable
+            .iter()
+            .map(|p| p.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
+        let mut candidate = deps.to_vec();
+        Self::apply_package_imports(stream.as_bytes(), selections, &mut candidate)?;
+        let partial = !issues.is_empty();
+        for (original, mut found) in deps.iter_mut().zip(candidate) {
+            if partial {
+                found
+                    .dependencies
+                    .extend(original.dependencies.iter().cloned());
+                found.dependencies.sort();
+                found.dependencies.dedup();
+                found.properties.insert(
+                    "sbom:analysis:method".into(),
+                    "go-module-and-partial-imports".into(),
+                );
+            }
+            found.properties.insert(
+                "sbom:go:source-import-status".into(),
+                if partial { "partial" } else { "complete" }.into(),
+            );
+            *original = found;
+        }
+        Ok((if partial { "partial" } else { "complete" }, issues))
+    }
+
     fn parse_module_json(bytes: &[u8]) -> anyhow::Result<HashMap<String, ModuleSelection>> {
         let mut selections = HashMap::new();
         for value in serde_json::Deserializer::from_slice(bytes).into_iter::<serde_json::Value>() {
@@ -546,6 +735,89 @@ impl GoDynamicProducer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn partial_imports_preserve_module_evidence_and_empty_tools_are_not_errors() {
+        let selected = GoDynamicProducer::parse_module_json(
+            br#"{"Path":"example.com/app","Main":true}
+            {"Path":"example.com/lib","Version":"v1.0.0"}"#,
+        )
+        .unwrap();
+        let mut deps = GoDynamicProducer::parse_graph(
+            "example.com/app example.com/lib@v1.0.0",
+            Some(selected.clone()),
+            "go.mod",
+        )
+        .unwrap();
+        let input=br#"{"ImportPath":"example.com/app","Module":{"Path":"example.com/app"},"Imports":["example.com/lib"]}
+            {"ImportPath":"example.com/lib","Module":{"Path":"example.com/lib"}}
+            {"ImportPath":"example.com/broken","Incomplete":true,"Error":{"Err":"missing source"}}"#;
+        let (status, notes) =
+            GoDynamicProducer::apply_import_evidence(input, &selected, &mut deps).unwrap();
+        assert_eq!(status, "partial");
+        assert_eq!(notes.len(), 1);
+        assert_eq!(
+            deps.iter()
+                .find(|d| d.name == "example.com/app")
+                .unwrap()
+                .dependencies
+                .len(),
+            1
+        );
+        assert_eq!(
+            GoDynamicProducer::apply_import_evidence(b"", &selected, &mut deps)
+                .unwrap()
+                .0,
+            "not-applicable"
+        );
+    }
+
+    #[test]
+    fn workspace_scope_retains_module_children_without_unrelated_projects() {
+        let selected = GoDynamicProducer::parse_module_json(
+            br#"{"Path":"example.com/a","Main":true}
+            {"Path":"example.com/b","Main":true}
+            {"Path":"example.com/unrelated","Main":true}"#,
+        )
+        .unwrap();
+        let mut deps =
+            GoDynamicProducer::parse_graph("example.com/a example.com/b", Some(selected), "go.mod")
+                .unwrap();
+        for d in &mut deps {
+            d.properties.insert(
+                "sbom:go:module-requires".into(),
+                serde_json::to_string(&d.dependencies).unwrap(),
+            );
+            d.dependencies.clear();
+        }
+        GoDynamicProducer::retain_project(&mut deps, "example.com/a");
+        assert_eq!(deps.len(), 2);
+        assert!(!deps.iter().any(|d| d.name == "example.com/unrelated"));
+    }
+
+    #[test]
+    fn workspace_overlay_excludes_missing_members_without_editing_input() {
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("target/test_outputs/go_workspace_filter");
+        std::fs::create_dir_all(root.join("a")).unwrap();
+        std::fs::write(root.join("a/go.mod"), "module example.com/a\ngo 1.22\n").unwrap();
+        let file = root.join("go.work");
+        std::fs::write(&file, "original fixture contents\n").unwrap();
+        let json = serde_json::json!({"Go":"1.22","Use":[{"DiskPath":"./a"},{"DiskPath":"./missing"}],
+            "Replace":[{"Old":{"Path":"example.com/local"},"New":{"Path":"./a"}}]});
+        let context = GoDynamicProducer::workspace_from_json(&file, &json).unwrap();
+        assert_eq!(context.missing.len(), 1);
+        let temporary = context.effective.as_ref().unwrap().clone();
+        let text = std::fs::read_to_string(&temporary).unwrap();
+        assert!(!text.contains("missing"));
+        assert!(text.contains("example.com/local"));
+        assert_eq!(
+            std::fs::read_to_string(&file).unwrap(),
+            "original fixture contents\n"
+        );
+        drop(context);
+        assert!(!temporary.exists());
+    }
 
     #[test]
     fn json_modules_preserve_replacements_and_isolated_selected_modules() {
