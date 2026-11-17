@@ -217,9 +217,11 @@ impl LocalPomRepo {
             0,
             &mut visited_parents,
             &mut visited_boms,
+            None,
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn resolve_effective_pom_inner(
         &mut self,
         group: &str,
@@ -228,20 +230,25 @@ impl LocalPomRepo {
         depth: usize,
         visited_parents: &mut HashSet<(String, String, String)>,
         visited_boms: &mut HashSet<(String, String, String)>,
+        override_props: Option<&HashMap<String, String>>,
     ) -> Option<EffectivePom> {
         if depth > 16 {
             return None;
         }
         let key = (group.to_string(), artifact.to_string(), version.to_string());
-        if let Some(cached) = self.effective_cache.get(&key) {
-            return cached.clone();
+        if override_props.is_none() {
+            if let Some(cached) = self.effective_cache.get(&key) {
+                return cached.clone();
+            }
         }
         if !visited_parents.insert(key.clone()) {
             return None;
         }
 
         let Some(parsed) = self.get_parsed_pom(group, artifact, version) else {
-            self.effective_cache.insert(key, None);
+            if override_props.is_none() {
+                self.effective_cache.insert(key, None);
+            }
             return None;
         };
 
@@ -259,6 +266,7 @@ impl LocalPomRepo {
                 depth + 1,
                 visited_parents,
                 visited_boms,
+                override_props,
             ) {
                 props.extend(parent_eff.properties);
                 managed_versions.extend(parent_eff.managed_versions);
@@ -281,6 +289,11 @@ impl LocalPomRepo {
             .unwrap_or_else(|| version.to_string());
 
         props.extend(parsed.properties.clone());
+        if let Some(ov) = override_props {
+            for (k, v) in ov {
+                props.insert(k.clone(), v.clone());
+            }
+        }
         props.insert("project.groupId".to_string(), eff_group.clone());
         props.insert("pom.groupId".to_string(), eff_group);
         props.insert("project.artifactId".to_string(), eff_artifact.clone());
@@ -312,6 +325,7 @@ impl LocalPomRepo {
                             depth + 1,
                             visited_parents,
                             visited_boms,
+                            override_props,
                         ) {
                             for (mk, mv) in bom_eff.managed_versions {
                                 managed_versions.entry(mk).or_insert(mv);
@@ -353,27 +367,41 @@ impl LocalPomRepo {
             managed_versions,
             dependencies: resolved_deps,
         };
-        self.effective_cache.insert(key, Some(eff.clone()));
+        if override_props.is_none() {
+            self.effective_cache.insert(key, Some(eff.clone()));
+        }
         Some(eff)
     }
 
     /// Resolve an external `<parent>` and any BOM `<scope>import</scope>` entries into
     /// inherited properties and managed versions for a workspace `pom.xml`.
+    /// Child `<properties>` override parent/BOM properties before BOM interpolation,
+    /// and child `<dependencyManagement>` BOM imports take precedence over `<parent>`.
     pub fn resolve_parent_and_boms(
         &mut self,
         parent: Option<(&str, &str, &str)>,
         bom_imports: &[(&str, &str, &str)],
+        child_properties: &HashMap<String, String>,
     ) -> (HashMap<String, String>, HashMap<(String, String), String>) {
         let mut props = HashMap::new();
         let mut managed = HashMap::new();
-        if let Some((pg, pa, pv)) = parent {
-            if let Some(eff) = self.resolve_effective_pom(pg, pa, pv) {
-                props.extend(eff.properties);
-                managed.extend(eff.managed_versions);
+        let ov = (!child_properties.is_empty()).then_some(child_properties);
+        for (bg, ba, bv) in bom_imports {
+            let mut vp = HashSet::new();
+            let mut vb = HashSet::new();
+            if let Some(eff) = self.resolve_effective_pom_inner(bg, ba, bv, 0, &mut vp, &mut vb, ov)
+            {
+                for (k, v) in eff.managed_versions {
+                    managed.entry(k).or_insert(v);
+                }
             }
         }
-        for (bg, ba, bv) in bom_imports {
-            if let Some(eff) = self.resolve_effective_pom(bg, ba, bv) {
+        if let Some((pg, pa, pv)) = parent {
+            let mut vp = HashSet::new();
+            let mut vb = HashSet::new();
+            if let Some(eff) = self.resolve_effective_pom_inner(pg, pa, pv, 0, &mut vp, &mut vb, ov)
+            {
+                props.extend(eff.properties);
                 for (k, v) in eff.managed_versions {
                     managed.entry(k).or_insert(v);
                 }
@@ -795,8 +823,11 @@ mod tests {
         .unwrap();
 
         let mut repo = LocalPomRepo::with_roots(Some(m2), Some(gradle));
-        let (props, managed) =
-            repo.resolve_parent_and_boms(Some(("com.example", "parent-pom", "1.0.0")), &[]);
+        let (props, managed) = repo.resolve_parent_and_boms(
+            Some(("com.example", "parent-pom", "1.0.0")),
+            &[],
+            &HashMap::new(),
+        );
         assert_eq!(props.get("lib.ver").map(String::as_str), Some("2.1.0"));
         assert_eq!(
             managed

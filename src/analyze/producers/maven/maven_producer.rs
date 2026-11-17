@@ -48,26 +48,57 @@ impl MavenProducer {
             // Offline local .m2 / .gradle .pom resolution for external parent, BOMs, and transitives
             let mut managed_overrides: HashMap<(String, String), String> = HashMap::new();
             if local_repo.is_available() {
-                let ext_parent = maven_file.parent.as_ref().and_then(|p| {
-                    match (&p.group_id, &p.artifact_id, &p.version) {
-                        (Some(g), Some(a), Some(v)) => Some((g.as_str(), a.as_str(), v.as_str())),
-                        _ => None,
+                let mut ext_parent: Option<(&str, &str, &str)> = None;
+                let mut bom_imports: Vec<(&str, &str, &str)> = Vec::new();
+                let mut child_props: HashMap<String, String> = HashMap::new();
+                let mut cur_file = Some(maven_file);
+                let mut seen_files: HashSet<PathBuf> = HashSet::new();
+                while let Some(mf) = cur_file {
+                    if !seen_files.insert(mf.path.clone()) {
+                        break;
                     }
-                });
-                let bom_imports: Vec<(&str, &str, &str)> = maven_file
-                    .dependency_management
-                    .iter()
-                    .filter(|d| matches!(d.scope, Some(MavenDependencyScope::Import)))
-                    .filter_map(|d| {
-                        d.version
-                            .as_deref()
-                            .map(|v| (d.group_id.as_str(), d.artifact_id.as_str(), v))
-                    })
-                    .collect();
+                    for (k, v) in &mf.properties {
+                        child_props.entry(k.clone()).or_insert_with(|| v.clone());
+                    }
+                    for d in &mf.dependency_management {
+                        if matches!(d.scope, Some(MavenDependencyScope::Import)) {
+                            if let Some(v) = d.version.as_deref() {
+                                bom_imports.push((d.group_id.as_str(), d.artifact_id.as_str(), v));
+                            }
+                        } else if let Some(v) = d.version.as_deref() {
+                            managed_overrides
+                                .entry((d.group_id.clone(), d.artifact_id.clone()))
+                                .or_insert_with(|| v.to_string());
+                        }
+                    }
+                    let next_ws = mf.parent.as_ref().and_then(|p| {
+                        maven_context.get_all_files().iter().find(|cand| {
+                            cand.path != mf.path
+                                && p.group_id.as_deref() == cand.project_info.group_id.as_deref()
+                                && p.artifact_id.as_deref()
+                                    == Some(cand.project_info.artifact_id.as_str())
+                                && (p.version.is_none()
+                                    || p.version.as_deref() == cand.project_info.version.as_deref())
+                        })
+                    });
+                    if next_ws.is_none() {
+                        ext_parent = mf.parent.as_ref().and_then(|p| {
+                            match (&p.group_id, &p.artifact_id, &p.version) {
+                                (Some(g), Some(a), Some(v)) => {
+                                    Some((g.as_str(), a.as_str(), v.as_str()))
+                                }
+                                _ => None,
+                            }
+                        });
+                    }
+                    cur_file = next_ws;
+                }
 
                 let (ext_props, ext_managed) =
-                    local_repo.resolve_parent_and_boms(ext_parent, &bom_imports);
-                managed_overrides.extend(ext_managed);
+                    local_repo.resolve_parent_and_boms(ext_parent, &bom_imports, &child_props);
+                for (k, v) in ext_managed {
+                    managed_overrides.entry(k).or_insert(v);
+                }
 
                 for d in &mut sbom_deps {
                     if !ext_props.is_empty() {

@@ -14,6 +14,7 @@ pub struct GoProducer {}
 struct GoRequire {
     module: String,
     version: String,
+    indirect: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -27,6 +28,7 @@ struct GoReplace {
 #[derive(Clone, Debug, Default)]
 struct ParsedGoMod {
     module_name: Option<String>,
+    go_117_plus: bool,
     requires: Vec<GoRequire>,
     replaces: Vec<GoReplace>,
     excludes: HashSet<(String, String)>,
@@ -242,6 +244,15 @@ impl GoProducer {
                         if !mod_name.is_empty() {
                             parsed.module_name = Some(mod_name.to_string());
                         }
+                    } else if let Some(rest) = code_part.strip_prefix("go ") {
+                        let ver = rest.trim();
+                        let mut parts = ver.split('.');
+                        if let (Some(maj_s), Some(min_s)) = (parts.next(), parts.next()) {
+                            if let (Ok(maj), Ok(min)) = (maj_s.parse::<u32>(), min_s.parse::<u32>())
+                            {
+                                parsed.go_117_plus = maj > 1 || (maj == 1 && min >= 17);
+                            }
+                        }
                     } else if let Some(rest) = code_part.strip_prefix("require") {
                         let rest = rest.trim();
                         if rest.starts_with('(') {
@@ -301,7 +312,7 @@ impl GoProducer {
         parsed
     }
 
-    fn parse_require_line(line: &str, _is_indirect: bool, out: &mut Vec<GoRequire>) {
+    fn parse_require_line(line: &str, is_indirect: bool, out: &mut Vec<GoRequire>) {
         let mut tokens = line.split_whitespace();
         if let (Some(module), Some(version)) = (tokens.next(), tokens.next()) {
             let clean_mod = module.trim_matches('"').to_string();
@@ -310,6 +321,7 @@ impl GoProducer {
                 out.push(GoRequire {
                     module: clean_mod,
                     version: clean_ver,
+                    indirect: is_indirect,
                 });
             }
         }
@@ -534,6 +546,9 @@ impl GoProducer {
                     .excludes
                     .contains(&(req.module.clone(), req.version.clone()))
                 {
+                    continue;
+                }
+                if dep_parsed.go_117_plus && req.indirect {
                     continue;
                 }
                 if req.module != mod_name && !mod_reqs.contains(&req.module) {
