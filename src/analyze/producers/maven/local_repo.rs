@@ -60,6 +60,8 @@ pub struct ResolvedTransitiveDep {
     pub version: String,
 }
 
+pub type TransitiveEdgeMap = HashMap<(String, String), Vec<(String, String)>>;
+
 pub struct LocalPomRepo {
     m2_root: Option<PathBuf>,
     gradle_root: Option<PathBuf>,
@@ -387,10 +389,20 @@ impl LocalPomRepo {
         seeds: &[SeedDep],
         managed_overrides: &HashMap<(String, String), String>,
     ) -> Vec<ResolvedTransitiveDep> {
+        self.expand_transitive_graph(seeds, managed_overrides).0
+    }
+
+    /// BFS ("nearest definition wins") transitive expansion returning both nodes and inter-library edges.
+    pub fn expand_transitive_graph(
+        &mut self,
+        seeds: &[SeedDep],
+        managed_overrides: &HashMap<(String, String), String>,
+    ) -> (Vec<ResolvedTransitiveDep>, TransitiveEdgeMap) {
         let mut selected: HashMap<(String, String), String> = HashMap::new();
         let mut queue: VecDeque<SeedDep> = VecDeque::new();
         let mut expanded: HashSet<(String, String, String)> = HashSet::new();
         let mut direct_keys: HashSet<(String, String)> = HashSet::new();
+        let mut edges: TransitiveEdgeMap = HashMap::new();
 
         for seed in seeds {
             if let Some(clean_ver) = normalize_pinned_version(&seed.version) {
@@ -415,6 +427,7 @@ impl LocalPomRepo {
             let Some(eff) = self.resolve_effective_pom(&g, &a, &v) else {
                 continue;
             };
+            let parent_ga = (g.clone(), a.clone());
             for dep in eff.dependencies {
                 if dep.optional {
                     continue;
@@ -428,9 +441,6 @@ impl LocalPomRepo {
                     continue;
                 }
                 let ga = (dep.group_id.clone(), dep.artifact_id.clone());
-                if selected.contains_key(&ga) {
-                    continue;
-                }
                 let raw_ver = managed_overrides
                     .get(&ga)
                     .map(String::as_str)
@@ -438,6 +448,15 @@ impl LocalPomRepo {
                 let Some(ver) = raw_ver.and_then(normalize_pinned_version) else {
                     continue;
                 };
+                if ga != parent_ga {
+                    let list = edges.entry(parent_ga.clone()).or_default();
+                    if !list.contains(&ga) {
+                        list.push(ga.clone());
+                    }
+                }
+                if selected.contains_key(&ga) {
+                    continue;
+                }
                 selected.insert(ga, ver.clone());
                 let mut next_exclusions = exclusions.clone();
                 next_exclusions.extend(dep.exclusions);
@@ -466,7 +485,7 @@ impl LocalPomRepo {
                 &b.version,
             ))
         });
-        out
+        (out, edges)
     }
 }
 

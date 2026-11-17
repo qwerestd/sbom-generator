@@ -6,7 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tree_sitter::{Language, Parser, Query, QueryCursor};
 
-use crate::analyze::producers::maven::local_repo::{LocalPomRepo, SeedDep};
+use crate::analyze::producers::maven::local_repo::{LocalPomRepo, SeedDep, TransitiveEdgeMap};
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
 use crate::model::dependency::{Dependency, DependencyBuilder, DependencyLocation, DependencyType};
 use crate::utils::context_resolver::HierarchicalContext;
@@ -120,6 +120,7 @@ impl SbomProducer for GradleProducer {
                 continue;
             }
 
+            let mut edge_map: TransitiveEdgeMap = HashMap::new();
             if !is_lockfile && local_repo.is_available() {
                 let mut managed_overrides: HashMap<(String, String), String> = HashMap::new();
                 for d in &extracted_deps {
@@ -152,7 +153,10 @@ impl SbomProducer for GradleProducer {
                     })
                     .collect();
                 let fallback_loc = Some(DependencyLocation::from_file(path));
-                for t in local_repo.expand_transitive_deps(&seeds, &managed_overrides) {
+                let (transitives, resolved_edges) =
+                    local_repo.expand_transitive_graph(&seeds, &managed_overrides);
+                edge_map = resolved_edges;
+                for t in transitives {
                     extracted_deps.push(ExtractedDep {
                         group: t.group_id,
                         name: t.artifact_id,
@@ -162,7 +166,37 @@ impl SbomProducer for GradleProducer {
                 }
             }
 
-            let file_deps = Self::build_dependency_graph(extracted_deps, &file_salt, path)?;
+            let mut file_deps = Self::build_dependency_graph(extracted_deps, &file_salt, path)?;
+            if !edge_map.is_empty() {
+                let mut ga_to_id: HashMap<(String, String), String> = HashMap::new();
+                for dep in &file_deps {
+                    if dep.r#type == DependencyType::Library {
+                        if let Some(g) = &dep.group {
+                            ga_to_id
+                                .entry((g.clone(), dep.name.clone()))
+                                .or_insert_with(|| dep.instance_id.clone());
+                        }
+                    }
+                }
+                for dep in &mut file_deps {
+                    if dep.r#type == DependencyType::Library {
+                        if let Some(g) = &dep.group {
+                            if let Some(children_ga) = edge_map.get(&(g.clone(), dep.name.clone()))
+                            {
+                                for child_ga in children_ga {
+                                    if let Some(cid) = ga_to_id.get(child_ga) {
+                                        if cid != &dep.instance_id
+                                            && !dep.dependencies.contains(cid)
+                                        {
+                                            dep.dependencies.push(cid.clone());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             all_dependencies.extend(file_deps);
         }
 

@@ -100,32 +100,37 @@ impl GoProducer {
             .map(|dir| dir.join("vendor").join("modules.txt"))
             .filter(|p| p.is_file());
 
-        let mut modules: HashMap<String, Option<String>> =
-            if let Some(vendor_path) = vendor_modules_txt {
-                let mut m = Self::parse_vendor_modules_txt(
-                    &fs::read_to_string(vendor_path).unwrap_or_default(),
-                );
-                for req in &parsed.requires {
-                    m.entry(req.module.clone())
-                        .or_insert_with(|| Some(req.version.clone()));
-                }
-                m
-            } else if let Some(cache_dir) = mod_cache {
-                Self::expand_mvs_from_cache(&parsed, path, cache_dir)
-                    .into_iter()
-                    .map(|(k, v)| (k, Some(v)))
-                    .collect()
-            } else {
+        let (mut modules, mvs_edges): (
+            HashMap<String, Option<String>>,
+            HashMap<String, Vec<String>>,
+        ) = if let Some(vendor_path) = vendor_modules_txt {
+            let mut m = Self::parse_vendor_modules_txt(
+                &fs::read_to_string(vendor_path).unwrap_or_default(),
+            );
+            for req in &parsed.requires {
+                m.entry(req.module.clone())
+                    .or_insert_with(|| Some(req.version.clone()));
+            }
+            (m, HashMap::new())
+        } else if let Some(cache_dir) = mod_cache {
+            let (sel, edges) = Self::expand_mvs_from_cache(&parsed, path, cache_dir);
+            (sel.into_iter().map(|(k, v)| (k, Some(v))).collect(), edges)
+        } else {
+            (
                 parsed
                     .requires
                     .iter()
                     .map(|r| (r.module.clone(), Some(r.version.clone())))
-                    .collect()
-            };
+                    .collect(),
+                HashMap::new(),
+            )
+        };
 
+        let mut replace_target: HashMap<String, String> = HashMap::new();
         for replacement in parsed.replaces {
             let final_name = if replacement.new_version.is_some() {
                 modules.remove(&replacement.old_module);
+                replace_target.insert(replacement.old_module, replacement.new_module.clone());
                 replacement.new_module
             } else {
                 // A local replacement keeps the original module name without a registry version.
@@ -140,6 +145,7 @@ impl GoProducer {
         modules.sort_by(|a, b| a.0.cmp(&b.0));
         let mut dependencies = Vec::new();
         let mut children = Vec::new();
+        let mut mod_to_id: HashMap<String, String> = HashMap::new();
         for (name, version) in modules {
             let raw_purl = match &version {
                 Some(v) => format!("pkg:golang/{name}@{v}"),
@@ -148,6 +154,7 @@ impl GoProducer {
             let purl = Dependency::auto_fix_and_validate_purl(&raw_purl);
             let id = make_instance_id(&purl, &file_salt);
             children.push(id.clone());
+            mod_to_id.insert(name.clone(), id.clone());
             dependencies.push(
                 DependencyBuilder::default()
                     .group(Self::extract_go_namespace(&name))
@@ -159,6 +166,20 @@ impl GoProducer {
                     .build()
                     .map_err(|e| anyhow::anyhow!(e))?,
             );
+        }
+        if !mvs_edges.is_empty() {
+            for dep in &mut dependencies {
+                if let Some(targets) = mvs_edges.get(&dep.name) {
+                    for tgt in targets {
+                        let resolved_tgt = replace_target.get(tgt).unwrap_or(tgt);
+                        if let Some(cid) = mod_to_id.get(resolved_tgt) {
+                            if cid != &dep.instance_id && !dep.dependencies.contains(cid) {
+                                dep.dependencies.push(cid.clone());
+                            }
+                        }
+                    }
+                }
+            }
         }
         dependencies.insert(
             0,
@@ -436,12 +457,13 @@ impl GoProducer {
         out
     }
 
-    /// Expand transitive dependencies via Minimal Version Selection (MVS) using cached `.mod` files.
+    /// Expand transitive dependencies via Minimal Version Selection (MVS) using cached `.mod` files,
+    /// returning both selected versions and inter-module `require` edges.
     fn expand_mvs_from_cache(
         parsed: &ParsedGoMod,
         go_mod_path: &Path,
         cache_dir: &Path,
-    ) -> HashMap<String, String> {
+    ) -> (HashMap<String, String>, HashMap<String, Vec<String>>) {
         let replace_map: HashMap<&str, &GoReplace> = parsed
             .replaces
             .iter()
@@ -450,6 +472,7 @@ impl GoProducer {
 
         let mut selected: HashMap<String, String> = HashMap::new();
         let mut queue: VecDeque<(String, String)> = VecDeque::new();
+        let mut edges: HashMap<String, Vec<String>> = HashMap::new();
 
         for req in &parsed.requires {
             if parsed
@@ -505,12 +528,16 @@ impl GoProducer {
                 continue;
             };
             let dep_parsed = Self::parse_go_mod(&content);
+            let mut mod_reqs = Vec::new();
             for req in dep_parsed.requires {
                 if parsed
                     .excludes
                     .contains(&(req.module.clone(), req.version.clone()))
                 {
                     continue;
+                }
+                if req.module != mod_name && !mod_reqs.contains(&req.module) {
+                    mod_reqs.push(req.module.clone());
                 }
                 let should_update = selected.get(&req.module).is_none_or(|cur| {
                     Self::compare_go_versions(&req.version, cur) == Ordering::Greater
@@ -520,9 +547,10 @@ impl GoProducer {
                     queue.push_back((req.module, req.version));
                 }
             }
+            edges.insert(mod_name, mod_reqs);
         }
 
-        selected
+        (selected, edges)
     }
 }
 

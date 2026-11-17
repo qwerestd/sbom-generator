@@ -11,6 +11,8 @@ pub struct YarnLockProducer;
 struct Entry {
     selectors: Vec<String>,
     version: String,
+    resolution: Option<String>,
+    resolved_url: Option<String>,
     children: Vec<(String, String)>,
 }
 fn unquote(s: &str) -> String {
@@ -22,6 +24,43 @@ fn name(selector: &str) -> Option<&str> {
         .find(|(i, c)| *i > 0 && *c == '@')?
         .0;
     Some(&selector[..i])
+}
+fn npm_pkg_from_url(url: &str) -> Option<String> {
+    let (_, after_proto) = url.split_once("://")?;
+    let (_, path) = after_proto.split_once('/')?;
+    let (pkg_part, _) = path.split_once("/-/")?;
+    if pkg_part.is_empty() {
+        None
+    } else {
+        Some(pkg_part.to_string())
+    }
+}
+fn resolve_canonical_name(entry: &Entry) -> Option<(String, Option<String>)> {
+    let alias_key = entry.selectors.first().and_then(|s| name(s))?.to_owned();
+    if let Some(res) = entry.resolution.as_deref() {
+        if let Some(target) = name(res) {
+            if !target.is_empty() && target != alias_key {
+                return Some((target.to_owned(), Some(alias_key)));
+            }
+        }
+    }
+    for sel in &entry.selectors {
+        if let Some((_, after_npm)) = sel.split_once("@npm:") {
+            if let Some(target) = name(after_npm) {
+                if !target.is_empty() && target != alias_key {
+                    return Some((target.to_owned(), Some(alias_key)));
+                }
+            }
+        }
+    }
+    if let Some(url) = entry.resolved_url.as_deref() {
+        if let Some(target) = npm_pkg_from_url(url) {
+            if target != alias_key {
+                return Some((target, Some(alias_key)));
+            }
+        }
+    }
+    Some((alias_key, None))
 }
 impl SbomProducer for YarnLockProducer {
     fn use_file(&self, p: &Path, _: &SbomProducerConfiguration) -> bool {
@@ -53,6 +92,7 @@ fn parse(text: &str, path: &Path) -> anyhow::Result<Vec<Dependency>> {
             let mut entry = Entry {
                 selectors: key.split(", ").map(unquote).collect(),
                 version: value["version"].as_str().unwrap_or("").into(),
+                resolution: value["resolution"].as_str().map(str::to_owned),
                 ..Default::default()
             };
             for cat in ["dependencies", "optionalDependencies"] {
@@ -90,6 +130,8 @@ fn parse(text: &str, path: &Path) -> anyhow::Result<Vec<Dependency>> {
                 let t = line.trim();
                 if let Some(v) = t.strip_prefix("version ") {
                     e.version = unquote(v);
+                } else if let Some(r) = t.strip_prefix("resolved ") {
+                    e.resolved_url = Some(unquote(r));
                 }
                 if line.starts_with("  ") && !line.starts_with("    ") {
                     dependency_section = matches!(t, "dependencies:" | "optionalDependencies:");
@@ -108,12 +150,7 @@ fn parse(text: &str, path: &Path) -> anyhow::Result<Vec<Dependency>> {
     let mut aliases = BTreeMap::new();
     let mut nodes = Vec::new();
     for entry in entries {
-        let Some(n) = entry
-            .selectors
-            .first()
-            .and_then(|s| name(s))
-            .map(str::to_owned)
-        else {
+        let Some((n, alias_key)) = resolve_canonical_name(&entry) else {
             continue;
         };
         if crate::utils::version_spec::manifest_version(Some(&entry.version), "npm")
@@ -128,10 +165,10 @@ fn parse(text: &str, path: &Path) -> anyhow::Result<Vec<Dependency>> {
         for selector in &entry.selectors {
             aliases.insert(selector.clone(), id.clone());
         }
-        nodes.push((n, purl, id, entry));
+        nodes.push((n, alias_key, purl, id, entry));
     }
     let mut result = Vec::new();
-    for (n, purl, id, entry) in nodes {
+    for (n, alias_key, purl, id, entry) in nodes {
         let children = entry
             .children
             .iter()
@@ -147,6 +184,9 @@ fn parse(text: &str, path: &Path) -> anyhow::Result<Vec<Dependency>> {
             .location(Some(DependencyLocation::from_file(path)))
             .build()
             .map_err(anyhow::Error::msg)?;
+        if let Some(alias) = alias_key {
+            dep.properties.insert("sbom:npm:alias_key".into(), alias);
+        }
         dep.properties.insert(
             "sbom:graph:declared-edges".into(),
             entry.children.len().to_string(),

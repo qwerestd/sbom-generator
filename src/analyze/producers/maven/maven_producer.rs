@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::analyze::producers::maven::context::MavenProducerContext;
-use crate::analyze::producers::maven::local_repo::{LocalPomRepo, SeedDep};
+use crate::analyze::producers::maven::local_repo::{LocalPomRepo, SeedDep, TransitiveEdgeMap};
 use crate::analyze::producers::maven::maven_file::MavenFile;
 use crate::analyze::producers::maven::model::MavenDependencyScope;
 use crate::analyze::producers::producer::{SbomProducer, SbomProducerConfiguration};
@@ -91,10 +91,20 @@ impl MavenProducer {
                 .map(|d| d.to_isolated_dependency(&file_salt))
                 .collect();
 
+            let mut edge_map: TransitiveEdgeMap = HashMap::new();
             if local_repo.is_available() {
                 let seeds: Vec<SeedDep> = sbom_deps
                     .iter()
-                    .filter(|d| !matches!(d.scope, Some(MavenDependencyScope::Import)))
+                    .filter(|d| {
+                        !matches!(
+                            d.scope,
+                            Some(
+                                MavenDependencyScope::Import
+                                    | MavenDependencyScope::Test
+                                    | MavenDependencyScope::Provided
+                            )
+                        )
+                    })
                     .filter_map(|d| {
                         d.version.as_ref().map(|v| SeedDep {
                             group_id: d.group_id.clone(),
@@ -106,7 +116,10 @@ impl MavenProducer {
                     .collect();
                 let seen_purls: HashSet<String> = deps.iter().map(|d| d.purl.clone()).collect();
                 let location = Some(DependencyLocation::from_file(&maven_file.path));
-                for t in local_repo.expand_transitive_deps(&seeds, &managed_overrides) {
+                let (transitives, resolved_edges) =
+                    local_repo.expand_transitive_graph(&seeds, &managed_overrides);
+                edge_map = resolved_edges;
+                for t in transitives {
                     let purl = Dependency::auto_fix_and_validate_purl(&format!(
                         "pkg:maven/{}/{}@{}",
                         t.group_id, t.artifact_id, t.version
@@ -127,6 +140,35 @@ impl MavenProducer {
                         .build()
                     {
                         deps.push(built);
+                    }
+                }
+            }
+
+            if !edge_map.is_empty() {
+                let mut ga_to_id: HashMap<(String, String), String> = HashMap::new();
+                for dep in &deps {
+                    if let Some(g) = &dep.group {
+                        let resolved_id = projects
+                            .get(&dep.purl)
+                            .and_then(|v| v.first())
+                            .map(|p| p.instance_id.clone())
+                            .unwrap_or_else(|| dep.instance_id.clone());
+                        ga_to_id
+                            .entry((g.clone(), dep.name.clone()))
+                            .or_insert(resolved_id);
+                    }
+                }
+                for dep in &mut deps {
+                    if let Some(g) = &dep.group {
+                        if let Some(children_ga) = edge_map.get(&(g.clone(), dep.name.clone())) {
+                            for child_ga in children_ga {
+                                if let Some(cid) = ga_to_id.get(child_ga) {
+                                    if cid != &dep.instance_id && !dep.dependencies.contains(cid) {
+                                        dep.dependencies.push(cid.clone());
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

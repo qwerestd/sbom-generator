@@ -129,6 +129,21 @@ pub fn fuse(mut deps: Vec<Dependency>) -> Vec<Dependency> {
                         )
                         .unwrap_or(false)
                     })
+                } else if deps[i].purl.starts_with("pkg:maven/") {
+                    let ver = d.version.as_deref().unwrap();
+                    let req = requirement.trim();
+                    req == ver
+                        || crate::utils::version_spec::manifest_version(Some(req), "maven")
+                            .0
+                            .is_some_and(|v| v == ver)
+                } else if deps[i].purl.starts_with("pkg:golang/") {
+                    let ver = d.version.as_deref().unwrap();
+                    let req = requirement.trim();
+                    req == ver
+                        || semver::VersionReq::parse(req.strip_prefix('v').unwrap_or(req))
+                            .ok()
+                            .zip(semver::Version::parse(ver.strip_prefix('v').unwrap_or(ver)).ok())
+                            .is_some_and(|(r, v)| r.matches(&v))
                 } else {
                     false
                 }
@@ -221,6 +236,12 @@ pub fn fuse(mut deps: Vec<Dependency>) -> Vec<Dependency> {
                 )
             })
             .unwrap();
+        let winner_is_dynamic_lib = deps[winner].r#type
+            == crate::model::dependency::DependencyType::Library
+            && deps[winner]
+                .properties
+                .get("sbom:analysis:method")
+                .is_some_and(|m| m != "static");
         let mut evidence = BTreeSet::new();
         for &i in indexes {
             evidence.insert(serde_json::json!({"location":deps[i].location.as_ref().map(|l| &l.block.file),"properties":deps[i].properties}).to_string());
@@ -228,8 +249,14 @@ pub fn fuse(mut deps: Vec<Dependency>) -> Vec<Dependency> {
                 continue;
             }
             let other = deps[i].clone();
+            let other_is_static = other
+                .properties
+                .get("sbom:analysis:method")
+                .is_none_or(|m| m == "static");
             aliases.insert(other.instance_id.clone(), deps[winner].instance_id.clone());
-            deps[winner].dependencies.extend(other.dependencies);
+            if !(winner_is_dynamic_lib && other_is_static) {
+                deps[winner].dependencies.extend(other.dependencies);
+            }
             if deps[winner].license.is_none() {
                 deps[winner].license = other.license;
             }
